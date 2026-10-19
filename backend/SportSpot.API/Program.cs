@@ -6,14 +6,27 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SportSpot.API.Data;
 using SportSpot.API.Middlewares;
+using SportSpot.API.Models;
 using SportSpot.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Cấu hình EF Core với PostgreSQL (Supabase)
+// 1. Cấu hình EF Core: Tự động dùng SQLite local khi chưa có Supabase thật (giúp test ngay lập tức)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var isSupabaseConfigured = !string.IsNullOrWhiteSpace(connectionString) && !connectionString.Contains("your-project");
+
 builder.Services.AddDbContext<SportSpotDbContext>(options =>
-    options.UseNpgsql(connectionString));
+{
+    if (isSupabaseConfigured)
+    {
+        options.UseNpgsql(connectionString);
+    }
+    else
+    {
+        // Chế độ Dev/Test cục bộ không cần mạng hay Supabase
+        options.UseSqlite("Data Source=sportspot_dev.db");
+    }
+});
 
 // 2. Cấu hình MemoryCache cho OTP (TTL 120s)
 builder.Services.AddMemoryCache();
@@ -97,6 +110,17 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// Tự động khởi tạo và seed dữ liệu nếu đang ở chế độ SQLite dev
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SportSpotDbContext>();
+    if (!isSupabaseConfigured)
+    {
+        db.Database.EnsureCreated();
+        SeedDevVenues(db);
+    }
+}
+
 // 8. Middleware Pipeline
 app.UseSwagger();
 app.UseSwaggerUI(c =>
@@ -122,3 +146,42 @@ if (!app.Environment.IsDevelopment())
 app.MapControllers();
 
 app.Run();
+
+// Hàm hỗ trợ seed sân mẫu cho môi trường dev SQLite
+static void SeedDevVenues(SportSpotDbContext context)
+{
+    if (context.Venues.Any()) return;
+
+    var venue1 = new Venue
+    {
+        SportId = 1,
+        Name = "CLB Cầu Lông Cầu Giấy",
+        Address = "Số 35 Trần Quý Kiên, Dịch Vọng",
+        District = "Cầu Giấy",
+        Latitude = 21.0368000m,
+        Longitude = 105.7905000m,
+        Description = "Cụm 6 sân thảm tiêu chuẩn thi đấu.",
+        Hotline = "0987654321",
+        BasePrice = 90000,
+        PeakPrice = 120000,
+        Rating = 4.9m,
+        Amenities = "Bãi đỗ ô tô, Căn tin, Phòng tắm, Cho thuê vợt",
+        IsActive = true
+    };
+    context.Venues.Add(venue1);
+    context.SaveChanges();
+
+    context.SubVenues.AddRange(
+        new SubVenue { VenueId = venue1.Id, Name = "Sân Số 1 (Thảm Yonex)", IsActive = true },
+        new SubVenue { VenueId = venue1.Id, Name = "Sân Số 2 (Thảm Yonex)", IsActive = true },
+        new SubVenue { VenueId = venue1.Id, Name = "Sân VIP (Khán đài)", IsActive = true }
+    );
+
+    context.Services.AddRange(
+        new Service { VenueId = venue1.Id, Name = "Thuê vợt Yonex Astrox", Type = "Rental", Price = 30000, StockQuantity = 20 },
+        new Service { VenueId = venue1.Id, Name = "Mua ống cầu Hải Yến (12 quả)", Type = "Sale", Price = 240000, StockQuantity = 50 },
+        new Service { VenueId = venue1.Id, Name = "Nước điện giải Pocari Sweat", Type = "Sale", Price = 15000, StockQuantity = 200 }
+    );
+
+    context.SaveChanges();
+}
