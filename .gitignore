@@ -1,0 +1,40 @@
+# .NET build artifacts
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.dbmdl
+*.jfm
+
+# Visual Studio & VS Code
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.lock
+
+# Logs
+*.log
+*.tlog
+
+# Flutter & Dart (chuẩn bị sẵn cho bước tiếp theo)
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# OS generated files
+.DS_Store
+Thumbs.db
