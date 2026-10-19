@@ -9,11 +9,21 @@ using SportSpot.API.Middlewares;
 using SportSpot.API.Models;
 using SportSpot.API.Services;
 
+// Nạp các biến môi trường từ file .env (nếu có)
+DotNetEnv.Env.TraversePath().Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Cấu hình EF Core: Tự động dùng SQLite local khi chưa có Supabase thật (giúp test ngay lập tức)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var isSupabaseConfigured = !string.IsNullOrWhiteSpace(connectionString) && !connectionString.Contains("your-project");
+// 1. Cấu hình EF Core: Ưu tiên lấy từ file .env, sau đó mới đến appsettings.json
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+}
+
+var isSupabaseConfigured = !string.IsNullOrWhiteSpace(connectionString) && 
+                           !connectionString.Contains("your-project") &&
+                           connectionString.Contains("Host=");
 
 builder.Services.AddDbContext<SportSpotDbContext>(options =>
 {
@@ -34,8 +44,10 @@ builder.Services.AddMemoryCache();
 // 3. Đăng ký JwtService
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-// 4. Cấu hình JWT Bearer Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "SportSpot_PRM393_Secret_Key_Super_Secure_2026_Key_Must_Be_Long_Enough!";
+// 4. Cấu hình JWT Bearer Authentication (Ưu tiên đọc từ .env)
+var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
+    ?? builder.Configuration["Jwt:Key"] 
+    ?? "SportSpot_PRM393_Secret_Key_Super_Secure_2026_Key_Must_Be_Long_Enough!";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

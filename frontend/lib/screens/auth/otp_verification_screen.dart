@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
@@ -22,6 +21,7 @@ class OtpVerificationScreen extends StatefulWidget {
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final _pinController = TextEditingController();
+  final _focusNode = FocusNode();
   Timer? _timer;
   int _secondsRemaining = 120;
 
@@ -29,6 +29,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void initState() {
     super.initState();
     _startTimer();
+    // Tự động focus vào ô nhập
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
   }
 
   void _startTimer() {
@@ -47,6 +51,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void dispose() {
     _timer?.cancel();
     _pinController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -78,6 +83,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       );
     } else {
       _pinController.clear();
+      setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(auth.errorMessage ?? 'Mã OTP không hợp lệ'),
@@ -95,6 +101,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     _startTimer();
     _pinController.clear();
+    setState(() {});
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -104,38 +111,81 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     );
   }
 
+  // Component 6 ô số thuần Flutter Native: 100% không bị lỗi LookupBoundary hay No Material
+  Widget _buildOtpBoxes() {
+    return GestureDetector(
+      onTap: () => _focusNode.requestFocus(),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // TextField ẩn để nhận input mượt mà từ bàn phím và paste
+          Opacity(
+            opacity: 0,
+            child: TextField(
+              controller: _pinController,
+              focusNode: _focusNode,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              autofocus: true,
+              onChanged: (val) {
+                setState(() {});
+                if (val.length == 6) {
+                  _onVerify(val);
+                }
+              },
+            ),
+          ),
+          // 6 Ô hiển thị số với hiệu ứng active tinh tế
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(6, (index) {
+              final isFocused = _pinController.text.length == index;
+              final hasValue = _pinController.text.length > index;
+              final char = hasValue ? _pinController.text[index] : '';
+
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 46,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: hasValue ? AppTheme.pastelBlue.withOpacity(0.3) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isFocused
+                        ? AppTheme.accentBlue
+                        : (hasValue ? AppTheme.accentBlue : const Color(0xFFCBD5E1)),
+                    width: isFocused ? 2 : 1.2,
+                  ),
+                  boxShadow: isFocused
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.accentBlue.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  char,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthProvider>().isLoading;
-
-    // Theme cho Pinput
-    final defaultPinTheme = PinTheme(
-      width: 48,
-      height: 56,
-      textStyle: const TextStyle(
-        fontSize: 20,
-        color: AppTheme.textDark,
-        fontWeight: FontWeight.w700,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
-      ),
-    );
-
-    final focusedPinTheme = defaultPinTheme.copyWith(
-      decoration: defaultPinTheme.decoration!.copyWith(
-        border: Border.all(color: AppTheme.accentBlue, width: 2),
-      ),
-    );
-
-    final submittedPinTheme = defaultPinTheme.copyWith(
-      decoration: defaultPinTheme.decoration!.copyWith(
-        color: AppTheme.pastelBlue.withOpacity(0.3),
-        border: Border.all(color: AppTheme.accentBlue),
-      ),
-    );
 
     final minutes = (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
     final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
@@ -145,7 +195,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         title: const Text('Xác thực mã OTP'),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -178,16 +228,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               ),
               const SizedBox(height: 36),
 
-              // Pinput 6 ô số
-              Pinput(
-                length: 6,
-                controller: _pinController,
-                defaultPinTheme: defaultPinTheme,
-                focusedPinTheme: focusedPinTheme,
-                submittedPinTheme: submittedPinTheme,
-                autofocus: true,
-                onCompleted: _onVerify,
-              ),
+              // 6 Ô OTP thuần Native Flutter
+              _buildOtpBoxes(),
+
               const SizedBox(height: 32),
 
               // Đồng hồ đếm ngược 120s
@@ -221,14 +264,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 40),
 
               // Nút Xác nhận
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: isLoading
+                  onPressed: isLoading || _pinController.text.length != 6
                       ? null
                       : () => _onVerify(_pinController.text),
                   child: isLoading

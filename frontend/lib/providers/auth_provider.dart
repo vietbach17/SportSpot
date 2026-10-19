@@ -116,16 +116,20 @@ class AuthProvider extends ChangeNotifier {
       // Lưu Token vào SecureStorage
       await TokenService.saveToken(token);
 
-      // Lưu phiên vào SQLite
-      await _dbHelper.saveUserSession(
-        userId: _currentUser!.userId,
-        fullName: _currentUser!.fullName,
-        phoneNumber: _currentUser!.phoneNumber,
-        email: _currentUser!.email,
-        role: _currentUser!.role,
-        walletBalance: _currentUser!.walletBalance,
-        accessToken: token,
-      );
+      // Lưu phiên vào Local Cache / SQLite
+      try {
+        await _dbHelper.saveUserSession(
+          userId: _currentUser!.userId,
+          fullName: _currentUser!.fullName,
+          phoneNumber: _currentUser!.phoneNumber,
+          email: _currentUser!.email,
+          role: _currentUser!.role,
+          walletBalance: _currentUser!.walletBalance,
+          accessToken: token,
+        );
+      } catch (dbErr) {
+        debugPrint('Warning: Local session save error: $dbErr');
+      }
 
       notifyListeners();
       return true;

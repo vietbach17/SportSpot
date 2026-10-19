@@ -49,6 +49,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final sportsStr = _selectedSports.join(',');
     await prefs.setString('favorite_sports', sportsStr);
 
+    if (!mounted) return;
     final auth = context.read<AuthProvider>();
     if (!auth.isGuest) {
       await auth.updateProfile(
@@ -78,6 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('favorite_sports', sportsStr);
 
+    if (!mounted) return;
     final auth = context.read<AuthProvider>();
     if (!auth.isGuest) {
       await auth.updateProfile(favoriteSports: sportsStr);
