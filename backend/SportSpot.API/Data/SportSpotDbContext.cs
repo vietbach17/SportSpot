@@ -60,7 +60,7 @@ public class SportSpotDbContext : DbContext
         modelBuilder.Entity<BookingDetail>()
             .HasIndex(bd => new { bd.SubVenueId, bd.PlayDate, bd.SlotId })
             .HasDatabaseName("UQ_SubVenue_Date_Slot_Active")
-            .HasFilter("Status != 'Cancelled'")
+            .HasFilter("\"Status\" != 'Cancelled'")
             .IsUnique();
 
         // Seed Sports

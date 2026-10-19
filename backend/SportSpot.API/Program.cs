@@ -15,30 +15,29 @@ DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Cấu hình EF Core: Ưu tiên lấy từ file .env, sau đó mới đến appsettings.json
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING");
-if (string.IsNullOrWhiteSpace(connectionString))
-{
-    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-}
+var rawConn = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
+              ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
-var isSupabaseConfigured = !string.IsNullOrWhiteSpace(connectionString) && 
+var connectionString = ConvertPostgresUriToConnectionString(rawConn ?? string.Empty);
+
+var isPostgresConfigured = !string.IsNullOrWhiteSpace(connectionString) && 
                            !connectionString.Contains("your-project") &&
-                           connectionString.Contains("Host=");
+                           (connectionString.Contains("Host=") || connectionString.Contains("Server="));
 
 builder.Services.AddDbContext<SportSpotDbContext>(options =>
 {
-    if (isSupabaseConfigured)
+    if (isPostgresConfigured)
     {
         options.UseNpgsql(connectionString);
     }
     else
     {
-        // Chế độ Dev/Test cục bộ không cần mạng hay Supabase
+        // Chế độ Dev/Test cục bộ không cần mạng hay PostgreSQL bên ngoài
         options.UseSqlite("Data Source=sportspot_dev.db");
     }
 });
 
-// 2. Cấu hình MemoryCache cho OTP (TTL 120s)
+// 2. Cấu hình MemoryCache cho OTP
 builder.Services.AddMemoryCache();
 
 // 3. Đăng ký JwtService
@@ -71,33 +70,33 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 
-// 6. Cấu hình Controllers và tuần tự hóa JSON
+// 6. Controllers & JSON Enum
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-// 7. Cấu hình Swagger / OpenAPI hỗ trợ nút Authorize JWT
+// 7. Swagger / OpenAPI Configuration
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "SportSpot API",
+        Title = "SportSpot API - Nền tảng đặt sân thể thao & Tìm kèo giao lưu",
         Version = "v1",
-        Description = "Backend API cho đồ án SportSpot (PRM393) - Hỗ trợ JWT Auth & Dev Bypass Header X-Mock-User-Id"
+        Description = "Tài liệu API dành cho ứng dụng Flutter và Web Admin (Môn PRM393)."
     });
 
+    // Thêm cấu hình nhập Bearer Token trên Swagger UI
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Nhập Token theo cú pháp: Bearer {token}",
+        Description = "Nhập token JWT theo định dạng: Bearer {token}",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -122,14 +121,46 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Tự động khởi tạo và seed dữ liệu nếu đang ở chế độ SQLite dev
+// Tự động khởi tạo database (Migration) và seed dữ liệu mẫu
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<SportSpotDbContext>();
-    if (!isSupabaseConfigured)
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
     {
-        db.Database.EnsureCreated();
+        if (isPostgresConfigured)
+        {
+            logger.LogInformation("==================================================");
+            logger.LogInformation(">>> [Database] Đang kết nối PostgreSQL & tự động chạy Migration...");
+            db.Database.Migrate();
+            logger.LogInformation(">>> [Database] Khởi tạo schema PostgreSQL thành công!");
+            logger.LogInformation("==================================================");
+        }
+        else
+        {
+            logger.LogInformation(">>> [Database] Đang sử dụng SQLite local dev (sportspot_dev.db)...");
+            db.Database.EnsureCreated();
+        }
+
         SeedDevVenues(db);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, ">>> [Database] Gặp lỗi khi chạy Migration: {Message}", ex.Message);
+        if (isPostgresConfigured)
+        {
+            try
+            {
+                logger.LogWarning(">>> [Database] Thử fallback với EnsureCreated()...");
+                db.Database.EnsureCreated();
+                SeedDevVenues(db);
+            }
+            catch (Exception fallbackEx)
+            {
+                logger.LogError(fallbackEx, ">>> [Database] Fallback EnsureCreated cũng thất bại: {Message}", fallbackEx.Message);
+            }
+        }
     }
 }
 
@@ -159,7 +190,33 @@ app.MapControllers();
 
 app.Run();
 
-// Hàm hỗ trợ seed sân mẫu cho môi trường dev SQLite
+// Chuyển đổi định dạng URI postgresql://... sang ADO.NET connection string nếu cần
+static string ConvertPostgresUriToConnectionString(string raw)
+{
+    if (string.IsNullOrWhiteSpace(raw)) return raw;
+    raw = raw.Trim();
+    if (raw.StartsWith("postgres://") || raw.StartsWith("postgresql://"))
+    {
+        try
+        {
+            var uri = new Uri(raw);
+            var userInfo = uri.UserInfo.Split(':');
+            var user = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : "";
+            var pass = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+            var host = uri.Host;
+            var port = uri.Port > 0 ? uri.Port : 5432;
+            var db = uri.AbsolutePath.TrimStart('/');
+            return $"Host={host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Prefer;Trust Server Certificate=true;";
+        }
+        catch
+        {
+            return raw;
+        }
+    }
+    return raw;
+}
+
+// Hàm hỗ trợ seed sân mẫu cho môi trường dev
 static void SeedDevVenues(SportSpotDbContext context)
 {
     if (context.Venues.Any()) return;
@@ -178,22 +235,28 @@ static void SeedDevVenues(SportSpotDbContext context)
         PeakPrice = 120000,
         Rating = 4.9m,
         Amenities = "Bãi đỗ ô tô, Căn tin, Phòng tắm, Cho thuê vợt",
+        ImageUrl = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800",
         IsActive = true
     };
-    context.Venues.Add(venue1);
-    context.SaveChanges();
 
-    context.SubVenues.AddRange(
-        new SubVenue { VenueId = venue1.Id, Name = "Sân Số 1 (Thảm Yonex)", IsActive = true },
-        new SubVenue { VenueId = venue1.Id, Name = "Sân Số 2 (Thảm Yonex)", IsActive = true },
-        new SubVenue { VenueId = venue1.Id, Name = "Sân VIP (Khán đài)", IsActive = true }
-    );
+    var venue2 = new Venue
+    {
+        SportId = 2,
+        Name = "Sân Bóng Đá Mini PVV",
+        Address = "Số 72 Trần Thái Tông, Dịch Vọng Hậu",
+        District = "Cầu Giấy",
+        Latitude = 21.0305000m,
+        Longitude = 105.7865000m,
+        Description = "Cụm sân cỏ nhân tạo 7 người chất lượng cao.",
+        Hotline = "0912345678",
+        BasePrice = 350000,
+        PeakPrice = 600000,
+        Rating = 4.7m,
+        Amenities = "Đèn chiếu sáng ban đêm, Trọng tài, Căn tin, Giữ xe miễn phí",
+        ImageUrl = "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800",
+        IsActive = true
+    };
 
-    context.Services.AddRange(
-        new Service { VenueId = venue1.Id, Name = "Thuê vợt Yonex Astrox", Type = "Rental", Price = 30000, StockQuantity = 20 },
-        new Service { VenueId = venue1.Id, Name = "Mua ống cầu Hải Yến (12 quả)", Type = "Sale", Price = 240000, StockQuantity = 50 },
-        new Service { VenueId = venue1.Id, Name = "Nước điện giải Pocari Sweat", Type = "Sale", Price = 15000, StockQuantity = 200 }
-    );
-
+    context.Venues.AddRange(venue1, venue2);
     context.SaveChanges();
 }
