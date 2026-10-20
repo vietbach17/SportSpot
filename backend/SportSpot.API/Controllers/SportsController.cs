@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SportSpot.API.Data;
-using SportSpot.API.DTOs;
+using SportSpot.Services.DTOs;
+using SportSpot.Services.Interfaces;
 
 namespace SportSpot.API.Controllers;
 
@@ -9,26 +8,17 @@ namespace SportSpot.API.Controllers;
 [Route("api/[controller]")]
 public class SportsController : ControllerBase
 {
-    private readonly SportSpotDbContext _context;
+    private readonly ISportService _sportService;
 
-    public SportsController(SportSpotDbContext context)
+    public SportsController(ISportService sportService)
     {
-        _context = context;
+        _sportService = sportService;
     }
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<List<SportDto>>>> GetSports()
     {
-        var sports = await _context.Sports
-            .Select(s => new SportDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                IconUrl = s.IconUrl,
-                VenueCount = s.Venues.Count(v => v.IsActive)
-            })
-            .ToListAsync();
-
-        return Ok(ApiResponse<List<SportDto>>.Ok(sports, "Lấy danh sách môn thể thao thành công"));
+        var result = await _sportService.GetSportsAsync();
+        return StatusCode(result.StatusCode, result);
     }
 }

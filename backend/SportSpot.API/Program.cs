@@ -4,10 +4,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using SportSpot.API.Data;
 using SportSpot.API.Middlewares;
-using SportSpot.API.Models;
-using SportSpot.API.Services;
+using SportSpot.Data.Context;
+using SportSpot.Data.Repositories.Implementations;
+using SportSpot.Data.Repositories.Interfaces;
+using SportSpot.Data.SeedData;
+using SportSpot.Services.Implementations;
+using SportSpot.Services.Interfaces;
 
 // Nạp các biến môi trường từ file .env (nếu có)
 DotNetEnv.Env.TraversePath().Load();
@@ -28,7 +31,7 @@ builder.Services.AddDbContext<SportSpotDbContext>(options =>
 {
     if (isPostgresConfigured)
     {
-        options.UseNpgsql(connectionString);
+        options.UseNpgsql(connectionString, b => b.MigrationsAssembly("SportSpot.Data"));
     }
     else
     {
@@ -40,8 +43,24 @@ builder.Services.AddDbContext<SportSpotDbContext>(options =>
 // 2. Cấu hình MemoryCache cho OTP
 builder.Services.AddMemoryCache();
 
-// 3. Đăng ký JwtService
+// 3. Đăng ký Dependency Injection cho Tầng Data (Repositories & UnitOfWork) và Tầng Services
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ISportRepository, SportRepository>();
+builder.Services.AddScoped<IVenueRepository, VenueRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IMatchRepository, MatchRepository>();
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ISportService, SportService>();
+builder.Services.AddScoped<IVenueService, VenueService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IMatchService, MatchService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<ITicketService, TicketService>();
 
 // 4. Cấu hình JWT Bearer Authentication (Ưu tiên đọc từ .env)
 var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
@@ -80,6 +99,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
 // 7. Swagger / OpenAPI Configuration
@@ -143,7 +164,7 @@ using (var scope = app.Services.CreateScope())
             db.Database.EnsureCreated();
         }
 
-        SeedDevVenues(db);
+        DbInitializer.SeedDevVenues(db);
     }
     catch (Exception ex)
     {
@@ -154,7 +175,7 @@ using (var scope = app.Services.CreateScope())
             {
                 logger.LogWarning(">>> [Database] Thử fallback với EnsureCreated()...");
                 db.Database.EnsureCreated();
-                SeedDevVenues(db);
+                DbInitializer.SeedDevVenues(db);
             }
             catch (Exception fallbackEx)
             {
@@ -214,49 +235,4 @@ static string ConvertPostgresUriToConnectionString(string raw)
         }
     }
     return raw;
-}
-
-// Hàm hỗ trợ seed sân mẫu cho môi trường dev
-static void SeedDevVenues(SportSpotDbContext context)
-{
-    if (context.Venues.Any()) return;
-
-    var venue1 = new Venue
-    {
-        SportId = 1,
-        Name = "CLB Cầu Lông Cầu Giấy",
-        Address = "Số 35 Trần Quý Kiên, Dịch Vọng",
-        District = "Cầu Giấy",
-        Latitude = 21.0368000m,
-        Longitude = 105.7905000m,
-        Description = "Cụm 6 sân thảm tiêu chuẩn thi đấu.",
-        Hotline = "0987654321",
-        BasePrice = 90000,
-        PeakPrice = 120000,
-        Rating = 4.9m,
-        Amenities = "Bãi đỗ ô tô, Căn tin, Phòng tắm, Cho thuê vợt",
-        ImageUrl = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800",
-        IsActive = true
-    };
-
-    var venue2 = new Venue
-    {
-        SportId = 2,
-        Name = "Sân Bóng Đá Mini PVV",
-        Address = "Số 72 Trần Thái Tông, Dịch Vọng Hậu",
-        District = "Cầu Giấy",
-        Latitude = 21.0305000m,
-        Longitude = 105.7865000m,
-        Description = "Cụm sân cỏ nhân tạo 7 người chất lượng cao.",
-        Hotline = "0912345678",
-        BasePrice = 350000,
-        PeakPrice = 600000,
-        Rating = 4.7m,
-        Amenities = "Đèn chiếu sáng ban đêm, Trọng tài, Căn tin, Giữ xe miễn phí",
-        ImageUrl = "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800",
-        IsActive = true
-    };
-
-    context.Venues.AddRange(venue1, venue2);
-    context.SaveChanges();
 }

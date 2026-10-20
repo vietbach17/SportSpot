@@ -24,6 +24,7 @@ Bộ tài liệu được tổ chức theo tiêu chuẩn kỹ nghệ phần mề
 | 9 | [**`08_API_CONTRACT.md`**](./08_API_CONTRACT.md) | Đặc tả hợp đồng API RESTful JSON chuẩn hóa, schema Request/Response và mã lỗi HTTP. | Mobile & Backend Dev |
 | 10 | [**`09_REQUIREMENTS_TRACEABILITY_RISKS.md`**](./09_REQUIREMENTS_TRACEABILITY_RISKS.md) | **Ma trận truy vết (RTM)** Feature $\leftrightarrow$ Use Case $\leftrightarrow$ API $\leftrightarrow$ DB; và Kế hoạch quản lý rủi ro dự án. | QA/Tester, Leader |
 | 11 | [**`10_TEAM_TASK_ASSIGNMENT_GUIDE.md`**](./10_TEAM_TASK_ASSIGNMENT_GUIDE.md) | **Phân chia Task cho 5 thành viên (Vertical Slice: Full FE + BE)**, chiến lược Mock Data độc lập (Zero-blocking) & Hướng dẫn hoàn thành từng bước. | Toàn bộ 5 thành viên |
+| 12 | [**`CODEBASE_STRUCTURE.md`**](./CODEBASE_STRUCTURE.md) | **Sơ đồ cây thư mục Codebase:** Giải thích vai trò của từng folder và file trong `backend/` (3 Layers) và `mobile/` (Feature-Driven). | Toàn bộ 5 thành viên |
 
 ---
 
