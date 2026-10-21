@@ -18,17 +18,17 @@ public class DevBypassAuthMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(HttpContext context, IWebHostEnvironment environment, SportSpot.Data.Context.SportSpotDbContext db)
     {
-        if (context.Request.Headers.TryGetValue("X-Mock-User-Id", out var mockUserIdHeader))
+        if (environment.IsDevelopment() && context.Request.Headers.TryGetValue("X-Mock-User-Id", out var mockUserIdHeader))
         {
             var userIdStr = mockUserIdHeader.ToString();
-            if (int.TryParse(userIdStr, out var userId))
+            if (int.TryParse(userIdStr, out var userId) && userId > 0 && await db.Users.FindAsync(userId) is { } user)
             {
                 var claims = new[]
                 {
                     new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                    new Claim(ClaimTypes.Role, "Player"),
+                    new Claim(ClaimTypes.Role, user.Role),
                     new Claim(ClaimTypes.Name, $"DevUser_{userId}")
                 };
 

@@ -10,6 +10,7 @@ public class CreateBookingRequest
     public bool IsOpenMatch { get; set; } = false;
     public int? TotalExpectedPlayers { get; set; }
     public int? NeededPlayers { get; set; }
+    public string SkillLevel { get; set; } = "Cơ bản";
     public int DepositPercentage { get; set; } = 100; // 30% hoặc 100%
     public string PaymentGateway { get; set; } = "MockPayment";
 }

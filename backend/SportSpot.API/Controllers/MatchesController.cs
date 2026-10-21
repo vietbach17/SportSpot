@@ -1,4 +1,5 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SportSpot.Services.DTOs;
 using SportSpot.Services.Interfaces;
@@ -7,61 +8,73 @@ namespace SportSpot.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class MatchesController : ControllerBase
+public class MatchesController(IMatchService matches, IWebHostEnvironment environment) : ControllerBase
 {
-    private readonly IMatchService _matchService;
-
-    public MatchesController(IMatchService matchService)
-    {
-        _matchService = matchService;
-    }
-
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<List<OpenMatchDto>>>> GetOpenMatches(
-        [FromQuery] int? sportId,
-        [FromQuery] string? district)
+    public async Task<IActionResult> List([FromQuery] int? sportId, [FromQuery] string? district)
     {
-        var result = await _matchService.GetOpenMatchesAsync(sportId, district);
+        var result = await matches.GetOpenMatchesAsync(sportId, district);
         return StatusCode(result.StatusCode, result);
     }
 
-    [HttpPost("{id}/join")]
-    public async Task<ActionResult<ApiResponse<object>>> JoinMatch(int id, [FromBody] JoinMatchRequest request)
+    [Authorize, HttpGet("staff")]
+    public async Task<IActionResult> Staff()
     {
-        if (request.UserId <= 0)
-        {
-            request.UserId = GetCurrentUserId();
-        }
-        var result = await _matchService.JoinMatchAsync(id, request);
+        var result = await matches.GetStaffMatchesAsync(UserId);
         return StatusCode(result.StatusCode, result);
     }
 
-    [HttpPost("{id}/assign-walk-in")]
-    public async Task<ActionResult<ApiResponse<object>>> AssignWalkIn(int id)
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> Detail(int id)
     {
-        var result = await _matchService.AssignWalkInAtDeskAsync(id);
+        var result = await matches.GetMatchAsync(id);
         return StatusCode(result.StatusCode, result);
     }
 
-    [HttpPut("{id}/stop-recruiting")]
-    public async Task<ActionResult<ApiResponse<object>>> StopRecruiting(int id, [FromQuery] int? hostUserId)
+    [Authorize, HttpPost]
+    public async Task<IActionResult> Create(CreateMatchRequest request)
     {
-        var uid = hostUserId ?? GetCurrentUserId();
-        var result = await _matchService.StopRecruitingAsync(id, uid);
+        var result = await matches.CreateMatchAsync(UserId, request);
         return StatusCode(result.StatusCode, result);
     }
 
-    [HttpPost("{id}/leave")]
-    public async Task<ActionResult<ApiResponse<object>>> LeaveMatch(int id, [FromQuery] int? userId)
+    [Authorize, HttpGet("{id:int}/my-ticket")]
+    public async Task<IActionResult> MyTicket(int id)
     {
-        var uid = userId ?? GetCurrentUserId();
-        var result = await _matchService.LeaveMatchAsync(id, uid);
+        var result = await matches.GetMyTicketAsync(id, UserId);
         return StatusCode(result.StatusCode, result);
     }
 
-    private int GetCurrentUserId()
+    [Authorize, HttpPost("{id:int}/join")]
+    public async Task<IActionResult> Join(int id, JoinMatchRequest request)
     {
-        var claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return int.TryParse(claimValue, out var id) ? id : 0;
+        if (!environment.IsDevelopment())
+            return StatusCode(503, ApiResponse<object>.Fail("Thanh toán mock chỉ hỗ trợ môi trường Development; tích hợp xác nhận thanh toán Module 5 để sử dụng thực tế", 503));
+        request.UserId = UserId;
+        var result = await matches.JoinMatchAsync(id, request);
+        return StatusCode(result.StatusCode, result);
     }
+
+    [Authorize, HttpPost("{id:int}/assign-walk-in")]
+    public async Task<IActionResult> Assign(int id)
+    {
+        var result = await matches.AssignWalkInAtDeskAsync(id, UserId);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [Authorize, HttpPut("{id:int}/stop-recruiting")]
+    public async Task<IActionResult> Stop(int id)
+    {
+        var result = await matches.StopRecruitingAsync(id, UserId);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [Authorize, HttpPost("{id:int}/leave")]
+    public async Task<IActionResult> Leave(int id)
+    {
+        var result = await matches.LeaveMatchAsync(id, UserId);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    private int UserId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
 }

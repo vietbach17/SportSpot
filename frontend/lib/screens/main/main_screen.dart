@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../auth/phone_input_screen.dart';
 import '../profile/profile_screen.dart';
+import '../matches/match_feed_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
@@ -28,7 +29,7 @@ class _MainScreenState extends State<MainScreen> {
 
     final List<Widget> pages = [
       _buildHomePlaceholder(context, isGuest),
-      _buildPlaceholderTab('Tìm Kèo Vãng Lai', Icons.groups_rounded, 'Khám phá các ca đấu đang tìm người quanh bạn'),
+      const MatchFeedScreen(),
       _buildPlaceholderTab('Vé Đặt Của Tôi', Icons.confirmation_number_rounded, 'Xem mã QR và vé điện tử ngoại tuyến'),
       const ProfileScreen(),
     ];

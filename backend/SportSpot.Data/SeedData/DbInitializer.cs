@@ -8,7 +8,11 @@ public static class DbInitializer
     // Hàm hỗ trợ seed sân mẫu cho môi trường dev (giữ nguyên 100% của Member 1)
     public static void SeedDevVenues(SportSpotDbContext context)
     {
-        if (context.Venues.Any()) return;
+        if (context.Venues.Any())
+        {
+            SeedMissingSubVenues(context);
+            return;
+        }
 
         var venue1 = new Venue
         {
@@ -47,6 +51,14 @@ public static class DbInitializer
         };
 
         context.Venues.AddRange(venue1, venue2);
+        context.SaveChanges();
+        SeedMissingSubVenues(context);
+    }
+
+    private static void SeedMissingSubVenues(SportSpotDbContext context)
+    {
+        foreach (var venue in context.Venues.Where(v => !v.SubVenues.Any()).ToList())
+            context.SubVenues.Add(new SubVenue { VenueId = venue.Id, Name = "Sân 1", IsActive = true });
         context.SaveChanges();
     }
 }

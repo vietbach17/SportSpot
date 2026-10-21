@@ -29,6 +29,12 @@ public class OpenMatch
 
     public int CostPerPerson { get; set; }
 
+    [MaxLength(30)]
+    public string SkillLevel { get; set; } = "Cơ bản";
+
+    [ConcurrencyCheck]
+    public int Revision { get; set; }
+
     [Required]
     [MaxLength(20)]
     public string Status { get; set; } = "Open"; // 'Open', 'Full', 'Stopped', 'Cancelled'

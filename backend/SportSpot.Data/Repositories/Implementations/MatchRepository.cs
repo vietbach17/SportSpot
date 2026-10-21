@@ -14,6 +14,7 @@ public class MatchRepository : GenericRepository<OpenMatch>, IMatchRepository
     public async Task<List<OpenMatch>> GetOpenMatchesWithDetailsAsync(int? sportId, string? district)
     {
         var query = _dbSet
+            .Include(m => m.MatchMembers).ThenInclude(mm => mm.User)
             .Include(m => m.HostUser)
             .Include(m => m.Booking)
                 .ThenInclude(b => b!.SubVenue)
@@ -33,16 +34,10 @@ public class MatchRepository : GenericRepository<OpenMatch>, IMatchRepository
                                      m.Booking.SubVenue.Venue.SportId == sportId.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(district))
-        {
-            var d = district.Trim().ToLower();
-            query = query.Where(m => m.Booking != null &&
-                                     m.Booking.SubVenue != null &&
-                                     m.Booking.SubVenue.Venue != null &&
-                                     m.Booking.SubVenue.Venue.District.ToLower().Contains(d));
-        }
-
-        return await query.OrderByDescending(m => m.CreatedAt).ToListAsync();
+        var matches = await query.OrderByDescending(m => m.CreatedAt).ToListAsync();
+        // SQLite lower() only handles ASCII; compare Vietnamese names consistently on both providers.
+        return string.IsNullOrWhiteSpace(district) ? matches : matches.Where(m =>
+            m.Booking?.SubVenue?.Venue?.District.Contains(district.Trim(), StringComparison.OrdinalIgnoreCase) == true).ToList();
     }
 
     public async Task<OpenMatch?> GetMatchByIdWithDetailsAsync(int matchId)

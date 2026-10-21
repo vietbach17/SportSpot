@@ -18,6 +18,22 @@ public class OpenMatchDto
     public int CurrentJoinedPlayers { get; set; }
     public int CostPerPerson { get; set; }
     public string Status { get; set; } = string.Empty;
+    public int VenueId { get; set; }
+    public int SportId { get; set; }
+    public string District { get; set; } = string.Empty;
+    public string SkillLevel { get; set; } = string.Empty;
+    public int RemainingBalanceForHost { get; set; }
+    public List<MatchMemberDto> Members { get; set; } = new();
+}
+
+public record MatchMemberDto(int MemberId, int? UserId, string Name, string? AvatarUrl, string MemberType);
+
+public class CreateMatchRequest
+{
+    public int BookingId { get; set; }
+    public int TotalExpectedPlayers { get; set; }
+    public int NeededPlayers { get; set; }
+    public string SkillLevel { get; set; } = "Cơ bản";
 }
 
 public class JoinMatchRequest
