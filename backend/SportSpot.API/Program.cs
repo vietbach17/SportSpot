@@ -162,6 +162,7 @@ using (var scope = app.Services.CreateScope())
         {
             logger.LogInformation(">>> [Database] Đang sử dụng SQLite local dev (sportspot_dev.db)...");
             db.Database.EnsureCreated();
+            SqliteModule4Upgrade.Apply(db);
         }
 
         DbInitializer.SeedDevVenues(db);
@@ -196,10 +197,10 @@ app.UseSwaggerUI(c =>
 app.UseCors("AllowAll");
 
 // Middleware hỗ trợ kiểm thử nội bộ: Cho phép gửi header X-Mock-User-Id
-app.UseMiddleware<DevBypassAuthMiddleware>();
 
 // Authentication & Authorization
 app.UseAuthentication();
+app.UseMiddleware<DevBypassAuthMiddleware>();
 app.UseAuthorization();
 
 if (!app.Environment.IsDevelopment())

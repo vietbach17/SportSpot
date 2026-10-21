@@ -26,6 +26,11 @@ public class SportSpotDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Booking>().Property(b => b.RemainingBalance).IsConcurrencyToken();
+        modelBuilder.Entity<Booking>().Property(b => b.Status).IsConcurrencyToken();
+        modelBuilder.Entity<User>().Property(u => u.WalletBalance).IsConcurrencyToken();
+        modelBuilder.Entity<MatchMember>().HasIndex(m => new { m.MatchId, m.UserId }).IsUnique();
+
         // Sports Unique
         modelBuilder.Entity<Sport>()
             .HasIndex(s => s.Name)

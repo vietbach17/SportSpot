@@ -30,6 +30,11 @@ public class User
 
     public int WalletBalance { get; set; } = 0;
 
+    public int? StaffVenueId { get; set; }
+
+    [ForeignKey(nameof(StaffVenueId))]
+    public Venue? StaffVenue { get; set; }
+
     [MaxLength(255)]
     public string? AvatarUrl { get; set; }
 

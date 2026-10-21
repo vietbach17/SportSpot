@@ -15,9 +15,11 @@ public class BookingsController : ControllerBase
         _bookingService = bookingService;
     }
 
+    [Microsoft.AspNetCore.Authorization.Authorize]
     [HttpPost]
     public async Task<ActionResult<ApiResponse<BookingResponseDto>>> CreateBooking([FromBody] CreateBookingRequest request)
     {
+        request.UserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var userId) ? userId : 0;
         var result = await _bookingService.CreateBookingAsync(request);
         return StatusCode(result.StatusCode, result);
     }

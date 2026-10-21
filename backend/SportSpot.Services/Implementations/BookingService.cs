@@ -20,6 +20,9 @@ public class BookingService : IBookingService
 
     public async Task<ApiResponse<BookingResponseDto>> CreateBookingAsync(CreateBookingRequest request)
     {
+        if (request.IsOpenMatch && (!MatchRules.ValidPlayers(request.TotalExpectedPlayers ?? 0, request.NeededPlayers ?? 0)
+            || request.SkillLevel is not ("Cơ bản" or "Trung bình")))
+            return ApiResponse<BookingResponseDto>.Fail("Số người tuyển phải lớn hơn 0, nhỏ hơn tổng số người; trình độ không hợp lệ");
         if (request.SlotIds == null || request.SlotIds.Count == 0)
         {
             return ApiResponse<BookingResponseDto>.Fail("Vui lòng chọn ít nhất 1 khung giờ");
@@ -42,9 +45,15 @@ public class BookingService : IBookingService
             return ApiResponse<BookingResponseDto>.Fail("Một số khung giờ được chọn không hợp lệ");
         }
 
+        if (request.IsOpenMatch && (request.PlayDate < DateOnly.FromDateTime(MatchRules.VietnamNow)
+            || request.PlayDate > DateOnly.FromDateTime(MatchRules.VietnamNow).AddDays(6)
+            || !TimeOnly.TryParse(selectedSlots[0].StartTime, out var startTime)
+            || request.PlayDate.ToDateTime(startTime) <= MatchRules.VietnamNow))
+            return ApiResponse<BookingResponseDto>.Fail("Kèo phải diễn ra trong 7 ngày tới và chưa bắt đầu");
+
         for (int i = 0; i < selectedSlots.Count - 1; i++)
         {
-            if (selectedSlots[i + 1].Id - selectedSlots[i].Id != 1)
+            if (selectedSlots[i].EndTime != selectedSlots[i + 1].StartTime)
             {
                 return ApiResponse<BookingResponseDto>.Fail("Các khung giờ được chọn bắt buộc phải liên tiếp nhau");
             }
@@ -133,7 +142,7 @@ public class BookingService : IBookingService
         {
             int totalExpected = request.TotalExpectedPlayers.Value;
             int needed = request.NeededPlayers.Value;
-            int costPerPerson = (int)Math.Round((double)courtPrice / totalExpected);
+            int costPerPerson = MatchRules.SplitCost(courtPrice, totalExpected);
 
             booking.OpenMatch = new OpenMatch
             {
@@ -142,6 +151,7 @@ public class BookingService : IBookingService
                 NeededPlayers = needed,
                 CurrentJoinedPlayers = 0,
                 CostPerPerson = costPerPerson,
+                SkillLevel = request.SkillLevel,
                 Status = "Open",
                 CreatedAt = DateTime.UtcNow
             };

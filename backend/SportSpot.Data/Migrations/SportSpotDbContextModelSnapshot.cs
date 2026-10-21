@@ -59,12 +59,14 @@ namespace SportSpot.Data.Migrations
                         .HasColumnType("date");
 
                     b.Property<int>("RemainingBalance")
+                        .IsConcurrencyToken()
                         .HasColumnType("integer");
 
                     b.Property<int>("ServicesPrice")
                         .HasColumnType("integer");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
@@ -204,9 +206,10 @@ namespace SportSpot.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MatchId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("MatchId", "UserId")
+                        .IsUnique();
 
                     b.ToTable("MatchMembers");
                 });
@@ -236,6 +239,15 @@ namespace SportSpot.Data.Migrations
 
                     b.Property<int>("NeededPlayers")
                         .HasColumnType("integer");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SkillLevel")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -578,7 +590,11 @@ namespace SportSpot.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<int?>("StaffVenueId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("WalletBalance")
+                        .IsConcurrencyToken()
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -588,6 +604,8 @@ namespace SportSpot.Data.Migrations
 
                     b.HasIndex("PhoneNumber")
                         .IsUnique();
+
+                    b.HasIndex("StaffVenueId");
 
                     b.ToTable("Users");
                 });
@@ -800,6 +818,15 @@ namespace SportSpot.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SportSpot.Data.Entities.User", b =>
+                {
+                    b.HasOne("SportSpot.Data.Entities.Venue", "StaffVenue")
+                        .WithMany()
+                        .HasForeignKey("StaffVenueId");
+
+                    b.Navigation("StaffVenue");
+                });
+
             modelBuilder.Entity("SportSpot.Data.Entities.Venue", b =>
                 {
                     b.HasOne("SportSpot.Data.Entities.Sport", "Sport")
@@ -852,4 +879,3 @@ namespace SportSpot.Data.Migrations
         }
     }
 }
-
