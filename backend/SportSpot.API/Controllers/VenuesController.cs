@@ -157,14 +157,40 @@ public class VenuesController : ControllerBase
             .Select(bd => bd.SlotId)
             .ToListAsync();
 
-        var slotStatuses = allSlots.Select(slot => new TimeSlotStatusDto
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var nowTime = TimeOnly.FromDateTime(DateTime.Now);
+
+        var slotStatuses = allSlots.Select(slot =>
         {
-            SlotId = slot.Id,
-            StartTime = slot.StartTime,
-            EndTime = slot.EndTime,
-            IsPeak = slot.IsPeak,
-            Price = slot.IsPeak ? venue.PeakPrice : venue.BasePrice,
-            IsBooked = bookedSlotIds.Contains(slot.Id)
+            var isBooked = bookedSlotIds.Contains(slot.Id);
+            var isPast = false;
+
+            if (playDate < today)
+            {
+                isPast = true;
+            }
+            else if (playDate == today && TimeOnly.TryParse(slot.EndTime, out var slotEnd))
+            {
+                if (nowTime >= slotEnd)
+                {
+                    isPast = true;
+                }
+            }
+
+            string status = "Available";
+            if (isPast) status = "Past";
+            else if (isBooked) status = "Booked";
+
+            return new TimeSlotStatusDto
+            {
+                SlotId = slot.Id,
+                StartTime = slot.StartTime,
+                EndTime = slot.EndTime,
+                IsPeak = slot.IsPeak,
+                Price = slot.IsPeak ? venue.PeakPrice : venue.BasePrice,
+                IsBooked = isBooked || isPast,
+                Status = status
+            };
         }).ToList();
 
         return Ok(ApiResponse<List<TimeSlotStatusDto>>.Ok(slotStatuses, "Lấy danh sách khung giờ thành công"));

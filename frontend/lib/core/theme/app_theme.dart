@@ -9,6 +9,7 @@ class AppTheme {
   static const Color textDark = Color(0xFF0F172A);
   static const Color textGray = Color(0xFF64748B);
   static const Color cardBg = Colors.white;
+  static const Color borderColor = Color(0xFFE2E8F0);
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -67,11 +68,11 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderSide: const BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderSide: const BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -85,7 +86,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: cardBg,
         elevation: 1,
-        shadowColor: Colors.black.withOpacity(0.05),
+        shadowColor: Colors.black.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

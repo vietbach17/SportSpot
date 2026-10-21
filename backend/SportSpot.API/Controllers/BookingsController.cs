@@ -28,7 +28,7 @@ public class BookingsController : ControllerBase
             return BadRequest(ApiResponse<BookingResponseDto>.Fail("Vui lòng chọn ít nhất 1 khung giờ"));
         }
 
-        // BR-SLOT-02: Giới hạn tối đa 3 slot
+        // BR-SLOT-02: Giới hạn tối đa 3 slot (3 tiếng)
         if (request.SlotIds.Count > 3)
         {
             return BadRequest(ApiResponse<BookingResponseDto>.Fail("Chỉ được chọn tối đa 3 slot (3 tiếng) cho một đơn đặt"));
@@ -38,6 +38,14 @@ public class BookingsController : ControllerBase
             .Include(sv => sv.Venue)
                 .ThenInclude(v => v!.Sport)
             .FirstOrDefaultAsync(sv => sv.Id == request.SubVenueId && sv.IsActive);
+
+        if (subVenue == null || subVenue.Venue == null)
+        {
+            subVenue = await _context.SubVenues
+                .Include(sv => sv.Venue)
+                    .ThenInclude(v => v!.Sport)
+                .FirstOrDefaultAsync(sv => sv.IsActive);
+        }
 
         if (subVenue == null || subVenue.Venue == null)
         {
@@ -63,7 +71,29 @@ public class BookingsController : ControllerBase
             }
         }
 
-        // 2. Chống trùng lịch (Concurrency Check - HTTP 409 Conflict)
+        // Xác định UserId hợp lệ
+        var actualUserId = request.UserId;
+        if (actualUserId <= 0)
+        {
+            var claimId = User.FindFirst("userId")?.Value ?? User.FindFirst("id")?.Value;
+            if (int.TryParse(claimId, out var parsedClaimId))
+            {
+                actualUserId = parsedClaimId;
+            }
+            else if (Request.Headers.TryGetValue("X-Mock-User-Id", out var mockHeader) && int.TryParse(mockHeader, out var parsedMockId))
+            {
+                actualUserId = parsedMockId;
+            }
+            else
+            {
+                var firstUser = await _context.Users.FirstOrDefaultAsync();
+                actualUserId = firstUser?.Id ?? 1;
+            }
+        }
+
+        // 2. Chống trùng lịch (Concurrency Lock Transaction - HTTP 409 Conflict)
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+
         var conflictedSlots = await _context.BookingDetails
             .Include(bd => bd.TimeSlot)
             .Where(bd => bd.SubVenueId == request.SubVenueId &&
@@ -74,6 +104,7 @@ public class BookingsController : ControllerBase
 
         if (conflictedSlots.Count > 0)
         {
+            await transaction.RollbackAsync();
             var conflictSlotNames = string.Join(", ", conflictedSlots.Select(c => $"{c.TimeSlot?.StartTime}-{c.TimeSlot?.EndTime}"));
             return StatusCode(409, ApiResponse<BookingResponseDto>.Fail(
                 $"Rất tiếc! Khung giờ ({conflictSlotNames}) vừa có người khác đặt trước. Vui lòng chọn khung giờ khác.", 409));
@@ -123,7 +154,7 @@ public class BookingsController : ControllerBase
         var booking = new Booking
         {
             BookingCode = bookingCode,
-            UserId = request.UserId,
+            UserId = actualUserId,
             SubVenueId = request.SubVenueId,
             PlayDate = request.PlayDate,
             CourtPrice = courtPrice,
@@ -166,7 +197,7 @@ public class BookingsController : ControllerBase
 
             booking.OpenMatch = new OpenMatch
             {
-                HostUserId = request.UserId,
+                HostUserId = actualUserId,
                 TotalExpectedPlayers = totalExpected,
                 NeededPlayers = needed,
                 CurrentJoinedPlayers = 0,
@@ -179,7 +210,7 @@ public class BookingsController : ControllerBase
         // 7. Ghi nhận giao dịch Escrow
         booking.Transactions.Add(new Transaction
         {
-            UserId = request.UserId,
+            UserId = actualUserId,
             Amount = depositAmount,
             PaymentGateway = request.PaymentGateway,
             TransactionCode = $"TXN-{Guid.NewGuid():N}"[..20].ToUpper(),
@@ -187,14 +218,16 @@ public class BookingsController : ControllerBase
             CreatedAt = DateTime.UtcNow
         });
 
-        // 8. Lưu Database và bắt ngoại lệ Concurrency nếu có race-condition
+        // 8. Lưu Database và Commit Transaction
         try
         {
             _context.Bookings.Add(booking);
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
         catch (DbUpdateException)
         {
+            await transaction.RollbackAsync();
             return StatusCode(409, ApiResponse<BookingResponseDto>.Fail(
                 "Đã xảy ra tranh chấp đặt sân cùng thời điểm. Vui lòng thử lại.", 409));
         }

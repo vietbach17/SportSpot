@@ -216,47 +216,108 @@ static string ConvertPostgresUriToConnectionString(string raw)
     return raw;
 }
 
-// Hàm hỗ trợ seed sân mẫu cho môi trường dev
+// Hàm hỗ trợ seed sân mẫu và dữ liệu dev cho môi trường dev
 static void SeedDevVenues(SportSpotDbContext context)
 {
-    if (context.Venues.Any()) return;
-
-    var venue1 = new Venue
+    // 1. Seed User mẫu nếu chưa có
+    if (!context.Users.Any())
     {
-        SportId = 1,
-        Name = "CLB Cầu Lông Cầu Giấy",
-        Address = "Số 35 Trần Quý Kiên, Dịch Vọng",
-        District = "Cầu Giấy",
-        Latitude = 21.0368000m,
-        Longitude = 105.7905000m,
-        Description = "Cụm 6 sân thảm tiêu chuẩn thi đấu.",
-        Hotline = "0987654321",
-        BasePrice = 90000,
-        PeakPrice = 120000,
-        Rating = 4.9m,
-        Amenities = "Bãi đỗ ô tô, Căn tin, Phòng tắm, Cho thuê vợt",
-        ImageUrl = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800",
-        IsActive = true
-    };
+        var testUser = new User
+        {
+            Id = 1,
+            FullName = "Nguyễn Văn Test",
+            PhoneNumber = "0901234567",
+            Email = "test@sportspot.vn",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456"),
+            Role = "Player",
+            WalletBalance = 500000,
+            IsFindMatchEnabled = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Users.Add(testUser);
+        context.SaveChanges();
+    }
 
-    var venue2 = new Venue
+    // 2. Seed Venues nếu chưa có
+    if (!context.Venues.Any())
     {
-        SportId = 2,
-        Name = "Sân Bóng Đá Mini PVV",
-        Address = "Số 72 Trần Thái Tông, Dịch Vọng Hậu",
-        District = "Cầu Giấy",
-        Latitude = 21.0305000m,
-        Longitude = 105.7865000m,
-        Description = "Cụm sân cỏ nhân tạo 7 người chất lượng cao.",
-        Hotline = "0912345678",
-        BasePrice = 350000,
-        PeakPrice = 600000,
-        Rating = 4.7m,
-        Amenities = "Đèn chiếu sáng ban đêm, Trọng tài, Căn tin, Giữ xe miễn phí",
-        ImageUrl = "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800",
-        IsActive = true
-    };
+        var venue1 = new Venue
+        {
+            SportId = 1,
+            Name = "CLB Cầu Lông Cầu Giấy",
+            Address = "Số 35 Trần Quý Kiên, Dịch Vọng",
+            District = "Cầu Giấy",
+            Latitude = 21.0368000m,
+            Longitude = 105.7905000m,
+            Description = "Cụm 6 sân thảm tiêu chuẩn thi đấu.",
+            Hotline = "0987654321",
+            BasePrice = 90000,
+            PeakPrice = 120000,
+            Rating = 4.9m,
+            Amenities = "Bãi đỗ ô tô, Căn tin, Phòng tắm, Cho thuê vợt",
+            ImageUrl = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800",
+            IsActive = true
+        };
 
-    context.Venues.AddRange(venue1, venue2);
-    context.SaveChanges();
+        var venue2 = new Venue
+        {
+            SportId = 2,
+            Name = "Sân Bóng Đá Mini PVV",
+            Address = "Số 72 Trần Thái Tông, Dịch Vọng Hậu",
+            District = "Cầu Giấy",
+            Latitude = 21.0305000m,
+            Longitude = 105.7865000m,
+            Description = "Cụm sân cỏ nhân tạo 7 người chất lượng cao.",
+            Hotline = "0912345678",
+            BasePrice = 350000,
+            PeakPrice = 600000,
+            Rating = 4.7m,
+            Amenities = "Đèn chiếu sáng ban đêm, Trọng tài, Căn tin, Giữ xe miễn phí",
+            ImageUrl = "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800",
+            IsActive = true
+        };
+
+        context.Venues.AddRange(venue1, venue2);
+        context.SaveChanges();
+    }
+
+    var v1 = context.Venues.FirstOrDefault(v => v.SportId == 1) ?? context.Venues.FirstOrDefault();
+    var v2 = context.Venues.FirstOrDefault(v => v.SportId == 2) ?? context.Venues.LastOrDefault();
+
+    // 3. Seed SubVenues nếu chưa có
+    if (!context.SubVenues.Any() && v1 != null)
+    {
+        var subVenues = new List<SubVenue>
+        {
+            new() { VenueId = v1.Id, Name = "Sân Thảm 1", IsActive = true },
+            new() { VenueId = v1.Id, Name = "Sân Thảm 2", IsActive = true },
+            new() { VenueId = v1.Id, Name = "Sân Thảm 3", IsActive = true },
+        };
+        if (v2 != null && v2.Id != v1.Id)
+        {
+            subVenues.Add(new() { VenueId = v2.Id, Name = "Sân Cỏ 7A", IsActive = true });
+            subVenues.Add(new() { VenueId = v2.Id, Name = "Sân Cỏ 7B", IsActive = true });
+        }
+        context.SubVenues.AddRange(subVenues);
+        context.SaveChanges();
+    }
+
+    // 4. Seed Services nếu chưa có
+    if (!context.Services.Any() && v1 != null)
+    {
+        var services = new List<Service>
+        {
+            new() { VenueId = v1.Id, Name = "Nước suối Aquafina 500ml", Type = "Sale", Price = 10000, StockQuantity = 100 },
+            new() { VenueId = v1.Id, Name = "Thuê vợt Yonex chính hãng", Type = "Rental", Price = 30000, StockQuantity = 20 },
+            new() { VenueId = v1.Id, Name = "Ống cầu lông Hải Yến (12 quả)", Type = "Sale", Price = 60000, StockQuantity = 50 },
+        };
+        if (v2 != null && v2.Id != v1.Id)
+        {
+            services.Add(new() { VenueId = v2.Id, Name = "Nước khoáng bù điện giải Revive", Type = "Sale", Price = 15000, StockQuantity = 100 });
+            services.Add(new() { VenueId = v2.Id, Name = "Thuê bộ áo pitch tập luyện (10 áo)", Type = "Rental", Price = 40000, StockQuantity = 10 });
+            services.Add(new() { VenueId = v2.Id, Name = "Thuê bóng thi đấu Động Lực số 5", Type = "Rental", Price = 30000, StockQuantity = 15 });
+        }
+        context.Services.AddRange(services);
+        context.SaveChanges();
+    }
 }
