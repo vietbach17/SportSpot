@@ -12,5 +12,5 @@ public interface IUnitOfWork : IDisposable
     ITransactionRepository Transactions { get; }
 
     Task<int> SaveChangesAsync();
-    Task<IDbContextTransaction> BeginTransactionAsync();
+    Task<IDbContextTransaction> BeginTransactionAsync(System.Data.IsolationLevel isolationLevel = System.Data.IsolationLevel.ReadCommitted);
 }

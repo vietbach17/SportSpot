@@ -1,3 +1,5 @@
+using System.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using SportSpot.Data.Context;
 using SportSpot.Data.Repositories.Interfaces;
@@ -35,8 +37,8 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
 
-    public async Task<IDbContextTransaction> BeginTransactionAsync()
-        => await _context.Database.BeginTransactionAsync();
+    public async Task<IDbContextTransaction> BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
+        => await _context.Database.BeginTransactionAsync(isolationLevel);
 
     public void Dispose()
     {
