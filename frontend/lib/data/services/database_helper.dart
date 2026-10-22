@@ -11,6 +11,7 @@ class DatabaseHelper {
 
   static Database? _database;
   static const String _webSessionKey = 'local_user_session';
+  static const String _webOfflineBookingsKey = 'local_offline_bookings_v1';
 
   Future<Database?> get database async {
     if (kIsWeb) return null;
@@ -191,5 +192,163 @@ class DatabaseHelper {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_webSessionKey);
+  }
+
+  // =========================================================================
+  // MODULE 5: QUẢN LÝ VÉ ĐIỆN TỬ NGOẠI TUYẾN (OFFLINE QR PASS - offline_bookings)
+  // =========================================================================
+
+  /// Lưu danh sách vé đồng bộ từ Server xuống bảng SQLite `offline_bookings`
+  Future<void> saveOfflineBookings(List<Map<String, dynamic>> rows) async {
+    try {
+      final db = await database;
+      if (db != null) {
+        final batch = db.batch();
+        for (final row in rows) {
+          batch.insert(
+            'offline_bookings',
+            _sanitizeOfflineRow(row),
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+        await batch.commit(noResult: true);
+      }
+    } catch (e) {
+      debugPrint('SQLite saveOfflineBookings error: $e');
+    }
+
+    // Luôn đồng bộ bản sao vào SharedPreferences để hỗ trợ cả Web / Desktop test
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_webOfflineBookingsKey, jsonEncode(rows));
+    } catch (e) {
+      debugPrint('SharedPreferences saveOfflineBookings error: $e');
+    }
+  }
+
+  /// Lưu hoặc cập nhật 1 vé đơn lẻ vào SQLite `offline_bookings`
+  Future<void> upsertOfflineBooking(Map<String, dynamic> row) async {
+    try {
+      final db = await database;
+      if (db != null) {
+        await db.insert(
+          'offline_bookings',
+          _sanitizeOfflineRow(row),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    } catch (e) {
+      debugPrint('SQLite upsertOfflineBooking error: $e');
+    }
+
+    try {
+      final current = await getOfflineBookings();
+      final code = row['booking_code']?.toString() ?? '';
+      final updated = <Map<String, dynamic>>[
+        row,
+        ...current.where((item) => item['booking_code']?.toString() != code),
+      ];
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_webOfflineBookingsKey, jsonEncode(updated));
+    } catch (e) {
+      debugPrint('SharedPreferences upsertOfflineBooking error: $e');
+    }
+  }
+
+  /// Đọc danh sách vé từ SQLite `offline_bookings` khi mất kết nối mạng (Offline Mode)
+  Future<List<Map<String, dynamic>>> getOfflineBookings() async {
+    if (!kIsWeb) {
+      try {
+        final db = await database;
+        if (db != null) {
+          final rows = await db.query(
+            'offline_bookings',
+            orderBy: 'play_date DESC, created_at DESC',
+          );
+          if (rows.isNotEmpty) {
+            return rows.map((r) => Map<String, dynamic>.from(r)).toList();
+          }
+        }
+      } catch (e) {
+        debugPrint('SQLite getOfflineBookings error: $e');
+      }
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_webOfflineBookingsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw) as List<dynamic>;
+        return decoded
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('SharedPreferences getOfflineBookings error: $e');
+    }
+
+    return [];
+  }
+
+  /// Cập nhật trạng thái vé trong SQLite sau khi Hủy vé hoặc Check-in
+  Future<void> updateOfflineBookingStatus(
+    String bookingCode, {
+    required String status,
+    bool? isCheckedIn,
+  }) async {
+    try {
+      final db = await database;
+      if (db != null) {
+        final values = <String, Object?>{
+          'status': status,
+          if (isCheckedIn != null) 'is_checked_in': isCheckedIn ? 1 : 0,
+        };
+        await db.update(
+          'offline_bookings',
+          values,
+          where: 'booking_code = ?',
+          whereArgs: [bookingCode],
+        );
+      }
+    } catch (e) {
+      debugPrint('SQLite updateOfflineBookingStatus error: $e');
+    }
+
+    try {
+      final list = await getOfflineBookings();
+      for (final item in list) {
+        if (item['booking_code']?.toString() == bookingCode) {
+          item['status'] = status;
+          if (isCheckedIn != null) {
+            item['is_checked_in'] = isCheckedIn ? 1 : 0;
+          }
+        }
+      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_webOfflineBookingsKey, jsonEncode(list));
+    } catch (e) {
+      debugPrint('SharedPreferences updateOfflineBookingStatus error: $e');
+    }
+  }
+
+  Map<String, Object?> _sanitizeOfflineRow(Map<String, dynamic> row) {
+    return {
+      'booking_code': row['booking_code']?.toString() ?? '',
+      'venue_id': (row['venue_id'] as num?)?.toInt() ?? 1,
+      'venue_name': row['venue_name']?.toString() ?? '',
+      'sport_name': row['sport_name']?.toString() ?? '',
+      'sub_venue_name': row['sub_venue_name']?.toString() ?? '',
+      'address': row['address']?.toString() ?? '',
+      'play_date': row['play_date']?.toString() ?? '',
+      'time_slots': row['time_slots']?.toString() ?? '',
+      'user_role_in_match': row['user_role_in_match']?.toString() ?? 'Host',
+      'total_price': (row['total_price'] as num?)?.toInt() ?? 0,
+      'deposit_amount': (row['deposit_amount'] as num?)?.toInt() ?? 0,
+      'status': row['status']?.toString() ?? 'Upcoming',
+      'qr_payload': row['qr_payload']?.toString() ?? '',
+      'is_checked_in': row['is_checked_in'] == true || row['is_checked_in'] == 1 ? 1 : 0,
+      'notification_id': (row['notification_id'] as num?)?.toInt() ?? 100,
+      'created_at': row['created_at']?.toString() ?? DateTime.now().toIso8601String(),
+    };
   }
 }

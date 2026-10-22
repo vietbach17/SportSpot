@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SportSpot.API", "SportSpot.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SportSpot.Module4.Tests", "SportSpot.Module4.Tests\SportSpot.Module4.Tests.csproj", "{B834DB17-7D7A-427F-BE63-DBE70DBDBAE1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SportSpot.Module5.Tests", "SportSpot.Module5.Tests\SportSpot.Module5.Tests.csproj", "{2C2F4131-C751-411D-A012-03F90B33ADAE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,18 @@ Global
 		{B834DB17-7D7A-427F-BE63-DBE70DBDBAE1}.Release|x64.Build.0 = Release|Any CPU
 		{B834DB17-7D7A-427F-BE63-DBE70DBDBAE1}.Release|x86.ActiveCfg = Release|Any CPU
 		{B834DB17-7D7A-427F-BE63-DBE70DBDBAE1}.Release|x86.Build.0 = Release|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Debug|x64.Build.0 = Debug|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Debug|x86.Build.0 = Debug|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Release|x64.ActiveCfg = Release|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Release|x64.Build.0 = Release|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Release|x86.ActiveCfg = Release|Any CPU
+		{2C2F4131-C751-411D-A012-03F90B33ADAE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

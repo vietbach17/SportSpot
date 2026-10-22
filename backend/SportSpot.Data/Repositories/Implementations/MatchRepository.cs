@@ -62,6 +62,26 @@ public class MatchRepository : GenericRepository<OpenMatch>, IMatchRepository
             .FirstOrDefaultAsync(mm => mm.MatchId == matchId && mm.UserId == userId);
     }
 
+    public async Task<List<MatchMember>> GetUserJoinedMatchesWithDetailsAsync(int userId)
+    {
+        return await _context.MatchMembers
+            .Include(mm => mm.OpenMatch)
+                .ThenInclude(m => m!.Booking)
+                    .ThenInclude(b => b!.SubVenue)
+                        .ThenInclude(sv => sv!.Venue)
+                            .ThenInclude(v => v!.Sport)
+            .Include(mm => mm.OpenMatch)
+                .ThenInclude(m => m!.Booking)
+                    .ThenInclude(b => b!.BookingDetails)
+                        .ThenInclude(bd => bd.TimeSlot)
+            .Include(mm => mm.OpenMatch)
+                .ThenInclude(m => m!.Booking)
+                    .ThenInclude(b => b!.Transactions)
+            .Where(mm => mm.UserId == userId && mm.TicketQrPayload != null)
+            .OrderByDescending(mm => mm.JoinedAt)
+            .ToListAsync();
+    }
+
     public async Task AddMatchMemberAsync(MatchMember member)
     {
         await _context.MatchMembers.AddAsync(member);

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using SportSpot.Services.DTOs;
 using SportSpot.Services.Interfaces;
@@ -22,6 +23,10 @@ public class PaymentsController : ControllerBase
     public async Task<ActionResult<ApiResponse<PaymentIntentResponseDto>>> CreatePaymentIntent(
         [FromBody] CreatePaymentIntentRequest request)
     {
+        if (request.UserId <= 0)
+        {
+            request.UserId = GetCurrentUserId();
+        }
         var result = await _paymentService.CreatePaymentIntentAsync(request);
         return StatusCode(result.StatusCode, result);
     }
@@ -45,5 +50,23 @@ public class PaymentsController : ControllerBase
     {
         var result = await _paymentService.MockInstantPayAsync(bookingCode);
         return StatusCode(result.StatusCode, result);
+    }
+
+    /// <summary>
+    /// GET /api/payments/history: Xem số dư ví hoàn tiền và lịch sử giao dịch Escrow của người dùng.
+    /// </summary>
+    [HttpGet("history")]
+    public async Task<ActionResult<ApiResponse<WalletAndHistoryDto>>> GetPaymentHistory([FromQuery] int? userId)
+    {
+        var uid = userId ?? GetCurrentUserId();
+        if (uid <= 0) uid = 1; // Fallback dev mode
+        var result = await _paymentService.GetUserTransactionsAsync(uid);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    private int GetCurrentUserId()
+    {
+        var claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return int.TryParse(claimValue, out var id) ? id : 0;
     }
 }

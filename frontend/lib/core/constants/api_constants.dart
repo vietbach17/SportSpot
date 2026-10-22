@@ -26,4 +26,13 @@ class ApiConstants {
   static const String sports = '/api/sports';
   static const String venues = '/api/venues';
   static const String bookings = '/api/bookings';
+
+  // Endpoints Module 5: Payments (Escrow) & Tickets (Offline QR Pass)
+  static const String createPaymentIntent = '/api/payments/create-intent';
+  static const String paymentWebhook = '/api/payments/webhook-ipn';
+  static const String paymentHistory = '/api/payments/history';
+  static String mockInstantPay(String bookingCode) => '/api/payments/mock-pay/$bookingCode';
+  static const String myTickets = '/api/tickets/my-tickets';
+  static const String verifyQr = '/api/tickets/verify-qr';
+  static String cancelTicket(int bookingId) => '/api/tickets/$bookingId/cancel';
 }

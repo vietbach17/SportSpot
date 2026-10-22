@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/match_ui.dart';
 import '../auth/phone_input_screen.dart';
 import '../booking/court_slots_screen.dart';
 import '../profile/profile_screen.dart';
 import '../matches/match_feed_screen.dart';
+import '../tickets/my_tickets_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
@@ -32,11 +32,7 @@ class _MainScreenState extends State<MainScreen> {
     final List<Widget> pages = [
       _buildHomeScreen(context, isGuest),
       const MatchFeedScreen(),
-      _buildPlaceholderTab(
-        'Vé Đặt Của Tôi',
-        Icons.confirmation_number_rounded,
-        'Xem mã QR và vé điện tử ngoại tuyến',
-      ),
+      const MyTicketsScreen(),
       const ProfileScreen(),
     ];
 
@@ -282,42 +278,6 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderTab(String title, IconData icon, String subtitle) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 64,
-                color: AppTheme.textGray.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textGray, fontSize: 14),
               ),
             ],
           ),

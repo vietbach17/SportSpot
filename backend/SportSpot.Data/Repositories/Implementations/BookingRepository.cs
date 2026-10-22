@@ -53,6 +53,7 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
                     .ThenInclude(v => v!.Sport)
             .Include(b => b.BookingDetails)
                 .ThenInclude(bd => bd.TimeSlot)
+            .Include(b => b.Transactions)
             .Where(b => b.UserId == userId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -64,7 +65,13 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
             .Include(b => b.User)
             .Include(b => b.SubVenue)
                 .ThenInclude(sv => sv!.Venue)
+                    .ThenInclude(v => v!.Sport)
+            .Include(b => b.BookingDetails)
+                .ThenInclude(bd => bd.TimeSlot)
             .Include(b => b.Transactions)
+            .Include(b => b.OpenMatch)
+                .ThenInclude(m => m!.MatchMembers)
+                    .ThenInclude(mm => mm.User)
             .FirstOrDefaultAsync(b => b.BookingCode == bookingCode);
     }
 
@@ -75,6 +82,9 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
             .Include(b => b.BookingDetails)
                 .ThenInclude(bd => bd.TimeSlot)
             .Include(b => b.Transactions)
+            .Include(b => b.OpenMatch)
+                .ThenInclude(m => m!.MatchMembers)
+                    .ThenInclude(mm => mm.User)
             .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
     }
 
