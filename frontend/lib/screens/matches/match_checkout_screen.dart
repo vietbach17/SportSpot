@@ -4,7 +4,7 @@ import '../../core/network/api_client.dart';
 import '../../widgets/recruitment_form.dart';
 import '../../widgets/match_ui.dart';
 
-/// A small checkout using Module 3 APIs; RecruitmentForm can also be embedded in its full checkout.
+/// A small checkout using booking APIs; RecruitmentForm can also be embedded in its full checkout.
 class MatchCheckoutScreen extends StatefulWidget {
   final ApiClient? apiClient;
   const MatchCheckoutScreen({super.key, this.apiClient});

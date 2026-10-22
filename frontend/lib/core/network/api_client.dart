@@ -3,6 +3,15 @@ import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../../data/services/token_service.dart';
 
+class ApiException implements Exception {
+  final int statusCode;
+  final String message;
+  ApiException(this.statusCode, this.message);
+
+  @override
+  String toString() => message;
+}
+
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
@@ -58,14 +67,18 @@ class ApiClient {
   }
 
   dynamic _processResponse(http.Response response) {
-    final utf8Body = utf8.decode(response.bodyBytes);
-    final Map<String, dynamic> json = jsonDecode(utf8Body);
+    try {
+      final utf8Body = utf8.decode(response.bodyBytes);
+      final Map<String, dynamic> json = jsonDecode(utf8Body);
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return json['data'];
-    } else {
-      final message = json['message'] ?? 'Đã xảy ra lỗi (${response.statusCode})';
-      throw Exception(message);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return json['data'];
+      } else {
+        final message = json['message'] ?? 'Đã xảy ra lỗi (${response.statusCode})';
+        throw ApiException(response.statusCode, message);
+      }
+    } on FormatException {
+      throw ApiException(response.statusCode, 'Lỗi phản hồi từ máy chủ (${response.statusCode})');
     }
   }
 }

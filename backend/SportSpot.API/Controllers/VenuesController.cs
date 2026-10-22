@@ -35,13 +35,27 @@ public class VenuesController : ControllerBase
     }
 
     [HttpGet("{id}/slots")]
-    [HttpGet("{id}/subvenues/{subVenueId}/slots")]
     public async Task<ActionResult<ApiResponse<List<TimeSlotStatusDto>>>> GetVenueTimeSlots(
         int id,
-        [FromQuery] int subVenueId,
-        [FromQuery] DateOnly playDate)
+        [FromQuery] int? subVenueId,
+        [FromQuery] DateOnly? date,
+        [FromQuery] DateOnly? playDate)
     {
-        var result = await _venueService.GetVenueTimeSlotsAsync(id, subVenueId, playDate);
+        var targetSubVenueId = subVenueId ?? 0;
+        var targetDate = date ?? playDate ?? DateOnly.FromDateTime(DateTime.Now);
+        var result = await _venueService.GetVenueTimeSlotsAsync(id, targetSubVenueId, targetDate);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpGet("{id}/subvenues/{subVenueId}/slots")]
+    public async Task<ActionResult<ApiResponse<List<TimeSlotStatusDto>>>> GetSubVenueTimeSlots(
+        int id,
+        int subVenueId,
+        [FromQuery] DateOnly? date,
+        [FromQuery] DateOnly? playDate)
+    {
+        var targetDate = date ?? playDate ?? DateOnly.FromDateTime(DateTime.Now);
+        var result = await _venueService.GetVenueTimeSlotsAsync(id, subVenueId, targetDate);
         return StatusCode(result.StatusCode, result);
     }
 }
