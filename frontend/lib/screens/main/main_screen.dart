@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/match_ui.dart';
 import '../auth/phone_input_screen.dart';
 import '../booking/court_slots_screen.dart';
 import '../profile/profile_screen.dart';
@@ -31,7 +32,11 @@ class _MainScreenState extends State<MainScreen> {
     final List<Widget> pages = [
       _buildHomeScreen(context, isGuest),
       const MatchFeedScreen(),
-      _buildPlaceholderTab('Vé Đặt Của Tôi', Icons.confirmation_number_rounded, 'Xem mã QR và vé điện tử ngoại tuyến'),
+      _buildPlaceholderTab(
+        'Vé Đặt Của Tôi',
+        Icons.confirmation_number_rounded,
+        'Xem mã QR và vé điện tử ngoại tuyến',
+      ),
       const ProfileScreen(),
     ];
 
@@ -72,92 +77,64 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildHomeScreen(BuildContext context, bool isGuest) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.bolt_rounded, color: AppTheme.accentBlue),
-            SizedBox(width: 6),
-            Text('SportSpot', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
+    return MatchTheme(
+      child: Scaffold(
+        backgroundColor: MatchColors.canvas,
+        appBar: AppBar(
+          title: const Row(
+            children: [
+              Icon(Icons.bolt_rounded, color: MatchColors.blue),
+              SizedBox(width: 6),
+              Text(
+                'SportSpot',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  color: MatchColors.ink,
+                  letterSpacing: -.5,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            if (isGuest)
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PhoneInputScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.login_rounded,
+                  size: 18,
+                  color: MatchColors.blue,
+                ),
+                label: const Text(
+                  'Đăng nhập',
+                  style: TextStyle(
+                    color: MatchColors.blue,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              )
           ],
         ),
-        actions: [
-          if (isGuest)
-            TextButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PhoneInputScreen()),
-                );
-              },
-              icon: const Icon(Icons.login_rounded, size: 18, color: AppTheme.accentBlue),
-              label: const Text('Đăng nhập', style: TextStyle(color: AppTheme.accentBlue, fontWeight: FontWeight.w700)),
-            )
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Hero Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.accentBlue, Color(0xFF1D4ED8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.accentBlue.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'KHÓA CHỐNG TRÙNG LỊCH',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Lưới Khung Giờ & Đặt Sân Tự Động',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Chọn khung giờ trực quan, kiểm tra liên tiếp tối đa 3h, đồng hồ giữ chỗ 5 phút và chống trùng lịch tuyệt đối.',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
+        body: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+              children: [
+                MatchHero(
+                  eyebrow: 'KHÓA CHỐNG TRÙNG LỊCH',
+                  title: 'Lưới Khung Giờ &\nĐặt Sân Tự Động',
+                  subtitle:
+                      'Chọn khung giờ trực quan, kiểm tra liên tiếp tối đa 3h, đồng hồ giữ chỗ 5 phút và chống trùng lịch tuyệt đối.',
+                  footer: FilledButton.icon(
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -166,49 +143,51 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
+                    style: FilledButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: AppTheme.accentBlue,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      foregroundColor: MatchColors.navy,
                     ),
                     icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                    label: const Text(
-                      'Đặt Sân Cầu Lông Ngay',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                    ),
+                    label: const Text('Đặt Sân Cầu Lông Ngay'),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'CỤM SÂN THỂ THAO TIÊU BIỂU',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: MatchColors.muted,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _venueCard(
+                  context: context,
+                  venueId: 1,
+                  title: 'CLB Cầu Lông Cầu Giấy',
+                  sport: 'Cầu lông',
+                  sportId: 1,
+                  address: '35 Trần Quý Kiên, Cầu Giấy',
+                  price: '90.000 đ - 120.000 đ/h',
+                  rating: '4.9',
+                  icon: Icons.sports_tennis_rounded,
+                ),
+                const SizedBox(height: 12),
+                _venueCard(
+                  context: context,
+                  venueId: 2,
+                  title: 'Sân Bóng Đá Mini PVV',
+                  sport: 'Bóng đá mini',
+                  sportId: 3,
+                  address: '72 Trần Thái Tông, Cầu Giấy',
+                  price: '350.000 đ - 600.000 đ/h',
+                  rating: '4.7',
+                  icon: Icons.sports_soccer_rounded,
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Chọn cụm sân thể thao',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textDark),
-            ),
-            const SizedBox(height: 12),
-            _venueCard(
-              context: context,
-              venueId: 1,
-              title: 'CLB Cầu Lông Cầu Giấy',
-              sport: 'Cầu lông',
-              address: '35 Trần Quý Kiên, Cầu Giấy',
-              price: '90.000 đ - 120.000 đ/h',
-              rating: '4.9',
-              icon: Icons.sports_tennis_rounded,
-            ),
-            const SizedBox(height: 12),
-            _venueCard(
-              context: context,
-              venueId: 2,
-              title: 'Sân Bóng Đá Mini PVV',
-              sport: 'Bóng đá mini',
-              address: '72 Trần Thái Tông, Cầu Giấy',
-              price: '350.000 đ - 600.000 đ/h',
-              rating: '4.7',
-              icon: Icons.sports_soccer_rounded,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -219,100 +198,106 @@ class _MainScreenState extends State<MainScreen> {
     required int venueId,
     required String title,
     required String sport,
+    required int sportId,
     required String address,
     required String price,
     required String rating,
     required IconData icon,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => CourtSlotsScreen(venueId: venueId)),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppTheme.pastelBlue,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: AppTheme.accentBlue, size: 28),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              sport,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.accentBlue,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-                          const SizedBox(width: 2),
-                          Text(rating, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        title,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.textDark),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        address,
-                        style: const TextStyle(fontSize: 12.5, color: AppTheme.textGray),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        price,
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF2E7D32),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+    return MatchSurface(
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CourtSlotsScreen(venueId: venueId),
             ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEDF3FF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, color: MatchColors.blue, size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        MatchPill(sport, icon: matchSportIcon(sportId)),
+                        const Spacer(),
+                        const Icon(
+                          Icons.star_rounded,
+                          color: Colors.amber,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          rating,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: MatchColors.ink,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w800,
+                        color: MatchColors.ink,
+                        letterSpacing: -.3,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 14,
+                          color: MatchColors.muted,
+                        ),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            address,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: MatchColors.muted,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      price,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF16A34A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -328,11 +313,19 @@ class _MainScreenState extends State<MainScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 64, color: AppTheme.textGray.withValues(alpha: 0.5)),
+              Icon(
+                icon,
+                size: 64,
+                color: AppTheme.textGray.withValues(alpha: 0.5),
+              ),
               const SizedBox(height: 16),
               Text(
                 title,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textDark),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textDark,
+                ),
               ),
               const SizedBox(height: 8),
               Text(

@@ -3,9 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/network/api_client.dart';
-import '../../core/theme/app_theme.dart';
 import '../../data/models/booking_model.dart';
 import '../../providers/booking_provider.dart';
+import '../../widgets/match_ui.dart';
 import '../../widgets/recruitment_form.dart';
 import '../main/main_screen.dart';
 
@@ -19,6 +19,13 @@ class BookingCheckoutScreen extends StatefulWidget {
 class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
   final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
   bool _isSubmitting = false;
+  BookingProvider? _bookingProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _bookingProvider = context.read<BookingProvider>();
+  }
 
   @override
   void initState() {
@@ -37,6 +44,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
 
   @override
   void dispose() {
+    _bookingProvider?.cancelHoldTimer();
     super.dispose();
   }
 
@@ -44,29 +52,58 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.timer_off_outlined, color: Colors.amber, size: 28),
-            SizedBox(width: 8),
-            Text('Hết thời gian giữ chỗ'),
-          ],
-        ),
-        content: const Text(
-          'Đã hết 5 phút giữ chỗ. Các khung giờ có thể đã được mở lại cho người khác. Vui lòng chọn lại khung giờ.',
-          style: TextStyle(fontSize: 14, color: AppTheme.textDark, height: 1.4),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Back to slots screen
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentBlue),
-            child: const Text('Chọn lại giờ', style: TextStyle(color: Colors.white)),
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFEF3C7),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.timer_off_outlined,
+                  color: Color(0xFFD97706),
+                  size: 36,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Hết thời gian giữ chỗ',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: MatchColors.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Đã hết 5 phút giữ chỗ. Các khung giờ có thể đã được mở lại cho người khác. Vui lòng chọn lại khung giờ.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: MatchColors.muted,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Chọn lại khung giờ'),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -102,34 +139,60 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 28),
-            SizedBox(width: 8),
-            Text('Trùng lịch đặt sân!'),
-          ],
-        ),
-        content: SizedBox(
-          width: 320,
-          child: Text(
-            message.isNotEmpty
-                ? message
-                : 'Rất tiếc! Khung giờ bạn chọn vừa có người khác đặt trước. Vui lòng chọn khung giờ khác.',
-            style: const TextStyle(fontSize: 14, color: AppTheme.textDark, height: 1.4),
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFEE2E2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  color: Color(0xFFDC2626),
+                  size: 36,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Trùng lịch đặt sân!',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: MatchColors.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message.isNotEmpty
+                    ? message
+                    : 'Rất tiếc! Khung giờ bạn chọn vừa có người khác đặt trước. Vui lòng chọn khung giờ khác.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: MatchColors.muted,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Quay lại chọn giờ'),
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Back to slot grid screen
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentBlue),
-            child: const Text('Quay lại chọn giờ', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
@@ -138,8 +201,6 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(error),
-        backgroundColor: Colors.redAccent.shade700,
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -151,91 +212,130 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
       builder: (dialogContext) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: SizedBox(
-          width: 320,
+          width: 340,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFE8F5E9),
+                    color: Color(0xFFEDFDF5),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check_circle_rounded, color: Color(0xFF2E7D32), size: 48),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFF16A34A),
+                    size: 44,
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 const Text(
                   'Đặt Sân Thành Công!',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textDark),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: MatchColors.ink,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Mã đặt chỗ: ${result.bookingCode}',
+                  result.bookingCode,
                   style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.accentBlue,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: MatchColors.blue,
+                    letterSpacing: .5,
                   ),
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  width: 140,
-                  height: 140,
+                  width: 150,
+                  height: 150,
                   alignment: Alignment.center,
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE0E0E0)),
+                    border: Border.all(color: MatchColors.line),
                   ),
                   child: QrImageView(
-                    data: result.qrPayload.isNotEmpty ? result.qrPayload : result.bookingCode,
+                    data: result.qrPayload.isNotEmpty
+                        ? result.qrPayload
+                        : result.bookingCode,
                     version: QrVersions.auto,
-                    size: 128,
+                    size: 134,
                     gapless: false,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 Text(
                   '${result.subVenueName} • ${result.timeSlots.join(', ')}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textDark),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: MatchColors.ink,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Ngày: ${result.playDate}',
-                  style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: MatchColors.muted,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF9FAFB),
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFFF7F9FC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: MatchColors.line),
                   ),
                   child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Đã đặt cọc:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                          const Text(
+                            'Đã đặt cọc:',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: MatchColors.muted,
+                            ),
+                          ),
                           Text(
                             currencyFormat.format(result.depositAmount),
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF2E7D32)),
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF16A34A),
+                            ),
                           ),
                         ],
                       ),
                       if (result.remainingBalance > 0) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Còn lại tại sân:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                            const Text(
+                              'Còn lại tại sân:',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: MatchColors.muted,
+                              ),
+                            ),
                             Text(
                               currencyFormat.format(result.remainingBalance),
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textDark),
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                color: MatchColors.ink,
+                              ),
                             ),
                           ],
                         ),
@@ -243,25 +343,22 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: FilledButton(
                     onPressed: () {
                       final bookingProvider = context.read<BookingProvider>();
                       bookingProvider.resetBookingState();
                       Navigator.of(dialogContext).pop();
                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const MainScreen(initialIndex: 0)),
+                        MaterialPageRoute(
+                          builder: (_) => const MainScreen(initialIndex: 0),
+                        ),
                         (route) => false,
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.accentBlue,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Về Trang Chủ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    child: const Text('Về Trang Chủ'),
                   ),
                 ),
               ],
@@ -278,43 +375,50 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     final venue = provider.venueDetail;
     final subVenue = provider.selectedSubVenue;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tóm Tắt & Thanh Toán', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHoldTimerBanner(provider),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildBookingOverviewCard(provider, venue, subVenue),
-                  const SizedBox(height: 16),
-                  _buildAccessoriesSection(provider),
-                  const SizedBox(height: 16),
-                  // Module 4 Dual Matchmaking Integration
-                  RecruitmentForm(
-                    courtPrice: provider.courtPrice,
-                    onChanged: (recruitmentVal) {
-                      provider.updateRecruitment(recruitmentVal);
-                    },
+    return MatchTheme(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Tóm tắt & Đặt sân'),
+        ),
+        bottomNavigationBar: _buildBottomConfirmBar(provider),
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHoldTimerBanner(provider),
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildBookingOverviewCard(provider, venue, subVenue),
+                        const SizedBox(height: 16),
+                        _buildAccessoriesSection(provider),
+                        const SizedBox(height: 16),
+                        // Module 4 Dual Matchmaking Integration
+                        RecruitmentForm(
+                          courtPrice: provider.courtPrice,
+                          onChanged: (recruitmentVal) {
+                            provider.updateRecruitment(recruitmentVal);
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDepositSelector(provider),
+                        const SizedBox(height: 16),
+                        _buildCostBreakdownCard(provider),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildDepositSelector(provider),
-                  const SizedBox(height: 16),
-                  _buildCostBreakdownCard(provider),
-                  const SizedBox(height: 100),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-      bottomSheet: _buildBottomConfirmBar(provider),
     );
   }
 
@@ -322,21 +426,24 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
-        border: Border(bottom: BorderSide(color: Colors.amber.shade300, width: 1)),
+      decoration: const BoxDecoration(
+        color: Color(0xFFFFFBEB),
+        border: Border(bottom: BorderSide(color: Color(0xFFFDE68A))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.timer_outlined, size: 20, color: Colors.amber.shade900),
+          const Icon(Icons.timer_outlined, size: 18, color: Color(0xFFD97706)),
           const SizedBox(width: 8),
-          Text(
-            'Giữ chỗ tạm thời trong: ${provider.formattedHoldTime}',
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w700,
-              color: Colors.amber.shade900,
+          Flexible(
+            child: Text(
+              'Giữ chỗ tạm thời: ${provider.formattedHoldTime}',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFFB45309),
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -344,61 +451,80 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     );
   }
 
-  Widget _buildBookingOverviewCard(BookingProvider provider, VenueDetailModel? venue, SubVenueModel? subVenue) {
+  Widget _buildBookingOverviewCard(
+    BookingProvider provider,
+    VenueDetailModel? venue,
+    SubVenueModel? subVenue,
+  ) {
     final dateStr = DateFormat('dd/MM/yyyy').format(provider.selectedDate);
-    final slotsStr = provider.selectedSlots.map((s) => '${s.startTime}-${s.endTime}').join(', ');
+    final slotsStr = provider.selectedSlots
+        .map((s) => '${s.startTime}-${s.endTime}')
+        .join(', ');
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return MatchSurface(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const MatchSectionTitle(
+            'Thông tin đặt sân',
+            'Chi tiết sân đấu và khung giờ bạn đã chọn.',
+            step: '01',
+          ),
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: AppTheme.pastelBlue,
-                  borderRadius: BorderRadius.circular(10),
+                  color: const Color(0xFFEDF3FF),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.sports_tennis_rounded, color: AppTheme.accentBlue, size: 20),
+                child: Icon(
+                  matchSportIcon(venue?.sportId ?? 1),
+                  color: MatchColors.blue,
+                  size: 22,
+                ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       venue?.name ?? 'Sân Thể Thao',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textDark),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: MatchColors.ink,
+                      ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       subVenue?.name ?? '',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.accentBlue),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: MatchColors.blue,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const Divider(height: 24, thickness: 1, color: Color(0xFFF3F4F6)),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: MatchColors.line),
+          const SizedBox(height: 14),
           _infoRow(Icons.calendar_today_outlined, 'Ngày thi đấu:', dateStr),
           const SizedBox(height: 8),
           _infoRow(Icons.access_time_rounded, 'Khung giờ:', slotsStr),
           const SizedBox(height: 8),
-          _infoRow(Icons.payments_outlined, 'Tiền sân tạm tính:', currencyFormat.format(provider.courtPrice)),
+          _infoRow(
+            Icons.payments_outlined,
+            'Tiền sân tạm tính:',
+            currencyFormat.format(provider.courtPrice),
+          ),
         ],
       ),
     );
@@ -407,13 +533,24 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
   Widget _infoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppTheme.textGray),
+        Icon(icon, size: 16, color: MatchColors.muted),
         const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontSize: 13, color: AppTheme.textGray)),
-        const Spacer(),
         Text(
-          value,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textDark),
+          label,
+          style: const TextStyle(fontSize: 13, color: MatchColors.muted),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: MatchColors.ink,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -423,32 +560,22 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     final services = provider.venueDetail?.services ?? [];
     if (services.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
+    return MatchSurface(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(Icons.inventory_2_outlined, size: 18, color: AppTheme.accentBlue),
-              SizedBox(width: 6),
-              Text(
-                'Dịch vụ & Phụ kiện đi kèm (F12)',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textDark),
-              ),
-            ],
+          const MatchSectionTitle(
+            'Dịch vụ & Phụ kiện',
+            'Tùy chọn thuê vợt, mua bóng, nước giải khát...',
+            step: '02',
           ),
-          const SizedBox(height: 12),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: services.length,
-            separatorBuilder: (context, index) => const Divider(height: 16, color: Color(0xFFF3F4F6)),
+            separatorBuilder: (context, index) =>
+                const Divider(height: 20, color: MatchColors.line),
             itemBuilder: (context, index) {
               final item = services[index];
               final qty = provider.selectedServices[item.id] ?? 0;
@@ -461,41 +588,64 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                       children: [
                         Text(
                           item.name,
-                          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textDark),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: MatchColors.ink,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           currencyFormat.format(item.price),
-                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.accentBlue),
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: MatchColors.blue,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(10),
+                      color: const Color(0xFFF7F9FC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: MatchColors.line),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
                           icon: const Icon(Icons.remove, size: 16),
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                           padding: EdgeInsets.zero,
-                          onPressed: qty > 0 ? () => provider.updateServiceQuantity(item.id, -1) : null,
+                          onPressed: qty > 0
+                              ? () => provider.updateServiceQuantity(item.id, -1)
+                              : null,
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Text(
                             '$qty',
-                            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              color: MatchColors.ink,
+                            ),
                           ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.add, size: 16),
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                           padding: EdgeInsets.zero,
-                          onPressed: () => provider.updateServiceQuantity(item.id, 1),
+                          onPressed: () =>
+                              provider.updateServiceQuantity(item.id, 1),
                         ),
                       ],
                     ),
@@ -510,32 +660,22 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
   }
 
   Widget _buildDepositSelector(BookingProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
+    return MatchSurface(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(Icons.account_balance_wallet_outlined, size: 18, color: AppTheme.accentBlue),
-              SizedBox(width: 6),
-              Text(
-                'Hình thức thanh toán cọc',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textDark),
-              ),
-            ],
+          const MatchSectionTitle(
+            'Hình thức đặt cọc',
+            'Chọn mức đặt cọc tối thiểu để hoàn tất giữ chỗ.',
+            step: '04',
           ),
-          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: _depositOptionCard(
                   title: 'Cọc tối thiểu 30%',
+                  subtitle: 'Trả 70% còn lại tại sân',
                   percentage: 30,
                   current: provider.depositPercentage,
                   onTap: () => provider.setDepositPercentage(30),
@@ -545,6 +685,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
               Expanded(
                 child: _depositOptionCard(
                   title: 'Thanh toán 100%',
+                  subtitle: 'Thanh toán toàn bộ trước',
                   percentage: 100,
                   current: provider.depositPercentage,
                   onTap: () => provider.setDepositPercentage(100),
@@ -559,6 +700,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
 
   Widget _depositOptionCard({
     required String title,
+    required String subtitle,
     required int percentage,
     required int current,
     required VoidCallback onTap,
@@ -566,31 +708,43 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     final isSelected = current == percentage;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.pastelBlue : const Color(0xFFF9FAFB),
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? const Color(0xFFEDF3FF) : const Color(0xFFF7F9FC),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppTheme.accentBlue : const Color(0xFFE5E7EB),
-            width: isSelected ? 2 : 1,
+            color: isSelected ? MatchColors.blue : MatchColors.line,
+            width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Column(
           children: [
             Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: isSelected ? AppTheme.accentBlue : AppTheme.textGray,
+              isSelected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_off,
+              color: isSelected ? MatchColors.blue : MatchColors.muted,
               size: 20,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected ? AppTheme.accentBlue : AppTheme.textDark,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                color: isSelected ? MatchColors.blue : MatchColors.ink,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                color: isSelected ? MatchColors.blue : MatchColors.muted,
               ),
             ),
           ],
@@ -600,47 +754,52 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
   }
 
   Widget _buildCostBreakdownCard(BookingProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
+    return MatchSurface(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const MatchSectionTitle(
             'Bảng kê chi phí',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textDark),
+            'Chi tiết các khoản phí và số tiền cần thanh toán.',
+            step: '05',
+          ),
+          _costRow('Tiền sân:', currencyFormat.format(provider.courtPrice)),
+          const SizedBox(height: 8),
+          _costRow(
+            'Phụ kiện & dịch vụ:',
+            currencyFormat.format(provider.servicesPrice),
           ),
           const SizedBox(height: 12),
-          _costRow('Tiền sân:', currencyFormat.format(provider.courtPrice)),
-          const SizedBox(height: 6),
-          _costRow('Phụ kiện & dịch vụ:', currencyFormat.format(provider.servicesPrice)),
-          const Divider(height: 20, thickness: 1, color: Color(0xFFF3F4F6)),
-          _costRow('Tổng tiền đơn:', currencyFormat.format(provider.totalPrice), isBold: true),
-          const SizedBox(height: 8),
+          const Divider(height: 1, color: MatchColors.line),
+          const SizedBox(height: 12),
+          _costRow(
+            'Tổng tiền đơn:',
+            currencyFormat.format(provider.totalPrice),
+            isBold: true,
+          ),
+          const SizedBox(height: 14),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F8E9),
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFEDF3FF),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
             ),
             child: Column(
               children: [
                 _costRow(
                   'Số tiền cần cọc ngay:',
                   currencyFormat.format(provider.depositAmount),
-                  valueColor: const Color(0xFF2E7D32),
+                  valueColor: MatchColors.blue,
                   isBold: true,
                 ),
                 if (provider.remainingBalance > 0) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   _costRow(
                     'Số tiền còn lại (trả tại quầy):',
                     currencyFormat.format(provider.remainingBalance),
-                    valueColor: AppTheme.textDark,
+                    valueColor: MatchColors.ink,
                   ),
                 ],
               ],
@@ -651,24 +810,31 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     );
   }
 
-  Widget _costRow(String label, String value, {Color? valueColor, bool isBold = false}) {
+  Widget _costRow(
+    String label,
+    String value, {
+    Color? valueColor,
+    bool isBold = false,
+  }) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-            color: isBold ? AppTheme.textDark : AppTheme.textGray,
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
+              color: isBold ? MatchColors.ink : MatchColors.muted,
+            ),
           ),
         ),
+        const SizedBox(width: 8),
         Text(
           value,
           style: TextStyle(
-            fontSize: isBold ? 14.5 : 13,
-            fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-            color: valueColor ?? AppTheme.textDark,
+            fontSize: isBold ? 15 : 13,
+            fontWeight: isBold ? FontWeight.w800 : FontWeight.w700,
+            color: valueColor ?? MatchColors.ink,
           ),
         ),
       ],
@@ -676,63 +842,70 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
   }
 
   Widget _buildBottomConfirmBar(BookingProvider provider) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
-          )
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Tiền cọc thanh toán:',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textGray),
-                  ),
-                  Text(
-                    currencyFormat.format(provider.depositAmount),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF2E7D32),
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: MatchColors.line)),
+        ),
+        child: Align(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Tiền cọc cần thanh toán',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: MatchColors.muted,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      currencyFormat.format(provider.depositAmount),
+                      style: const TextStyle(
+                        fontSize: 23,
+                        fontWeight: FontWeight.w800,
+                        color: MatchColors.ink,
+                        letterSpacing: -.5,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => _handleConfirmBooking(provider),
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.arrow_forward_rounded, size: 20),
+                    label: Text(
+                      _isSubmitting
+                          ? 'Đang xác nhận đặt sân...'
+                          : 'Xác nhận đặt sân · Cọc ${provider.depositPercentage}%',
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: _isSubmitting ? null : () => _handleConfirmBooking(provider),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentBlue,
-                disabledBackgroundColor: AppTheme.textGray.withValues(alpha: 0.3),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              child: _isSubmitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                    )
-                  : const Text(
-                      'Xác Nhận Đặt',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Colors.white),
-                    ),
-            ),
-          ],
+          ),
         ),
       ),
     );

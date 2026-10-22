@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_theme.dart';
 import '../../providers/booking_provider.dart';
 import '../../widgets/date_selector_widget.dart';
+import '../../widgets/match_ui.dart';
 import '../../widgets/time_slot_grid_widget.dart';
 import 'booking_checkout_screen.dart';
 
@@ -34,44 +34,42 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<BookingProvider>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          provider.venueDetail?.name ?? 'Đặt Khung Giờ',
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+    return MatchTheme(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(provider.venueDetail?.name ?? 'Đặt Khung Giờ'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              tooltip: 'Làm mới khung giờ',
+              onPressed: () => provider.loadSlotsForCurrentDate(),
+            ),
+          ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Làm mới khung giờ',
-            onPressed: () => provider.loadSlotsForCurrentDate(),
-          ),
-        ],
-      ),
-      body: provider.isLoading && provider.venueDetail == null
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: () => provider.loadSlotsForCurrentDate(),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildVenueHeader(provider),
-                    const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
-                    _buildSubVenuesSelector(provider),
-                    const SizedBox(height: 8),
-                    _buildDateSection(provider),
-                    const SizedBox(height: 12),
-                    _buildLegend(),
-                    const SizedBox(height: 8),
-                    _buildSlotGrid(provider),
-                    const SizedBox(height: 120), // Bottom padding for sticky bar
-                  ],
+        bottomNavigationBar: _buildBottomSummary(context, provider),
+        body: provider.isLoading && provider.venueDetail == null
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: () => provider.loadSlotsForCurrentDate(),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      children: [
+                        _buildVenueHeader(provider),
+                        const SizedBox(height: 16),
+                        _buildSubVenuesSelector(provider),
+                        const SizedBox(height: 16),
+                        _buildDateAndSlotsSection(provider),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-      bottomSheet: _buildBottomSummary(context, provider),
+      ),
     );
   }
 
@@ -79,55 +77,56 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
     final venue = provider.venueDetail;
     if (venue == null) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return MatchSurface(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.pastelBlue,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  venue.sportName,
-                  style: const TextStyle(
-                    color: AppTheme.accentBlue,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-                ),
+              MatchPill(
+                venue.sportName,
+                icon: matchSportIcon(venue.sportId),
               ),
               const Spacer(),
-              const Icon(Icons.star_rounded, color: Colors.amber, size: 20),
+              const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
               const SizedBox(width: 4),
               Text(
                 '${venue.rating}',
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  color: MatchColors.ink,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
           Text(
             venue.name,
             style: const TextStyle(
-              fontSize: 19,
+              fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: AppTheme.textDark,
+              color: MatchColors.ink,
+              letterSpacing: -.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Row(
             children: [
-              const Icon(Icons.location_on_outlined, size: 16, color: AppTheme.textGray),
+              const Icon(
+                Icons.location_on_outlined,
+                size: 16,
+                color: MatchColors.muted,
+              ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   '${venue.address}, ${venue.district}',
-                  style: const TextStyle(color: AppTheme.textGray, fontSize: 13),
+                  style: const TextStyle(
+                    color: MatchColors.muted,
+                    fontSize: 13,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -141,160 +140,112 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
   Widget _buildSubVenuesSelector(BookingProvider provider) {
     if (provider.subVenues.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 6),
-          child: Text(
+    return MatchSurface(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const MatchSectionTitle(
             'Chọn sân đấu',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
-            ),
+            'Chọn sân cụ thể bạn muốn đặt lịch trong cụm sân này.',
+            step: '01',
           ),
-        ),
-        SizedBox(
-          height: 44,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            scrollDirection: Axis.horizontal,
-            itemCount: provider.subVenues.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final sub = provider.subVenues[index];
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: provider.subVenues.map((sub) {
               final isSelected = provider.selectedSubVenue?.id == sub.id;
-
               return ChoiceChip(
+                showCheckmark: false,
                 label: Text(sub.name),
                 selected: isSelected,
-                selectedColor: AppTheme.accentBlue,
+                selectedColor: MatchColors.blue,
                 backgroundColor: Colors.white,
                 labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : AppTheme.textDark,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected ? Colors.white : MatchColors.ink,
+                  fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: isSelected ? AppTheme.accentBlue : const Color(0xFFE0E0E0),
-                  ),
+                side: BorderSide(
+                  color: isSelected ? MatchColors.blue : MatchColors.line,
                 ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 onSelected: (selected) {
                   if (selected) {
                     provider.selectSubVenue(sub);
                   }
                 },
               );
-            },
+            }).toList(),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateSection(BookingProvider provider) {
-    if (provider.dateRange.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: Row(
-            children: [
-              Icon(Icons.calendar_month_rounded, size: 18, color: AppTheme.accentBlue),
-              SizedBox(width: 6),
-              Text(
-                'Chọn ngày thi đấu (7 ngày tới)',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
-                ),
-              ),
-            ],
-          ),
-        ),
-        DateSelectorWidget(
-          dateRange: provider.dateRange,
-          selectedDate: provider.selectedDate,
-          onDateSelected: (date) => provider.selectDate(date),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLegend() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF9FAFB),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFEEEEEE)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _legendItem(const Color(0xFF4CAF50), 'Trống'),
-            _legendItem(AppTheme.accentBlue, 'Đang chọn'),
-            _legendItem(const Color(0xFFBDBDBD), 'Đã kín / Qua'),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _legendItem(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textDark),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSlotGrid(BookingProvider provider) {
-    if (provider.isLoading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return TimeSlotGridWidget(
-      slots: provider.slots,
-      selectedSlots: provider.selectedSlots,
-      onSlotToggled: (slot) {
-        final error = provider.toggleSlot(slot);
-        if (error != null) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error, style: const TextStyle(fontWeight: FontWeight.w600)),
-              backgroundColor: Colors.redAccent.shade700,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
+  Widget _buildDateAndSlotsSection(BookingProvider provider) {
+    return MatchSurface(
+      padding: const EdgeInsets.fromLTRB(0, 20, 0, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: MatchSectionTitle(
+              'Thời gian & Khung giờ',
+              'Chọn ngày thi đấu và tối đa 3 khung giờ liên tiếp.',
+              step: '02',
             ),
-          );
-        }
-      },
+          ),
+          if (provider.dateRange.isNotEmpty)
+            DateSelectorWidget(
+              dateRange: provider.dateRange,
+              selectedDate: provider.selectedDate,
+              onDateSelected: (date) => provider.selectDate(date),
+            ),
+          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                _SlotLegend('Còn trống', Colors.white, border: true),
+                _SlotLegend('Đang chọn', MatchColors.blue),
+                _SlotLegend('Đã kín / đã qua', Color(0xFFF0F3F7)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (provider.isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 36),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            TimeSlotGridWidget(
+              slots: provider.slots,
+              selectedSlots: provider.selectedSlots,
+              onSlotToggled: (slot) {
+                final error = provider.toggleSlot(slot);
+                if (error != null) {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        error,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+        ],
+      ),
     );
   }
 
@@ -303,85 +254,106 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
     final hasSelection = count > 0;
     final courtTotal = provider.courtPrice;
 
-    String slotSummaryText = 'Vui lòng chọn slot giờ (tối đa 3h)';
+    String slotSummaryText = 'Chọn tối đa 3 khung giờ liên tiếp';
     if (hasSelection) {
       final first = provider.selectedSlots.first.startTime;
       final last = provider.selectedSlots.last.endTime;
-      slotSummaryText = '$count slot ($first - $last)';
+      slotSummaryText = '$count slot đã chọn ($first - $last)';
     }
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
-          )
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    slotSummaryText,
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textGray),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    hasSelection ? currencyFormat.format(courtTotal) : '0 đ',
-                    style: const TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.accentBlue,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              onPressed: hasSelection
-                  ? () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const BookingCheckoutScreen(),
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: MatchColors.line)),
+        ),
+        child: Align(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        slotSummaryText,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: MatchColors.muted,
                         ),
-                      );
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentBlue,
-                disabledBackgroundColor: AppTheme.textGray.withValues(alpha: 0.3),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Tiếp tục',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        hasSelection ? currencyFormat.format(courtTotal) : '0 đ',
+                        style: const TextStyle(
+                          fontSize: 23,
+                          fontWeight: FontWeight.w800,
+                          color: MatchColors.ink,
+                          letterSpacing: -.5,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 4),
-                  Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
-                ],
-              ),
+                ),
+                const SizedBox(width: 16),
+                FilledButton.icon(
+                  onPressed: hasSelection
+                      ? () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const BookingCheckoutScreen(),
+                            ),
+                          );
+                        }
+                      : null,
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                  label: const Text('Tiếp tục'),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _SlotLegend extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool border;
+  const _SlotLegend(this.label, this.color, {this.border = false});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 13,
+            height: 13,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(4),
+              border: border ? Border.all(color: MatchColors.line) : null,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: MatchColors.muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
 }

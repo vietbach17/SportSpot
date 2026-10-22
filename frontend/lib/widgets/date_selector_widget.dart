@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
+import 'match_ui.dart';
 
 class DateSelectorWidget extends StatelessWidget {
   final List<DateTime> dateRange;
@@ -13,7 +13,6 @@ class DateSelectorWidget extends StatelessWidget {
     required this.onDateSelected,
   });
 
-  // Custom weekday mapping - prevents any LocaleDataException
   static String getWeekdayLabel(DateTime date) {
     final now = DateTime.now();
     if (date.year == now.year && date.month == now.month && date.day == now.day) {
@@ -44,7 +43,7 @@ class DateSelectorWidget extends StatelessWidget {
     return SizedBox(
       height: 98,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         scrollDirection: Axis.horizontal,
         itemCount: dateRange.length,
         separatorBuilder: (context, index) => const SizedBox(width: 10),
@@ -55,61 +54,53 @@ class DateSelectorWidget extends StatelessWidget {
               date.day == selectedDate.day;
 
           final weekday = getWeekdayLabel(date);
-          final dayStr = '${date.day}/${date.month}';
+          final dayStr =
+              '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
 
           return GestureDetector(
             onTap: () => onDateSelected(date),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 180),
               width: 76,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.accentBlue : Colors.white,
+                color: isSelected ? MatchColors.blue : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected
-                      ? AppTheme.accentBlue
-                      : AppTheme.textGray.withValues(alpha: 0.2),
+                  color: isSelected ? MatchColors.blue : MatchColors.line,
                   width: 1.5,
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppTheme.accentBlue.withValues(alpha: 0.28),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        )
-                      ]
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        )
-                      ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    weekday,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                      color: isSelected ? Colors.white : AppTheme.textGray,
-                    ),
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        weekday,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight:
+                              isSelected ? FontWeight.w800 : FontWeight.w700,
+                          color:
+                              isSelected ? MatchColors.lime : MatchColors.muted,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        dayStr,
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                          color: isSelected ? Colors.white : MatchColors.ink,
+                          letterSpacing: -.3,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    dayStr,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: isSelected ? Colors.white : AppTheme.textDark,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           );

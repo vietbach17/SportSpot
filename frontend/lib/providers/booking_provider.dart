@@ -10,7 +10,9 @@ class BookingProvider extends ChangeNotifier {
   IBookingRepository _repository;
 
   BookingProvider({IBookingRepository? repository})
-      : _repository = repository ?? RemoteBookingRepository();
+      : _repository = repository ?? RemoteBookingRepository() {
+    initDates();
+  }
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;

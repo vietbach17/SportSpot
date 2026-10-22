@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
+import 'package:intl/intl.dart';
 import '../data/models/booking_model.dart';
+import 'match_ui.dart';
 
 class TimeSlotGridWidget extends StatelessWidget {
   final List<VenueSlotModel> slots;
@@ -18,25 +19,27 @@ class TimeSlotGridWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     if (slots.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
+        padding: EdgeInsets.symmetric(vertical: 36),
         child: Center(
           child: Text(
             'Không có khung giờ nào khả dụng',
-            style: TextStyle(color: AppTheme.textGray, fontSize: 14),
+            style: TextStyle(color: MatchColors.muted, fontSize: 13),
           ),
         ),
       );
     }
 
+    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+
     return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 1.45,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 1.48,
       ),
       itemCount: slots.length,
       itemBuilder: (context, index) {
@@ -44,99 +47,94 @@ class TimeSlotGridWidget extends StatelessWidget {
         final isSelected = selectedSlots.any((s) => s.slotId == slot.slotId);
         final isAvailable = slot.isAvailable;
 
-        // Visual Palette:
-        // 1. Selected: Accent Blue / Orange
-        // 2. Available: Green
-        // 3. Booked / Past: Gray
-        Color bgColor;
-        Color borderColor;
-        Color textColor;
-        Color priceColor;
+        // Module 4 visual palette
+        final bgColor = isSelected
+            ? MatchColors.blue
+            : !isAvailable
+                ? const Color(0xFFF0F3F7)
+                : Colors.white;
 
-        if (isSelected) {
-          bgColor = AppTheme.accentBlue;
-          borderColor = AppTheme.accentBlue;
-          textColor = Colors.white;
-          priceColor = Colors.white.withValues(alpha: 0.9);
-        } else if (isAvailable) {
-          bgColor = const Color(0xFFF1F8E9);
-          borderColor = const Color(0xFFA5D6A7);
-          textColor = const Color(0xFF1B5E20);
-          priceColor = const Color(0xFF2E7D32);
-        } else {
-          bgColor = const Color(0xFFF5F5F5);
-          borderColor = const Color(0xFFE0E0E0);
-          textColor = const Color(0xFF9E9E9E);
-          priceColor = const Color(0xFFBDBDBD);
-        }
+        final borderColor = isSelected ? MatchColors.blue : MatchColors.line;
 
-        final priceStr = '${(slot.price / 1000).toStringAsFixed(0)}k';
+        final timeColor = isSelected
+            ? Colors.white
+            : !isAvailable
+                ? MatchColors.muted.withValues(alpha: .5)
+                : MatchColors.ink;
+
+        final priceColor = isSelected
+            ? MatchColors.lime
+            : !isAvailable
+                ? MatchColors.muted.withValues(alpha: .4)
+                : MatchColors.muted;
+
+        final priceStr = isAvailable
+            ? currencyFormat.format(slot.price)
+            : (slot.status == 'Past' ? 'Đã qua' : 'Đã kín');
 
         return GestureDetector(
           onTap: isAvailable ? () => onSlotToggled(slot) : null,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderColor, width: isSelected ? 2 : 1.2),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: AppTheme.accentBlue.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      )
-                    ]
-                  : null,
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(
+                color: borderColor,
+                width: isSelected ? 1.5 : 1,
+              ),
             ),
             child: Stack(
               children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           '${slot.startTime} - ${slot.endTime}',
                           style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
-                            color: textColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: timeColor,
+                            letterSpacing: -.2,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          priceStr,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight:
+                                isSelected ? FontWeight.w800 : FontWeight.w600,
+                            color: priceColor,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      isAvailable || isSelected ? priceStr : (slot.status == 'Past' ? 'Đã qua' : 'Đã kín'),
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        color: priceColor,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
                 if (slot.isPeak && isAvailable && !isSelected)
                   Positioned(
-                    top: -2,
-                    right: -2,
+                    top: 0,
+                    right: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1.5,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade700,
+                        color: const Color(0xFFFEF3C7),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(
                         'Vàng',
                         style: TextStyle(
-                          fontSize: 8.5,
+                          fontSize: 8,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: Color(0xFFB45309),
                         ),
                       ),
                     ),
