@@ -134,7 +134,7 @@ class _MainScreenState extends State<MainScreen> {
                       foregroundColor: MatchColors.navy,
                     ),
                     icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                    label: const Text('Đặt Sân Cầu Lông Ngay'),
+                    label: const Text('Đặt Sân Ngay'),
                   ),
                 ),
                 const SizedBox(height: 24),

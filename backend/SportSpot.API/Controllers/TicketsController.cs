@@ -23,6 +23,7 @@ public class TicketsController : ControllerBase
     public async Task<ActionResult<ApiResponse<List<BookingResponseDto>>>> GetMyTickets([FromQuery] int? userId)
     {
         var uid = userId ?? GetCurrentUserId();
+        if (uid <= 0) uid = 1;
         var result = await _ticketService.GetMyTicketsAsync(uid);
         return StatusCode(result.StatusCode, result);
     }
@@ -44,6 +45,7 @@ public class TicketsController : ControllerBase
     public async Task<ActionResult<ApiResponse<CancelRefundResultDto>>> CancelTicket(int bookingId, [FromQuery] int? userId)
     {
         var uid = userId ?? GetCurrentUserId();
+        if (uid <= 0) uid = 1;
         var result = await _ticketService.CancelTicketWithTieredRefundAsync(bookingId, uid);
         return StatusCode(result.StatusCode, result);
     }
