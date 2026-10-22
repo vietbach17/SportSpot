@@ -1,0 +1,53 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend (.NET 8 Web API)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-backend",
+      "program": "${workspaceFolder}/backend/SportSpot.API/bin/Debug/net8.0/SportSpot.API.dll",
+      "args": ["--urls", "http://localhost:5000"],
+      "cwd": "${workspaceFolder}/backend/SportSpot.API",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+        "uriFormat": "%s/swagger"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    {
+      "name": "Frontend (Flutter Chrome)",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "program": "${workspaceFolder}/frontend/lib/main.dart",
+      "args": ["-d", "chrome", "--web-port", "3000"]
+    },
+    {
+      "name": "Frontend (Flutter Windows)",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "program": "${workspaceFolder}/frontend/lib/main.dart",
+      "args": ["-d", "windows"]
+    },
+    {
+      "name": "Frontend (Flutter Edge)",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "program": "${workspaceFolder}/frontend/lib/main.dart",
+      "args": ["-d", "edge", "--web-port", "3000"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack (Backend + Flutter Chrome)",
+      "configurations": ["Backend (.NET 8 Web API)", "Frontend (Flutter Chrome)"]
+    }
+  ]
+}
