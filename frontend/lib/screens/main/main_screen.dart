@@ -81,21 +81,7 @@ class _MainScreenState extends State<MainScreen> {
       child: Scaffold(
         backgroundColor: MatchColors.canvas,
         appBar: AppBar(
-          title: const Row(
-            children: [
-              Icon(Icons.bolt_rounded, color: MatchColors.blue),
-              SizedBox(width: 6),
-              Text(
-                'SportSpot',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
-                  color: MatchColors.ink,
-                  letterSpacing: -.5,
-                ),
-              ),
-            ],
-          ),
+          title: const SportSpotBrandTitle(),
           actions: [
             if (isGuest)
               TextButton.icon(

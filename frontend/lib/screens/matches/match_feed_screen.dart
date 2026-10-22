@@ -166,31 +166,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     return MatchTheme(
       child: Scaffold(
         appBar: AppBar(
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: MatchColors.blue,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.bolt_rounded,
-                  color: MatchColors.lime,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 9),
-              Text(
-                widget.staff ? 'Quầy lễ tân' : 'SportSpot',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -.5,
-                ),
-              ),
-            ],
+          title: SportSpotBrandTitle(
+            title: widget.staff ? 'Quầy lễ tân' : 'SportSpot',
           ),
           actions: [
             if (!widget.staff && auth.currentUser?.role == 'VenueStaff')

@@ -126,6 +126,63 @@ class MatchSurface extends StatelessWidget {
   );
 }
 
+class SportSpotLogo extends StatelessWidget {
+  final double size;
+  final double iconSize;
+  const SportSpotLogo({
+    super.key,
+    this.size = 32,
+    this.iconSize = 24,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: MatchColors.blue,
+        borderRadius: BorderRadius.circular(size * 10 / 32),
+      ),
+      child: Icon(
+        Icons.bolt_rounded,
+        color: MatchColors.lime,
+        size: iconSize,
+      ),
+    );
+  }
+}
+
+class SportSpotBrandTitle extends StatelessWidget {
+  final String title;
+  final double fontSize;
+  const SportSpotBrandTitle({
+    super.key,
+    this.title = 'SportSpot',
+    this.fontSize = 20,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SportSpotLogo(),
+        const SizedBox(width: 9),
+        Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: fontSize,
+            color: MatchColors.ink,
+            letterSpacing: -.5,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class MatchPill extends StatelessWidget {
   final String label;
   final IconData? icon;
