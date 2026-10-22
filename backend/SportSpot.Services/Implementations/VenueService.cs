@@ -116,17 +116,41 @@ public class VenueService : IVenueService
             return ApiResponse<List<TimeSlotStatusDto>>.Fail("Không tìm thấy cụm sân", 404);
         }
 
-        var allSlots = await _unitOfWork.Venues.GetAllTimeSlotsOrderedAsync();
-        var bookedSlotIds = await _unitOfWork.Venues.GetBookedSlotIdsAsync(subVenueId, playDate);
-
-        var slotStatuses = allSlots.Select(slot => new TimeSlotStatusDto
+        if (subVenueId <= 0)
         {
-            SlotId = slot.Id,
-            StartTime = slot.StartTime,
-            EndTime = slot.EndTime,
-            IsPeak = slot.IsPeak,
-            Price = slot.IsPeak ? venue.PeakPrice : venue.BasePrice,
-            IsBooked = bookedSlotIds.Contains(slot.Id)
+            var venueDetail = await _unitOfWork.Venues.GetVenueDetailByIdAsync(id);
+            subVenueId = venueDetail?.SubVenues.FirstOrDefault()?.Id ?? 0;
+        }
+
+        var allSlots = await _unitOfWork.Venues.GetAllTimeSlotsOrderedAsync();
+        var bookedSlotIds = subVenueId > 0
+            ? await _unitOfWork.Venues.GetBookedSlotIdsAsync(subVenueId, playDate)
+            : new List<int>();
+
+        var now = DateTime.Now;
+        var isToday = playDate == DateOnly.FromDateTime(now);
+
+        var slotStatuses = allSlots.Select(slot =>
+        {
+            var isBooked = bookedSlotIds.Contains(slot.Id);
+            var isPast = false;
+            if (isToday && TimeOnly.TryParse(slot.EndTime, out var endTime))
+            {
+                isPast = TimeOnly.FromDateTime(now) >= endTime;
+            }
+
+            var status = isBooked ? "Booked" : (isPast ? "Past" : "Available");
+
+            return new TimeSlotStatusDto
+            {
+                SlotId = slot.Id,
+                StartTime = slot.StartTime,
+                EndTime = slot.EndTime,
+                IsPeak = slot.IsPeak,
+                Price = slot.IsPeak ? venue.PeakPrice : venue.BasePrice,
+                IsBooked = isBooked || isPast,
+                Status = status
+            };
         }).ToList();
 
         return ApiResponse<List<TimeSlotStatusDto>>.Ok(slotStatuses, "Lấy danh sách khung giờ thành công");

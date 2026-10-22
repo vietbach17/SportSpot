@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/token_service.dart';
 import 'providers/auth_provider.dart';
+import 'providers/booking_provider.dart';
 import 'screens/main/main_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 
@@ -17,6 +18,9 @@ void main() async {
       providers: [
         ChangeNotifierProvider(
           create: (_) => AuthProvider()..initializeAuth(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => BookingProvider(),
         ),
       ],
       child: SportSpotApp(hasSeenOnboarding: hasSeenOnboarding),

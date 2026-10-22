@@ -50,4 +50,5 @@ public class TimeSlotStatusDto
     public bool IsPeak { get; set; }
     public int Price { get; set; }
     public bool IsBooked { get; set; }
+    public string Status { get; set; } = "Available"; // "Available", "Booked", "Past", "Holding"
 }

@@ -59,16 +59,6 @@ public class BookingService : IBookingService
             }
         }
 
-        var conflictedSlots = await _unitOfWork.Bookings.GetConflictedSlotsAsync(
-            request.SubVenueId, request.PlayDate, request.SlotIds);
-
-        if (conflictedSlots.Count > 0)
-        {
-            var conflictSlotNames = string.Join(", ", conflictedSlots.Select(c => $"{c.TimeSlot?.StartTime}-{c.TimeSlot?.EndTime}"));
-            return ApiResponse<BookingResponseDto>.Fail(
-                $"Rất tiếc! Khung giờ ({conflictSlotNames}) vừa có người khác đặt trước. Vui lòng chọn khung giờ khác.", 409);
-        }
-
         int courtPrice = 0;
         foreach (var slot in selectedSlots)
         {
@@ -167,15 +157,35 @@ public class BookingService : IBookingService
             CreatedAt = DateTime.UtcNow
         });
 
+        // Concurrency lock using Serializable Isolation Level Transaction
+        using var transaction = await _unitOfWork.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
         try
         {
+            var conflictedSlots = await _unitOfWork.Bookings.GetConflictedSlotsAsync(
+                request.SubVenueId, request.PlayDate, request.SlotIds);
+
+            if (conflictedSlots.Count > 0)
+            {
+                await transaction.RollbackAsync();
+                var conflictSlotNames = string.Join(", ", conflictedSlots.Select(c => $"{c.TimeSlot?.StartTime}-{c.TimeSlot?.EndTime}"));
+                return ApiResponse<BookingResponseDto>.Fail(
+                    $"Rất tiếc! Khung giờ ({conflictSlotNames}) vừa có người khác đặt trước. Vui lòng chọn khung giờ khác.", 409);
+            }
+
             await _unitOfWork.Bookings.AddAsync(booking);
             await _unitOfWork.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
         catch (DbUpdateException)
         {
+            await transaction.RollbackAsync();
             return ApiResponse<BookingResponseDto>.Fail(
                 "Đã xảy ra tranh chấp đặt sân cùng thời điểm. Vui lòng thử lại.", 409);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
         }
 
         var fullQrPayload = QrChecksumHelper.BuildSignedQrPayload(booking.BookingCode, booking.UserId, "Host");
