@@ -19,6 +19,17 @@ public class TransactionRepository : GenericRepository<Transaction>, ITransactio
             .ToListAsync();
     }
 
+    public async Task<List<Transaction>> GetByUserIdAsync(int userId)
+    {
+        return await _dbSet
+            .Include(t => t.Booking)
+                .ThenInclude(b => b!.SubVenue)
+                    .ThenInclude(sv => sv!.Venue)
+            .Where(t => t.UserId == userId)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+    }
+
     public async Task<Transaction?> GetByTransactionCodeAsync(string transactionCode)
     {
         return await _dbSet

@@ -25,18 +25,22 @@ public class BookingResponseDto
 {
     public int BookingId { get; set; }
     public string BookingCode { get; set; } = string.Empty;
+    public int VenueId { get; set; }
     public string VenueName { get; set; } = string.Empty;
     public string SubVenueName { get; set; } = string.Empty;
     public string SportName { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public DateOnly PlayDate { get; set; }
     public List<string> TimeSlots { get; set; } = new();
+    public string UserRoleInMatch { get; set; } = "Host";
+    public int? MatchId { get; set; }
     public int CourtPrice { get; set; }
     public int ServicesPrice { get; set; }
     public int TotalPrice { get; set; }
     public int DepositAmount { get; set; }
     public int RemainingBalance { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string EscrowStatus { get; set; } = "Holding";
     public string QrPayload { get; set; } = string.Empty;
     public bool IsCheckedIn { get; set; }
 }

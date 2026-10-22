@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../auth/phone_input_screen.dart';
 import '../profile/profile_screen.dart';
 import '../matches/match_feed_screen.dart';
+import '../tickets/my_tickets_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
@@ -30,7 +31,7 @@ class _MainScreenState extends State<MainScreen> {
     final List<Widget> pages = [
       _buildHomePlaceholder(context, isGuest),
       const MatchFeedScreen(),
-      _buildPlaceholderTab('Vé Đặt Của Tôi', Icons.confirmation_number_rounded, 'Xem mã QR và vé điện tử ngoại tuyến'),
+      const MyTicketsScreen(),
       const ProfileScreen(),
     ];
 
@@ -96,7 +97,7 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppTheme.pastelBlue,
                   shape: BoxShape.circle,
                 ),
@@ -113,34 +114,6 @@ class _MainScreenState extends State<MainScreen> {
                 'Module 1 (Xác thực & Hồ sơ) đã sẵn sàng.\nBạn có thể chuyển sang tab "Cá nhân" để xem thông tin và bật Chế độ tìm kèo.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppTheme.textGray, height: 1.5),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderTab(String title, IconData icon, String subtitle) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 64, color: AppTheme.textGray.withOpacity(0.5)),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textDark),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textGray, fontSize: 14),
               ),
             ],
           ),
