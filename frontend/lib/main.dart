@@ -4,8 +4,10 @@ import 'core/theme/app_theme.dart';
 import 'data/services/token_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/booking_provider.dart';
+import 'providers/venue_provider.dart';
 import 'screens/main/main_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'widgets/responsive_phone_frame.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +23,9 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => BookingProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => VenueProvider(),
         ),
       ],
       child: SportSpotApp(hasSeenOnboarding: hasSeenOnboarding),
@@ -42,6 +47,7 @@ class SportSpotApp extends StatelessWidget {
       title: 'SportSpot',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      builder: (context, child) => ResponsivePhoneFrame(child: child ?? const SizedBox.shrink()),
       home: hasSeenOnboarding ? const MainScreen() : const OnboardingScreen(),
     );
   }

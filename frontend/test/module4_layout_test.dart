@@ -14,6 +14,7 @@ import 'package:sportspot/screens/matches/match_checkout_screen.dart';
 import 'package:sportspot/screens/matches/match_feed_screen.dart';
 import 'package:sportspot/widgets/recruitment_form.dart';
 import 'package:sportspot/widgets/match_ui.dart';
+import 'test_http_client.dart';
 
 const capture = bool.fromEnvironment('UPDATE_MODULE4_PREVIEWS');
 
@@ -32,6 +33,7 @@ Future<void> preview(GlobalKey key, String name) async {
 
 void main() {
   WidgetController.hitTestWarningShouldBeFatal = true;
+  HttpOverrides.global = MockHttpOverrides();
   setUpAll(() async {
     final config = jsonDecode(
       File('.dart_tool/package_config.json').readAsStringSync(),

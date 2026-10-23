@@ -24,64 +24,117 @@ public static class DbInitializer
             context.SaveChanges();
         }
 
-        // 2. Seed Venues
-        if (!context.Venues.Any())
+        // 2. Seed 5 Cụm sân thể thao có thật tại TP.HCM (GPS thật phục vụ test khoảng cách)
+        var venuesToAdd = new List<Venue>();
+
+        if (!context.Venues.Any(v => v.Name.Contains("Kỳ Hòa")))
         {
-            var venue1 = new Venue
+            venuesToAdd.Add(new Venue
             {
-                SportId = 1,
-                Name = "CLB Cầu Lông Cầu Giấy",
-                Address = "Số 35 Trần Quý Kiên, Dịch Vọng",
-                District = "Cầu Giấy",
-                Latitude = 21.0368000m,
-                Longitude = 105.7905000m,
-                Description = "Cụm sân thảm tiêu chuẩn thi đấu, trần cao thoáng mát.",
-                Hotline = "0987654321",
-                BasePrice = 90000,
-                PeakPrice = 120000,
+                SportId = 1, // Cầu lông
+                Name = "CLB Cầu Lông Kỳ Hòa",
+                Address = "Số 238 đường 3/2, Phường 12",
+                District = "Quận 10",
+                Latitude = 10.7725000m,
+                Longitude = 106.6710000m,
+                Description = "Cụm 8 sân thảm tiêu chuẩn Yonex, trần cao 11m thoáng mát, đèn led chống chói chuyên dụng.",
+                Hotline = "0903123456",
+                BasePrice = 100000,
+                PeakPrice = 140000,
                 Rating = 4.9m,
-                Amenities = "Bãi đỗ ô tô, Căn tin, Phòng tắm, Cho thuê vợt, Wifi",
+                Amenities = "Bãi đỗ ô tô, Căn tin, Phòng tắm nóng lạnh, Cho thuê vợt cao cấp, Wifi tốc độ cao",
                 ImageUrl = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800",
                 IsActive = true
-            };
+            });
+        }
 
-            var venue2 = new Venue
+        if (!context.Venues.Any(v => v.Name.Contains("Chảo Lửa")))
+        {
+            venuesToAdd.Add(new Venue
             {
                 SportId = 3, // Bóng đá mini
-                Name = "Sân Bóng Đá Mini PVV",
-                Address = "Số 72 Trần Thái Tông, Dịch Vọng Hậu",
-                District = "Cầu Giấy",
-                Latitude = 21.0305000m,
-                Longitude = 105.7865000m,
-                Description = "Cụm sân cỏ nhân tạo 7 người chất lượng cao chống trơn trượt.",
-                Hotline = "0912345678",
+                Name = "Sân Bóng Đá Mini Chảo Lửa",
+                Address = "Số 30 Phan Thúc Duyện, Phường 4",
+                District = "Tân Bình",
+                Latitude = 10.8033000m,
+                Longitude = 106.6575000m,
+                Description = "Tổ hợp 6 sân cỏ nhân tạo đạt chuẩn FIFA, hệ thống thoát nước chuẩn và đèn LED ban đêm rực rỡ.",
+                Hotline = "0918765432",
                 BasePrice = 350000,
-                PeakPrice = 600000,
-                Rating = 4.7m,
-                Amenities = "Đèn chiếu sáng ban đêm, Trọng tài, Căn tin, Giữ xe miễn phí",
+                PeakPrice = 650000,
+                Rating = 4.8m,
+                Amenities = "Đèn chiếu sáng ban đêm, Trọng tài, Căn tin, Giữ xe miễn phí, Khán đài cổ vũ",
                 ImageUrl = "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800",
                 IsActive = true
-            };
+            });
+        }
 
-            var venue3 = new Venue
+        if (!context.Venues.Any(v => v.Name.Contains("D-Sport") || v.Name.Contains("D-Sports")))
+        {
+            venuesToAdd.Add(new Venue
             {
                 SportId = 2, // Pickleball
-                Name = "Pickleball Club D-Sport",
-                Address = "Số 10 Chu Văn An, Bình Thạnh",
-                District = "Bình Thạnh",
-                Latitude = 10.8122000m,
-                Longitude = 106.6975000m,
-                Description = "Sân Pickleball mặt sân cao cấp chuẩn quốc tế USAPA.",
-                Hotline = "0903112233",
+                Name = "CLB Pickleball D-Sports Thủ Đức",
+                Address = "Số 18 đường Song Hành, An Phú",
+                District = "TP. Thủ Đức",
+                Latitude = 10.8498000m,
+                Longitude = 106.7720000m,
+                Description = "Sân Pickleball mặt sân cao cấp USAPA, mái che thoáng mát, trang thiết bị hiện đại bậc nhất khu Đông.",
+                Hotline = "0934567890",
+                BasePrice = 120000,
+                PeakPrice = 180000,
+                Rating = 4.9m,
+                Amenities = "Phòng thay đồ, Huấn luyện viên, Cho thuê bóng & vợt, Ghế nghỉ ngơi, Nước uống miễn phí",
+                ImageUrl = "https://images.unsplash.com/photo-1599586120429-48281b6f0ece?w=800",
+                IsActive = true
+            });
+        }
+
+        if (!context.Venues.Any(v => v.Name.Contains("Hồ Xuân Hương")))
+        {
+            venuesToAdd.Add(new Venue
+            {
+                SportId = 4, // Bóng rổ
+                Name = "Sân Bóng Rổ TT TDTT Hồ Xuân Hương",
+                Address = "Số 2 Hồ Xuân Hương, Phường 6",
+                District = "Quận 3",
+                Latitude = 10.7742000m,
+                Longitude = 106.6892000m,
+                Description = "Sân bóng rổ sàn gỗ thi đấu trong nhà chuẩn FIBA, bảng rổ kính cường lực và điều hòa nhiệt độ.",
+                Hotline = "0283930403",
+                BasePrice = 200000,
+                PeakPrice = 350000,
+                Rating = 4.7m,
+                Amenities = "Sàn gỗ FIBA, Máy lạnh, Phòng tắm, Căn tin dinh dưỡng, Bãi đỗ xe rộng rãi",
+                ImageUrl = "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800",
+                IsActive = true
+            });
+        }
+
+        if (!context.Venues.Any(v => v.Name.Contains("Celadon")))
+        {
+            venuesToAdd.Add(new Venue
+            {
+                SportId = 1, // Cầu lông
+                Name = "Cụm Sân Thể Thao Celadon Tân Phú",
+                Address = "Số 2 đường Bờ Bao Tân Thắng, Sơn Kỳ",
+                District = "Tân Phú",
+                Latitude = 10.8018000m,
+                Longitude = 106.6162000m,
+                Description = "Khu liên hợp thể thao xanh với 10 sân cầu lông thảm PVC, không gian rộng rãi trong lòng đại đô thị Celadon.",
+                Hotline = "0908889999",
                 BasePrice = 110000,
                 PeakPrice = 150000,
                 Rating = 4.8m,
-                Amenities = "Phòng thay đồ, Huấn luyện viên, Cho thuê bóng & vợt",
-                ImageUrl = "https://images.unsplash.com/photo-1599586120429-48281b6f0ece?w=800",
+                Amenities = "Công viên xanh, Phòng thay đồ cao cấp, Khu hồi phục cơ, Căn tin, Cho thuê dụng cụ",
+                ImageUrl = "https://images.unsplash.com/photo-1613918108466-292b78a8ef95?w=800",
                 IsActive = true
-            };
+            });
+        }
 
-            context.Venues.AddRange(venue1, venue2, venue3);
+        if (venuesToAdd.Count > 0)
+        {
+            context.Venues.AddRange(venuesToAdd);
             context.SaveChanges();
         }
 
@@ -111,11 +164,18 @@ public static class DbInitializer
                         new SubVenue { VenueId = venue.Id, Name = "Sân Cỏ 7B", IsActive = true }
                     );
                 }
-                else // Pickleball hoặc khác
+                else if (venue.SportId == 2) // Pickleball
                 {
                     context.SubVenues.AddRange(
-                        new SubVenue { VenueId = venue.Id, Name = "Sân 1", IsActive = true },
-                        new SubVenue { VenueId = venue.Id, Name = "Sân 2", IsActive = true }
+                        new SubVenue { VenueId = venue.Id, Name = "Sân P1", IsActive = true },
+                        new SubVenue { VenueId = venue.Id, Name = "Sân P2", IsActive = true }
+                    );
+                }
+                else // Bóng rổ
+                {
+                    context.SubVenues.AddRange(
+                        new SubVenue { VenueId = venue.Id, Name = "Sân Trong Nhà", IsActive = true },
+                        new SubVenue { VenueId = venue.Id, Name = "Sân Ngoài Trời", IsActive = true }
                     );
                 }
             }

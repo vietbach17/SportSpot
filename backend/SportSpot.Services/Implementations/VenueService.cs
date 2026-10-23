@@ -72,6 +72,44 @@ public class VenueService : IVenueService
             return ApiResponse<VenueDetailDto>.Fail("Không tìm thấy cụm sân", 404);
         }
 
+        var gallery = new List<string>();
+        if (!string.IsNullOrEmpty(venue.ImageUrl)) gallery.Add(venue.ImageUrl);
+
+        if (venue.SportId == 1) // Cầu lông
+        {
+            gallery.AddRange(new[]
+            {
+                "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1200",
+                "https://images.unsplash.com/photo-1613918108466-292b78a8ef95?w=1200",
+                "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200"
+            });
+        }
+        else if (venue.SportId == 2) // Pickleball
+        {
+            gallery.AddRange(new[]
+            {
+                "https://images.unsplash.com/photo-1599586120429-48281b6f0ece?w=1200",
+                "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200"
+            });
+        }
+        else if (venue.SportId == 3) // Bóng đá
+        {
+            gallery.AddRange(new[]
+            {
+                "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=1200",
+                "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200",
+                "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=1200"
+            });
+        }
+        else // Bóng rổ
+        {
+            gallery.AddRange(new[]
+            {
+                "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200",
+                "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200"
+            });
+        }
+
         var detail = new VenueDetailDto
         {
             Id = venue.Id,
@@ -89,6 +127,7 @@ public class VenueService : IVenueService
             Rating = venue.Rating,
             Amenities = venue.Amenities,
             Description = venue.Description,
+            GalleryImages = gallery.Distinct().ToList(),
             SubVenues = venue.SubVenues.Select(sv => new SubVenueDto
             {
                 Id = sv.Id,

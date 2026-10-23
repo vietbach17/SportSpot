@@ -5,8 +5,14 @@ import 'package:sportspot/data/repositories/mock_match_repository.dart';
 import 'package:sportspot/providers/auth_provider.dart';
 import 'package:sportspot/screens/matches/match_feed_screen.dart';
 import 'package:sportspot/widgets/recruitment_form.dart';
+import 'dart:io';
+import 'test_http_client.dart';
 
 void main() {
+  setUpAll(() {
+    HttpOverrides.global = MockHttpOverrides();
+  });
+
   testWidgets('Recruitment preview and invalid headcounts', (tester) async {
     final key = GlobalKey<FormState>();
     RecruitmentValue value = const RecruitmentValue();

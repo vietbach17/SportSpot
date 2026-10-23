@@ -44,6 +44,8 @@ dependencies:
   intl: ^0.20.3
   qr_flutter: ^4.1.0
   carousel_slider: ^5.1.2
+  url_launcher: ^6.3.3
+  google_fonts: ^9.0.0
 
 dev_dependencies:
   flutter_test:

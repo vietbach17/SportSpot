@@ -5,8 +5,14 @@ import 'package:sportspot/data/repositories/mock_ticket_repository.dart';
 import 'package:sportspot/providers/ticket_provider.dart';
 import 'package:sportspot/screens/tickets/my_tickets_screen.dart';
 import 'package:sportspot/screens/tickets/ticket_qr_detail_screen.dart';
+import 'dart:io';
+import 'test_http_client.dart';
 
 void main() {
+  setUpAll(() {
+    HttpOverrides.global = MockHttpOverrides();
+  });
+
   group('Module 5 Unit Tests - Payment Escrow, SHA-256 QR & Tiered Cancellation', () {
     test('SHA-256 QR Payload verification settles Escrow and blocks tampering/replay', () async {
       final repo = MockTicketRepository();

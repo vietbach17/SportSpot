@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../data/models/match_model.dart';
 import '../../data/repositories/match_repository.dart';
+import '../../data/sportspot_mock_data.dart';
+import '../../data/sportspot_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/match_ui.dart';
 import '../../widgets/recruitment_form.dart';
@@ -11,15 +14,564 @@ import '../auth/phone_input_screen.dart';
 import 'match_checkout_screen.dart';
 
 class MatchFeedScreen extends StatefulWidget {
-  final MatchRepository? repository;
+  final Object? repository;
   final bool staff;
   const MatchFeedScreen({super.key, this.repository, this.staff = false});
+
   @override
-  State<MatchFeedScreen> createState() => _MatchFeedScreenState();
+  State<MatchFeedScreen> createState() {
+    if (repository != null || staff) {
+      return _Module4MatchFeedState();
+    }
+    return _StitchMatchFeedState();
+  }
 }
 
-class _MatchFeedScreenState extends State<MatchFeedScreen> {
-  late final MatchRepository repo = widget.repository ?? ApiMatchRepository();
+class _StitchMatchFeedState extends State<MatchFeedScreen> {
+  String selectedSport = 'all';
+  String selectedLevel = 'all';
+  List<SportSpotMatch> matches = List.from(SportSpotMockData.openMatches);
+
+  void _joinMatch(int index) {
+    setState(() {
+      final current = matches[index];
+      final isNowJoined = !current.isJoined;
+      matches[index] = current.copyWith(
+        isJoined: isNowJoined,
+        spotsTaken: isNowJoined ? current.spotsTaken + 1 : current.spotsTaken - 1,
+        spotsNeeded: isNowJoined ? current.spotsNeeded - 1 : current.spotsNeeded + 1,
+      );
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(matches[index].isJoined
+            ? '🎉 Match slot reserved! You are in squad.'
+            : 'Left the match.'),
+        backgroundColor: matches[index].isJoined ? const Color(0xFF10B981) : Colors.black87,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showHostGameDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF181A22) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: EdgeInsets.only(
+            top: 24,
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 28,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withAlpha(76),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Host a Match',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Create an open game slot and let nearby players auto-split court fees.',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Match Title',
+                  hintText: 'e.g. Badminton Doubles Friendly',
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF242834) : Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Slots Needed',
+                        hintText: '2',
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF242834) : Colors.grey.shade100,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Split Fee (VND)',
+                        hintText: '60,000',
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF242834) : Colors.grey.shade100,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('⚡ Match created! Nearby players notified.'),
+                        backgroundColor: Color(0xFF2563EB),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('Publish Match', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final filteredMatches = matches.where((m) {
+      if (selectedSport != 'all' && m.sport != selectedSport) return false;
+      if (selectedLevel != 'all' && m.level != selectedLevel) return false;
+      return true;
+    }).toList();
+
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top utility row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF242834) : Colors.white,
+                        borderRadius: BorderRadius.circular(9999),
+                        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.near_me_rounded, size: 14, color: Color(0xFF2563EB)),
+                          SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Within 5 km • Cau Giay',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: _showHostGameDialog,
+                    icon: const Icon(Icons.add_circle_rounded, size: 16),
+                    label: const Text('Host Game', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              // Title Header
+              const Text('Open Matches', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 4),
+              const Text(
+                'Join open player slots and auto-split court fees effortlessly.',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+
+              // Sport Filter Strip
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFilterChip('all', 'All Sports', Icons.grid_view_rounded),
+                    _buildFilterChip('badminton', 'Badminton', Icons.sports_tennis_rounded),
+                    _buildFilterChip('pickleball', 'Pickleball', Icons.sports_tennis),
+                    _buildFilterChip('football', 'Football', Icons.sports_soccer_rounded),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Match Cards List
+              if (filteredMatches.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Column(
+                      children: [
+                        Icon(Icons.sports_outlined, size: 48, color: Colors.grey.withAlpha(128)),
+                        const SizedBox(height: 12),
+                        const Text('No matches found for this filter', style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filteredMatches.length,
+                  itemBuilder: (context, index) {
+                    final match = filteredMatches[index];
+                    final originalIndex = matches.indexOf(match);
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF242834) : Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(isDark ? 76 : 13),
+                            blurRadius: 15,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Cover & Spot status
+                          Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                child: Image.network(
+                                  match.image,
+                                  height: 165,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => Container(
+                                    height: 165,
+                                    color: Colors.grey.shade800,
+                                    child: const Center(child: Icon(Icons.sports_tennis, color: Colors.white, size: 48)),
+                                  ),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.transparent,
+                                        Colors.black.withAlpha(191),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 12,
+                                right: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
+                                    borderRadius: BorderRadius.circular(9999),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.group, color: Colors.white, size: 12),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Needs ${match.spotsNeeded} players',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 12,
+                                left: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withAlpha(153),
+                                    borderRadius: BorderRadius.circular(9999),
+                                  ),
+                                  child: Text(
+                                    match.timeDisplay,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 12,
+                                left: 14,
+                                right: 14,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      match.venueName,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      match.courtDetails,
+                                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Actions and Host Row
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 18,
+                                            backgroundImage: NetworkImage(match.hostAvatar),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  match.hostName,
+                                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                                  overflow: TextOverflow.ellipsis,
+                                                  maxLines: 1,
+                                                ),
+                                                Text(
+                                                  match.hostRank,
+                                                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                                  overflow: TextOverflow.ellipsis,
+                                                  maxLines: 1,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF2563EB).withAlpha(30),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            'Auto-split ${match.splitMultiplier}x',
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Color(0xFF2563EB),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${match.splitPrice ~/ 1000}k VND/person',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w900,
+                                            color: Color(0xFF2563EB),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        onPressed: () => _joinMatch(originalIndex),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: match.isJoined
+                                              ? const Color(0xFF10B981)
+                                              : const Color(0xFF2563EB),
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                        ),
+                                        child: Text(
+                                          match.isJoined ? 'Joined! ✓' : 'Join Match',
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0xFF1E212B) : Colors.grey.shade100,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: IconButton(
+                                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
+                                        onPressed: () {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('💬 Squad Chat with ${match.hostName} & group'),
+                                              duration: const Duration(seconds: 1),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String value, String label, IconData icon) {
+    final isSelected = selectedSport == value;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: () => setState(() => selectedSport = value),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF2563EB)
+              : (isDark ? const Color(0xFF242834) : Colors.white),
+          borderRadius: BorderRadius.circular(9999),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF2563EB) : (isDark ? Colors.white12 : Colors.black12),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? Colors.white : (isDark ? Colors.white : Colors.black87),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+class _Module4MatchFeedState extends State<MatchFeedScreen> {
+  late final MatchRepository repo = (widget.repository is MatchRepository ? widget.repository as MatchRepository : null) ?? ApiMatchRepository();
   late Future<List<OpenMatch>> result;
   final district = TextEditingController();
   int? sportId;
