@@ -211,3 +211,186 @@
   }
 }
 ```
+
+
+---
+
+### 2.5. Phân hệ Thanh Toán Tạm Giữ Escrow (`/api/payments`) [Module 5]
+
+#### `POST /api/payments/create-intent` *(Header: Bearer {token})*
+* **Request Body:**
+```json
+{
+  "bookingId": 501,
+  "paymentGateway": "VNPay",
+  "depositPercent": 50
+}
+```
+* **Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "transactionId": 102,
+    "paymentUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?...",
+    "escrowStatus": "Holding",
+    "amount": 135000,
+    "expiresAt": "2026-10-25T18:05:00Z"
+  }
+}
+```
+
+#### `POST /api/payments/webhook-ipn`
+* **Request Body:**
+```json
+{
+  "vnp_TxnRef": "TXN-882410",
+  "vnp_ResponseCode": "00",
+  "vnp_SecureHash": "a1b2c3d4..."
+}
+```
+* **Response (200 OK):**
+```json
+{
+  "RspCode": "00",
+  "Message": "Confirm Success"
+}
+```
+
+#### `POST /api/payments/mock-pay/{bookingCode}`
+* **Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Thanh toán sandbox tức thì thành công",
+  "data": {
+    "bookingCode": "SP-882410",
+    "escrowStatus": "Holding",
+    "qrCodePayload": "SPORTSPOT|SP-882410|1|Host|A1B2C3D4"
+  }
+}
+```
+
+#### `GET /api/payments/history` *(Header: Bearer {token})*
+* **Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "walletBalance": 120000,
+    "escrowHoldingTotal": 135000,
+    "transactions": [
+      {
+        "id": 1,
+        "bookingCode": "SP-882410",
+        "venueName": "CLB Cầu Lông Cầu Giấy",
+        "amount": 135000,
+        "paymentGateway": "VNPay",
+        "status": "Holding",
+        "createdAt": "2026-10-25T14:30:00Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 2.6. Phân hệ Vé Điện Tử QR & Hủy Vé Phạt Bậc Thang (`/api/tickets`) [Module 5]
+
+#### `GET /api/tickets/my-tickets` *(Header: Bearer {token})*
+* **Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "bookingId": 501,
+      "bookingCode": "SP-882410",
+      "venueName": "CLB Cầu Lông Cầu Giấy",
+      "subVenueName": "Sân Số 1 (Thảm Yonex)",
+      "sportName": "Cầu lông",
+      "playDate": "2026-10-26",
+      "timeSlots": ["18:00-19:00", "19:00-20:00"],
+      "userRoleInMatch": "Host",
+      "totalPrice": 270000,
+      "depositAmount": 135000,
+      "remainingBalance": 135000,
+      "status": "Upcoming",
+      "escrowStatus": "Holding",
+      "qrPayload": "SPORTSPOT|SP-882410|1|Host|8C2F1A9D",
+      "isCheckedIn": false
+    }
+  ]
+}
+```
+
+#### `POST /api/tickets/verify-qr` *(Header: Bearer {staffToken})*
+* **Request Body:**
+```json
+{
+  "qrPayload": "SPORTSPOT|SP-882410|1|Host|8C2F1A9D"
+}
+```
+* **Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Xác thực mã QR hợp lệ. Tiền cọc đã giải ngân (Settled) cho chủ sân.",
+  "data": {
+    "bookingCode": "SP-882410",
+    "customerName": "Nguyễn Văn Nam",
+    "role": "Host",
+    "subVenueName": "Sân Số 1",
+    "escrowStatus": "Settled",
+    "checkedInAt": "2026-10-26T17:50:00Z"
+  }
+}
+```
+
+#### `POST /api/tickets/{bookingId}/cancel` *(Header: Bearer {token})*
+* **Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Hủy vé thành công theo chính sách phạt bậc thang",
+  "data": {
+    "bookingId": 501,
+    "bookingCode": "SP-882410",
+    "hoursBeforeMatch": 26.5,
+    "refundPercentage": 100,
+    "refundAmount": 135000,
+    "penaltyAmount": 0,
+    "newWalletBalance": 255000,
+    "policyApplied": "Bậc 1 (Trước >= 4 giờ): Hoàn 100% cọc"
+  }
+}
+```
+
+---
+
+### 2.7. Phân hệ Khung Giờ Sân Con (`/api/courts`) [Module 3]
+
+#### `GET /api/courts/{subVenueId}/slots?date=YYYY-MM-DD`
+* **Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "slotId": 13,
+      "startTime": "18:00",
+      "endTime": "19:00",
+      "price": 120000,
+      "status": "Available"
+    },
+    {
+      "slotId": 14,
+      "startTime": "19:00",
+      "endTime": "20:00",
+      "price": 120000,
+      "status": "Holding"
+    }
+  ]
+}
+```
