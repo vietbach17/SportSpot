@@ -39,6 +39,12 @@ abstract class TicketRepository {
   Future<Map<String, dynamic>> verifyQrCheckIn(String qrPayload);
   Future<CancelRefundResultModel> cancelTicket(TicketModel ticket);
   Future<WalletSummaryResult> getWalletAndHistory();
+  Future<Map<String, dynamic>> requestBankWithdrawal({
+    required String bankName,
+    required String accountNumber,
+    required String accountHolder,
+    required int amount,
+  });
 }
 
 class ApiTicketRepository implements TicketRepository {
@@ -251,5 +257,24 @@ class ApiTicketRepository implements TicketRepository {
     } catch (_) {
       return _fallbackMock.getWalletAndHistory();
     }
+  }
+
+  @override
+  Future<Map<String, dynamic>> requestBankWithdrawal({
+    required String bankName,
+    required String accountNumber,
+    required String accountHolder,
+    required int amount,
+  }) async {
+    final res = await _fallbackMock.requestBankWithdrawal(
+      bankName: bankName,
+      accountNumber: accountNumber,
+      accountHolder: accountHolder,
+      amount: amount,
+    );
+    try {
+      await _dbHelper.setGuestWalletBalance(res['remainingBalance'] as int);
+    } catch (_) {}
+    return res;
   }
 }

@@ -78,6 +78,52 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
     public Task<ApiResponse<object>> AssignWalkInAtDeskAsync(int matchId, int staffId) =>
         AddMemberAsync(matchId, staffId, true, "Cash");
 
+    public async Task<ApiResponse<object>> GuestJoinMatchAsync(int matchId, GuestJoinMatchRequest request)
+    {
+        var match = await unitOfWork.Matches.GetMatchByIdWithDetailsAsync(matchId);
+        if (match?.Booking == null) return ApiResponse<object>.Fail("Không tìm thấy kèo đấu", 404);
+        if (match.Status != "Open" || match.CurrentJoinedPlayers >= match.NeededPlayers || !MatchRules.IsUpcoming(match.Booking))
+            return ApiResponse<object>.Fail("Kèo đã đủ người, dừng tuyển hoặc đã bắt đầu", 409);
+
+        var guestName = string.IsNullOrWhiteSpace(request.GuestName) ? "Khách vãng lai" : request.GuestName.Trim();
+        var qr = QrChecksumHelper.BuildSignedQrPayload(match.Booking.BookingCode, 0, $"Guest_{guestName}");
+        var member = new MatchMember {
+            MatchId = match.Id,
+            UserId = null,
+            MemberType = "GuestWalkIn",
+            PaidAmount = match.CostPerPerson,
+            PaymentStatus = "Paid",
+            TicketQrPayload = qr,
+            IsCheckedIn = false,
+            CheckedInAt = null
+        };
+        await unitOfWork.Matches.AddMatchMemberAsync(member);
+        match.CurrentJoinedPlayers++;
+        match.Revision++;
+        if (match.CurrentJoinedPlayers == match.NeededPlayers) match.Status = "Full";
+        match.Booking.RemainingBalance -= match.CostPerPerson;
+        await unitOfWork.Transactions.AddAsync(new Transaction {
+            BookingId = match.BookingId,
+            UserId = 0,
+            Amount = match.CostPerPerson,
+            PaymentGateway = request.PaymentGateway ?? "GuestWallet",
+            TransactionCode = $"TXN-G-{Guid.NewGuid():N}",
+            Status = "Holding"
+        });
+        try { await unitOfWork.SaveChangesAsync(); }
+        catch (DbUpdateException) { return ApiResponse<object>.Fail(ConflictMessage, 409); }
+        return ApiResponse<object>.Ok(new {
+            matchId,
+            guestName,
+            paidAmount = match.CostPerPerson,
+            ticketQrPayload = qr,
+            remainingNeeded = match.NeededPlayers - match.CurrentJoinedPlayers,
+            remainingBalanceForHost = match.Booking.RemainingBalance,
+            matchStatus = match.Status
+        }, "Khách vãng lai tham gia thành công");
+    }
+
+
     private async Task<ApiResponse<object>> AddMemberAsync(int matchId, int actorId, bool atDesk, string gateway)
     {
         var actor = await unitOfWork.Users.GetByIdAsync(actorId);
@@ -180,6 +226,6 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
         CurrentJoinedPlayers = m.CurrentJoinedPlayers, CostPerPerson = m.CostPerPerson,
         Status = m.Status, SkillLevel = m.SkillLevel, RemainingBalanceForHost = m.Booking?.RemainingBalance ?? 0,
         Members = m.MatchMembers.OrderBy(mm => mm.JoinedAt).Select(mm => new MatchMemberDto(
-            mm.Id, mm.UserId, mm.User?.FullName ?? "Khách tại quầy", mm.User?.AvatarUrl, mm.MemberType)).ToList()
+            mm.Id, mm.UserId, mm.User?.FullName ?? (mm.MemberType == "GuestWalkIn" ? "Khách vãng lai" : "Khách tại quầy"), mm.User?.AvatarUrl, mm.MemberType)).ToList()
     };
 }

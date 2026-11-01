@@ -8,6 +8,7 @@ import '../../providers/booking_provider.dart';
 import '../../widgets/match_ui.dart';
 import '../../widgets/recruitment_form.dart';
 import '../main/main_screen.dart';
+import 'booking_detail_screen.dart';
 
 class BookingCheckoutScreen extends StatefulWidget {
   const BookingCheckoutScreen({super.key});
@@ -343,10 +344,73 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton(
+                  child: FilledButton.icon(
+                    key: const Key('view_my_tickets_button'),
+                    icon: const Icon(Icons.confirmation_number_rounded, size: 18),
+                    label: const Text('Xem Vé Của Tôi (Mã QR Check-in)'),
+                    onPressed: () {
+                      final bookingProvider = context.read<BookingProvider>();
+                      bookingProvider.resetBookingState();
+                      Navigator.of(dialogContext).pop();
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const MainScreen(initialIndex: 2),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    key: const Key('view_booking_detail_button'),
+                    icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                    label: const Text('Xem Chi Tiết Đơn Đặt Sân'),
+                    onPressed: () {
+                      final bookingProvider = context.read<BookingProvider>();
+                      final List<Map<String, dynamic>> serviceDetails = [];
+                      final allServices = bookingProvider.venueDetail?.services ?? [];
+                      bookingProvider.selectedServices.forEach((serviceId, qty) {
+                        if (qty > 0) {
+                          final svc = allServices.firstWhere(
+                            (s) => s.id == serviceId,
+                            orElse: () => VenueServiceModel(
+                              id: serviceId,
+                              name: 'Dịch vụ phụ kiện',
+                              type: 'Service',
+                              price: 0,
+                              stockQuantity: 0,
+                            ),
+                          );
+                          serviceDetails.add({
+                            'name': svc.name,
+                            'quantity': qty,
+                            'price': svc.price * qty,
+                          });
+                        }
+                      });
+                      bookingProvider.resetBookingState();
+                      Navigator.of(dialogContext).pop();
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) => BookingDetailScreen(
+                            booking: result,
+                            serviceDetails: serviceDetails,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
                     onPressed: () {
                       final bookingProvider = context.read<BookingProvider>();
                       bookingProvider.resetBookingState();

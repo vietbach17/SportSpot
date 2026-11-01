@@ -41,3 +41,10 @@ public class JoinMatchRequest
     public int UserId { get; set; }
     public string PaymentGateway { get; set; } = "MockPayment";
 }
+
+public class GuestJoinMatchRequest
+{
+    public string GuestName { get; set; } = "Khách vãng lai";
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string PaymentGateway { get; set; } = "GuestWallet";
+}

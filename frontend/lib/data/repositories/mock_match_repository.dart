@@ -86,6 +86,12 @@ class MockMatchRepository implements MatchRepository {
   }
 
   @override
+  Future<void> guestJoin(int id, {String name = 'Khách vãng lai', String phone = '', String gateway = 'GuestWallet'}) async {
+    _requireId(id);
+    _add(null);
+  }
+
+  @override
   Future<void> assign(int id) async {
     _requireId(id);
     if (!isStaff) throw StateError('Chỉ dành cho lễ tân');

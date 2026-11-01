@@ -10,6 +10,7 @@ abstract class MatchRepository {
   });
   Future<OpenMatch> detail(int id);
   Future<void> join(int id);
+  Future<void> guestJoin(int id, {String name, String phone, String gateway});
   Future<void> assign(int id);
   Future<void> stop(int id);
   Future<void> leave(int id);
@@ -50,6 +51,15 @@ class ApiMatchRepository implements MatchRepository {
   Future<void> join(int id) async {
     await client.post('/api/matches/$id/join', {
       'paymentGateway': 'MockPayment',
+    });
+  }
+
+  @override
+  Future<void> guestJoin(int id, {String name = 'Khách vãng lai', String phone = '', String gateway = 'GuestWallet'}) async {
+    await client.post('/api/matches/$id/guest-join', {
+      'guestName': name,
+      'phoneNumber': phone,
+      'paymentGateway': gateway,
     });
   }
 

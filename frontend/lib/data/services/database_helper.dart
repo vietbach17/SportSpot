@@ -351,4 +351,96 @@ class DatabaseHelper {
       'created_at': row['created_at']?.toString() ?? DateTime.now().toIso8601String(),
     };
   }
+
+  // ==========================================
+  // GUEST LOCAL WALLET (VI TAM TREN MAY CHO KHACH VANG LAI)
+  // ==========================================
+  static const String _guestWalletKey = 'guest_local_wallet_balance';
+
+  Future<int> getGuestWalletBalance() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getInt(_guestWalletKey) ?? 60000;
+    } catch (_) {
+      return 60000;
+    }
+  }
+
+  Future<void> setGuestWalletBalance(int amount) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_guestWalletKey, amount.clamp(0, 100000000));
+    } catch (e) {
+      debugPrint('setGuestWalletBalance error: ');
+    }
+  }
+
+  Future<int> addGuestWalletBalance(int amount) async {
+    final current = await getGuestWalletBalance();
+    final updated = current + amount;
+    await setGuestWalletBalance(updated);
+    return updated;
+  }
+
+  Future<bool> deductGuestWalletBalance(int amount) async {
+    final current = await getGuestWalletBalance();
+    if (current < amount) return false;
+    await setGuestWalletBalance(current - amount);
+    return true;
+  }
+
+  // ==========================================
+  // GUEST MATCH TICKETS (VE GHEP TRAN CHO KHACH VANG LAI)
+  // ==========================================
+  static const String _guestTicketsKey = 'guest_joined_match_tickets';
+
+  Future<void> recordGuestJoinedMatch({
+    required int matchId,
+    required String bookingCode,
+    required String qrPayload,
+    required String guestName,
+    required String guestPhone,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_guestTicketsKey);
+      Map<String, dynamic> map = {};
+      if (raw != null && raw.isNotEmpty) {
+        map = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      }
+      map[''] = {
+        'match_id': matchId,
+        'booking_code': bookingCode,
+        'qr_payload': qrPayload,
+        'guest_name': guestName,
+        'guest_phone': guestPhone,
+        'joined_at': DateTime.now().toIso8601String(),
+      };
+      await prefs.setString(_guestTicketsKey, jsonEncode(map));
+    } catch (e) {
+      debugPrint('recordGuestJoinedMatch error: ');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getGuestJoinedTicket(int matchId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_guestTicketsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final map = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+        if (map.containsKey('')) {
+          return Map<String, dynamic>.from(map[''] as Map);
+        }
+      }
+    } catch (e) {
+      debugPrint('getGuestJoinedTicket error: ');
+    }
+    return null;
+  }
+
+  Future<bool> isGuestJoinedMatch(int matchId) async {
+    final ticket = await getGuestJoinedTicket(matchId);
+    return ticket != null;
+  }
 }
+

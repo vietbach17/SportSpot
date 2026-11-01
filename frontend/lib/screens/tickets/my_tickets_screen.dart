@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../data/models/ticket_model.dart';
 import '../../data/repositories/ticket_repository.dart';
 import '../../providers/ticket_provider.dart';
 import 'ticket_qr_detail_screen.dart';
+import 'qr_scanner_screen.dart';
+import 'escrow_wallet_sheet.dart';
+import 'bank_withdrawal_dialog.dart';
+import 'cancel_ticket_dialog.dart';
+import 'ticket_share_helper.dart';
+import '../booking/booking_detail_screen.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   final Object? repository;
@@ -85,44 +90,79 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'VÍ HOÀN TIỀN',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _formatVnd(_provider.walletBalance),
-                              key: const Key('wallet_balance_text'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF10B981),
+                        InkWell(
+                          onTap: () => EscrowWalletSheet.show(context, _provider),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'VÍ HOÀN TIỀN',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 2),
+                              Text(
+                                _formatVnd(_provider.walletBalance),
+                                key: const Key('wallet_balance_text'),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF10B981),
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              GestureDetector(
+                                onTap: () => showDialog(
+                                  context: context,
+                                  builder: (_) => BankWithdrawalDialog(provider: _provider),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.send_to_mobile_rounded, size: 10, color: Color(0xFF047857)),
+                                      SizedBox(width: 3),
+                                      Text('Rút tiền', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF047857))),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         Container(width: 1, height: 32, color: Colors.grey.withOpacity(0.2)),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'ESCROW TẠM GIỮ',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _formatVnd(_provider.escrowHoldingTotal),
-                              key: const Key('escrow_holding_text'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF2563EB),
+                        InkWell(
+                          onTap: () => EscrowWalletSheet.show(context, _provider),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'ESCROW TẠM GIỮ',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 2),
+                              Text(
+                                _formatVnd(_provider.escrowHoldingTotal),
+                                key: const Key('escrow_holding_text'),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF2563EB),
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              const Text(
+                                'Chi tiết >',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                              ),
+                            ],
+                          ),
                         ),
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -165,6 +205,30 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 10),
+                    InkWell(
+                      onTap: () => EscrowWalletSheet.show(context, _provider),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.2)),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.history_rounded, size: 15, color: Color(0xFF2563EB)),
+                            SizedBox(width: 6),
+                            Text(
+                              'Xem chi tiết dòng tiền Ký Quỹ Escrow & Lịch sử Ví ➔',
+                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF2563EB)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -210,7 +274,37 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                 'Contactless gate entry passes and team split invoices.',
                 style: TextStyle(fontSize: 13, color: Colors.grey),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
+
+              // Reception QR Scanner Simulation Button
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const Key('open_qr_scanner_simulation_btn'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    side: BorderSide(
+                      color: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  icon: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF2563EB)),
+                  label: const Text(
+                    'Mô Phỏng Quét QR Check-in (Quầy Lễ Tân & Escrow)',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF2563EB)),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => QrScannerScreen(provider: _provider),
+                      ),
+                    );
+                  },
+                ),
+              ),
 
               // Active Digital Pass
               Container(
@@ -480,7 +574,91 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const Key('view_booking_detail_btn'),
+                  onPressed: () {
+                    if (activeTicket != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BookingDetailScreen(ticket: activeTicket),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                  label: const Text('Xem Bảng Kê Chi Tiết Đơn Đặt Sân'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: const Key('share_ticket_btn'),
+                      onPressed: () {
+                        if (activeTicket != null) {
+                          TicketShareHelper.shareTicket(
+                            context,
+                            bookingCode: activeTicket.bookingCode,
+                            venueName: activeTicket.venueName,
+                            subVenueName: activeTicket.subVenueName,
+                            sportName: activeTicket.sportName,
+                            playDate: activeTicket.playDate,
+                            timeSlots: activeTicket.timeSlots,
+                            status: activeTicket.status,
+                            escrowStatus: activeTicket.escrowStatus,
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.share_rounded, size: 16),
+                      label: const Text('Chia Sẻ Vé', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                  if (activeTicket != null && activeTicket.status == 'Upcoming' && !activeTicket.isCheckedIn) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const Key('cancel_booking_btn'),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => CancelTicketDialog(
+                              ticket: activeTicket,
+                              onConfirmCancel: () async {
+                                Navigator.of(context).pop();
+                                await _provider.cancelTicket(activeTicket);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    backgroundColor: Color(0xFF2563EB),
+                                    content: Text('Đã hủy đặt sân và hoàn tiền cọc về Ví theo chính sách Escrow!'),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.cancel_outlined, size: 16, color: Colors.red),
+                        label: const Text('Hủy Sân (Hoàn Cọc)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red)),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.redAccent),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 14),
 
               // Directions & Help row
               Row(

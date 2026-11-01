@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../providers/ticket_provider.dart';
 import 'cancel_ticket_dialog.dart';
+import 'ticket_share_helper.dart';
 
 class TicketQrDetailScreen extends StatefulWidget {
   final TicketModel ticket;
@@ -380,6 +381,66 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                       ),
                     ),
                   ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.share_rounded, size: 16),
+                        label: const Text('Chia Sẻ Vé'),
+                        onPressed: () {
+                          TicketShareHelper.shareTicket(
+                            context,
+                            bookingCode: _currentTicket.bookingCode,
+                            venueName: _currentTicket.venueName,
+                            subVenueName: _currentTicket.subVenueName,
+                            sportName: _currentTicket.sportName,
+                            playDate: _currentTicket.playDate,
+                            timeSlots: _currentTicket.timeSlots,
+                            status: _currentTicket.status,
+                            escrowStatus: _currentTicket.escrowStatus,
+                          );
+                        },
+                      ),
+                    ),
+                    if (!isSettled && !isCancelled) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.cancel_outlined, size: 16, color: Colors.red),
+                          label: const Text('Hủy Đặt Sân', style: TextStyle(color: Colors.red)),
+                          style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.redAccent)),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => CancelTicketDialog(
+                                ticket: _currentTicket,
+                                onConfirmCancel: () async {
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  Navigator.of(context).pop();
+                                  final res = await widget.provider.cancelTicket(_currentTicket);
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _currentTicket = _currentTicket.copyWith(
+                                      status: 'Cancelled',
+                                      escrowStatus: res.refundPercentage > 0 ? 'Refunded' : 'Settled',
+                                    );
+                                  });
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      backgroundColor: const Color(0xFF2563EB),
+                                      content: Text('Đã hủy vé thành công! Hoàn ${res.refundPercentage}% (${res.refundAmount} đ) về Ví.'),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),

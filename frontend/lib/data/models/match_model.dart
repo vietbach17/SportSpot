@@ -10,7 +10,7 @@ class MatchMember {
 }
 
 class OpenMatch {
-  final int id, hostId, needed, joined, cost, balance, sportId;
+  final int id, hostId, needed, joined, cost, balance, sportId, venueId;
   final String venue,
       court,
       sport,
@@ -29,7 +29,8 @@ class OpenMatch {
       joined = json['currentJoinedPlayers'],
       cost = json['costPerPerson'],
       balance = json['remainingBalanceForHost'],
-      sportId = json['sportId'],
+      sportId = json['sportId'] ?? 1,
+      venueId = json['venueId'] ?? 1,
       venue = json['venueName'],
       court = json['subVenueName'],
       sport = json['sportName'],
