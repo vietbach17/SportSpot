@@ -105,56 +105,67 @@ class _HomeScreenState extends State<HomeScreen> {
                           )
                         ],
                       ),
-                      child: Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 18,
-                            backgroundImage: NetworkImage(SportSpotMockData.userNam),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        'Nam Nguyen',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    SizedBox(width: 4),
-                                    Icon(Icons.verified, size: 14, color: Color(0xFF2563EB)),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.location_on, size: 12, color: Color(0xFF2563EB)),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: Text(
-                                        'Cầu Giấy, Hà Nội',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                     child: Consumer<AuthProvider>(
+  builder: (context, auth, child) {
+    final user = auth.currentUser;
+    final isGuest = auth.isGuest;
+    
+    final String displayName = isGuest ? 'Khách vãng lai' : (user?.fullName ?? 'Người dùng');
+    
+    final ImageProvider avatarImage = isGuest 
+        ? const AssetImage('assets/images/guest_avatar.png')
+        : NetworkImage(SportSpotMockData.userNam); 
+
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 18,
+          backgroundImage: avatarImage,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  if (!isGuest)
+                    const Icon(Icons.verified, size: 14, color: Color(0xFF2563EB)),
+                ],
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.location_on, size: 12, color: Color(0xFF2563EB)),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: Text(
+                      'Cầu Giấy, Hà Nội',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                       ),
                     ),
                   ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  },
+),,
                   const SizedBox(width: 8),
 
                   // Right Utility Pills

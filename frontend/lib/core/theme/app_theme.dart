@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Bảng màu chuẩn theo yêu cầu dự án
+  // Bảng màu
   static const Color pastelBlue = Color(0xFFE0EEF9);
   static const Color accentBlue = Color(0xFF2563EB);
   static const Color darkBlue = Color(0xFF1E3A8A);
@@ -11,7 +11,7 @@ class AppTheme {
   static const Color textGray = Color(0xFF64748B);
   static const Color cardBg = Colors.white;
 
-  // Dark Theme Colors (Slate Athletic Glass)
+  // Dark Theme 
   static const Color darkBackground = Color(0xFF181A22);
   static const Color darkSurface = Color(0xFF1E212B);
   static const Color darkCard = Color(0xFF242834);
@@ -107,6 +107,7 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       brightness: Brightness.dark,
+      useMaterial3: true,
       scaffoldBackgroundColor: darkBackground,
       colorScheme: const ColorScheme.dark(
         primary: accentBlue,
@@ -114,7 +115,71 @@ class AppTheme {
         surface: darkSurface,
       ),
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
-      useMaterial3: true,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: darkSurface,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: darkTextPrimary),
+        titleTextStyle: TextStyle(
+          color: darkTextPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accentBlue,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(9999),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: accentBlue,
+          side: const BorderSide(color: accentBlue, width: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(9999),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkSurface,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(9999),
+          borderSide: const BorderSide(color: Color(0x22FFFFFF)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(9999),
+          borderSide: const BorderSide(color: Color(0x22FFFFFF)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(9999),
+          borderSide: const BorderSide(color: accentBlue, width: 2),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: darkCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: Color(0x1FFFFFFF), width: 1),
+        ),
+      ),
     );
   }
 }

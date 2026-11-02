@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../main/main_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../main/main_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;

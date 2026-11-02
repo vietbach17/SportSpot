@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/sportspot_mock_data.dart';
 import '../onboarding/onboarding_screen.dart';
-
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -48,15 +49,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
-                child: Column(
-                  children: [
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundImage: const NetworkImage(SportSpotMockData.userNam),
-                          backgroundColor: Colors.grey.shade700,
-                        ),
+                child: Consumer<AuthProvider>(
+  builder: (context, auth, child) {
+    final user = auth.currentUser;
+    final isGuest = auth.isGuest;
+    
+    final displayName = isGuest ? 'Khách vãng lai' : (user?.fullName ?? 'Người dùng');
+    final displayPhone = isGuest ? 'Chưa đăng nhập số điện thoại' : (user?.phoneNumber ?? '');
+
+    return Column(
+      children: [
+        Stack(
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundImage: isGuest 
+                  ? const AssetImage('assets/images/default_avatar.png') as ImageProvider
+                  : NetworkImage(SportSpotMockData.userNam),
+              backgroundColor: Colors.grey.shade700,
+            ),
+          
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          displayName,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          displayPhone,
+          style: const TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+      ],
+    );
+  },
+),,
                         Positioned(
                           bottom: 0,
                           right: 0,
@@ -235,14 +263,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Logout button
+              /// Logout button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: TextButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logged out of SportSpot session')),
+                  onPressed: () async {
+                    // Xóa token và thiết lập trạng thái vãng lai
+                    await context.read<AuthProvider>().logout();
+                    
+                    if (!mounted) return;
+                    
+                    // Chuyển hướng về màn hình Onboarding và xóa sạch stack cũ
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+                      (route) => false,
                     );
                   },
                   icon: const Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
