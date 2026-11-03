@@ -64,6 +64,21 @@ public class PaymentsController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    /// <summary>
+    /// POST /api/payments/topup: Nạp tiền trực tiếp vào ví người dùng (Demo / VNPay / MoMo).
+    /// </summary>
+    [HttpPost("topup")]
+    public async Task<ActionResult<ApiResponse<WalletAndHistoryDto>>> TopUpWallet([FromBody] TopUpWalletRequest request)
+    {
+        if (request.UserId <= 0)
+        {
+            request.UserId = GetCurrentUserId();
+            if (request.UserId <= 0) request.UserId = 1;
+        }
+        var result = await _paymentService.TopUpWalletAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
     private int GetCurrentUserId()
     {
         var claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

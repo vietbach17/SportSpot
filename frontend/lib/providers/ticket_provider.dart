@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../core/network/api_client.dart';
 import '../data/models/ticket_model.dart';
 import '../data/repositories/ticket_repository.dart';
 
@@ -98,6 +99,23 @@ class TicketProvider extends ChangeNotifier {
     }
   }
 
+  Future<TicketModel?> mockInstantPayByCode(String bookingCode) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final ticket = await _repository.mockInstantPayByCode(bookingCode);
+      await loadTickets(forceOffline: _isOfflineMode);
+      return ticket;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>> verifyQrCheckIn(String qrPayload) async {
     final result = await _repository.verifyQrCheckIn(qrPayload);
     await loadTickets(forceOffline: _isOfflineMode);
@@ -108,5 +126,27 @@ class TicketProvider extends ChangeNotifier {
     final result = await _repository.cancelTicket(ticket);
     await loadTickets(forceOffline: _isOfflineMode);
     return result;
+  }
+
+  Future<void> topUpWallet(int amount) async {
+    try {
+      await ApiClient().post('/api/payments/topup', {'amount': amount, 'userId': 1});
+    } catch (_) {}
+    _walletBalance += amount;
+    _transactions.insert(
+      0,
+      TransactionHistoryModel(
+        id: DateTime.now().millisecondsSinceEpoch % 10000,
+        transactionCode: 'TOPUP-${DateTime.now().millisecondsSinceEpoch % 1000000}',
+        bookingId: 0,
+        bookingCode: 'TOPUP',
+        venueName: 'Nạp tiền ví SportSpot',
+        amount: amount,
+        paymentGateway: 'VNPay',
+        status: 'Settled',
+        createdAt: DateTime.now().toIso8601String(),
+      ),
+    );
+    notifyListeners();
   }
 }

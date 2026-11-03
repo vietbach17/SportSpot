@@ -43,6 +43,9 @@ public class User
     [MaxLength(255)]
     public string? FavoriteSports { get; set; } = "Cầu lông,Bóng đá mini";
 
+    [MaxLength(500)]
+    public string? FcmToken { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

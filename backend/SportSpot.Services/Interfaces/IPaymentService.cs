@@ -8,4 +8,5 @@ public interface IPaymentService
     Task<ApiResponse<object>> ProcessWebhookAsync(PaymentWebhookRequest request);
     Task<ApiResponse<BookingResponseDto>> MockInstantPayAsync(string bookingCode);
     Task<ApiResponse<WalletAndHistoryDto>> GetUserTransactionsAsync(int userId);
+    Task<ApiResponse<WalletAndHistoryDto>> TopUpWalletAsync(TopUpWalletRequest request);
 }

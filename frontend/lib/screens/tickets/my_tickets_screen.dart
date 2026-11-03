@@ -5,7 +5,10 @@ import '../../data/repositories/ticket_repository.dart';
 import '../../providers/ticket_provider.dart';
 import '../../widgets/boarding_pass_ticket.dart';
 import '../../widgets/shimmer_skeleton.dart';
+import 'qr_scanner_screen.dart';
+import 'package:provider/provider.dart';
 import 'ticket_qr_detail_screen.dart';
+import 'cancel_ticket_dialog.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   final Object? repository;
@@ -17,19 +20,23 @@ class MyTicketsScreen extends StatefulWidget {
 }
 
 class _MyTicketsScreenState extends State<MyTicketsScreen> {
-  late final TicketProvider _provider;
+  TicketProvider? _localProvider;
+  TicketProvider? _boundProvider;
+  TicketProvider get _provider => _localProvider ?? _boundProvider!;
   int _selectedTabIndex = 0; // 0: Tất cả, 1: Sắp tới, 2: Đã xong, 3: Đã hủy
 
   @override
   void initState() {
     super.initState();
-    _provider = TicketProvider(
-      repository: widget.repository is TicketRepository
-          ? (widget.repository as TicketRepository)
-          : null,
-    );
-    _provider.addListener(_onProviderChanged);
-    _provider.loadTickets();
+    if (widget.repository != null) {
+      _localProvider = TicketProvider(
+        repository: widget.repository is TicketRepository
+            ? (widget.repository as TicketRepository)
+            : null,
+      );
+      _localProvider!.addListener(_onProviderChanged);
+      _localProvider!.loadTickets();
+    }
   }
 
   void _onProviderChanged() {
@@ -38,8 +45,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 
   @override
   void dispose() {
-    _provider.removeListener(_onProviderChanged);
-    _provider.dispose();
+    _localProvider?.removeListener(_onProviderChanged);
+    _localProvider?.dispose();
     super.dispose();
   }
 
@@ -68,6 +75,16 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_localProvider != null) {
+      _boundProvider = _localProvider;
+    } else {
+      try {
+        _boundProvider = Provider.of<TicketProvider>(context, listen: true);
+      } catch (_) {
+        _localProvider = TicketProvider();
+        _boundProvider = _localProvider;
+      }
+    }
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF111216) : const Color(0xFFF7F8FA);
     final cardColor = isDark ? const Color(0xFF191A20) : Colors.white;
@@ -94,6 +111,21 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            key: const Key('open_qr_scanner_btn'),
+            icon: Icon(Icons.qr_code_scanner_rounded, color: textColor),
+            tooltip: 'Quét vé QR (Lễ tân / Chủ sân)',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => QrScannerScreen(
+                    provider: _provider,
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.refresh_rounded, color: textColor),
             tooltip: 'Làm mới danh sách',
@@ -546,6 +578,43 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (!isCancelled && !isCheckedIn) ...[
+                          InkWell(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => CancelTicketDialog(
+                                  ticket: ticket,
+                                  onConfirmCancel: () async {
+                                    final res = await _provider.cancelTicket(ticket);
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        backgroundColor: const Color(0xFF16A34A),
+                                        content: Text(
+                                          'Hủy vé thành công! Hoàn +${CancelTicketDialog.formatVnd(res.refundAmount)} vào Ví.',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              child: Text(
+                                'Hủy đặt',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.red.shade600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
                         const Icon(Icons.qr_code_2_rounded, size: 18, color: Color(0xFF2563EB)),
                         const SizedBox(width: 4),
                         const Text(

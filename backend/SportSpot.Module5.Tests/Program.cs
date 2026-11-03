@@ -222,4 +222,217 @@ using (var db = Context())
     Check(hist.Success && hist.Data!.WalletBalance == 180000, "WalletBalance deducted accurately (300k - 120k = 180k)");
 }
 
+// 6. Test Slot Release upon Booking Cancellation
+using (var db = Context())
+{
+    var uow = Uow(db);
+    var bookingSvc = new SportSpot.Services.Implementations.BookingService(uow, new TicketService(uow));
+    var playDate = DateOnly.FromDateTime(MatchRules.VietnamNow).AddDays(2);
+    // Booking 1 for slot 1
+    var createRes = await bookingSvc.CreateBookingAsync(new CreateBookingRequest
+    {
+        UserId = 1,
+        SubVenueId = 1,
+        PlayDate = playDate,
+        SlotIds = new List<int> { 1 }
+    });
+    Check(createRes.Success, "Booking slot 1 succeeds");
+    var bookingId = createRes.Data!.BookingId;
+
+    // Competing booking for same slot fails with conflict
+    var conflictRes = await bookingSvc.CreateBookingAsync(new CreateBookingRequest
+    {
+        UserId = 2,
+        SubVenueId = 1,
+        PlayDate = playDate,
+        SlotIds = new List<int> { 1 }
+    });
+    Check(!conflictRes.Success, "Conflicting booking for same slot rejected");
+
+    // Cancel booking 1
+    var cancelRes = await bookingSvc.CancelBookingAsync(bookingId, 1);
+    Check(cancelRes.Success, "Cancel booking 1 succeeds");
+
+    // After cancellation, slot 1 is released and booking succeeds!
+    var rebookRes = await bookingSvc.CreateBookingAsync(new CreateBookingRequest
+    {
+        UserId = 2,
+        SubVenueId = 1,
+        PlayDate = playDate,
+        SlotIds = new List<int> { 1 }
+    });
+    Check(rebookRes.Success, "Released slot rebooked successfully after cancellation");
+}
+
+// 7. Test Reviews & Average Rating calculation
+using (var db = Context())
+{
+    var reviewSvc = new ReviewService(db);
+    var rev1 = await reviewSvc.CreateReviewAsync(1, new CreateReviewRequest
+    {
+        VenueId = 1,
+        Rating = 5,
+        Comment = "Sân chất lượng cao, thảm êm!"
+    });
+    Check(rev1.Success && rev1.Data!.Rating == 5, "Create review 5-star succeeds");
+
+    var rev2 = await reviewSvc.CreateReviewAsync(2, new CreateReviewRequest
+    {
+        VenueId = 1,
+        Rating = 3,
+        Comment = "Sân ổn nhưng hơi đông vào giờ cao điểm"
+    });
+    Check(rev2.Success && rev2.Data!.Rating == 3, "Create review 3-star succeeds");
+
+    var summary = await reviewSvc.GetVenueReviewsAsync(1);
+    Check(summary.Success && summary.Data!.TotalReviews == 2 && summary.Data.AverageRating == 4.0m,
+          "Venue average rating accurately computed ( (5+3)/2 = 4.0 )");
+    Check(summary.Data!.RatingBreakdown[5] == 1 && summary.Data.RatingBreakdown[3] == 1,
+          "Review breakdown contains correct star counts");
+}
+
+// 8. Test Owner Dashboard & SubVenue Toggle
+using (var db = Context())
+{
+    var ownerSvc = new OwnerService(db);
+    var dash = await ownerSvc.GetOwnerDashboardAsync(1);
+    Check(dash.Success && dash.Data!.VenueId == 1 && dash.Data.TotalBookings > 0,
+          "Owner dashboard statistics retrieved with non-zero bookings");
+    Check(dash.Data!.DailyRevenues.Count == 7, "Daily revenue spans past 7 days");
+    Check(dash.Data!.SubVenues.Count > 0, "Owner dashboard lists subvenues");
+
+    var subVenueId = dash.Data!.SubVenues.First().Id;
+    var toggleRes = await ownerSvc.ToggleSubVenueStatusAsync(subVenueId, false);
+    Check(toggleRes.Success && !toggleRes.Data, "Subvenue toggled to inactive (maintenance)");
+
+    var toggleBack = await ownerSvc.ToggleSubVenueStatusAsync(subVenueId, true);
+    Check(toggleBack.Success && toggleBack.Data, "Subvenue toggled back to active");
+}
+
+// 9. Test Top-Up Wallet
+using (var db = Context())
+{
+    var uow = Uow(db);
+    var paymentSvc = new PaymentService(uow);
+    var topupRes = await paymentSvc.TopUpWalletAsync(new TopUpWalletRequest
+    {
+        UserId = 1,
+        Amount = 200000,
+        PaymentGateway = "VNPay"
+    });
+    Check(topupRes.Success && topupRes.Data!.WalletBalance >= 200000, "Wallet top-up succeeds and updates balance");
+    Check(topupRes.Data!.Transactions.Any(t => t.TransactionCode.StartsWith("TOPUP")), "TopUp transaction recorded");
+}
+
+// 10. Test Notifications System
+using (var db = Context())
+{
+    db.Notifications.Add(new Notification
+    {
+        UserId = 1,
+        Title = "Nhắc lịch test",
+        Message = "Còn 2 tiếng nữa đến giờ ra sân",
+        Type = "Reminder",
+        IsRead = false,
+        CreatedAt = DateTime.UtcNow
+    });
+    await db.SaveChangesAsync();
+
+    var notifSvc = new NotificationService(db);
+    var summary = await notifSvc.GetNotificationsAsync(1);
+    Check(summary.Success && summary.Data!.UnreadCount > 0, "Retrieve unread notifications succeeds");
+
+    var firstNotif = summary.Data!.Notifications.First(n => !n.IsRead);
+    var markRes = await notifSvc.MarkAsReadAsync(firstNotif.Id, 1);
+    Check(markRes.Success, "Mark notification as read succeeds");
+
+    var markAllRes = await notifSvc.MarkAllAsReadAsync(1);
+    Check(markAllRes.Success, "Mark all notifications as read succeeds");
+}
+
+// 11. Test Favorite Venues Toggle
+using (var db = Context())
+{
+    db.FavoriteVenues.Add(new FavoriteVenue
+    {
+        UserId = 1,
+        VenueId = 1,
+        CreatedAt = DateTime.UtcNow
+    });
+    await db.SaveChangesAsync();
+
+    var hasFav = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(
+        db.FavoriteVenues, f => f.UserId == 1 && f.VenueId == 1
+    );
+    Check(hasFav, "Venue marked as favorite");
+
+    var existing = await db.FavoriteVenues.FirstAsync(f => f.UserId == 1 && f.VenueId == 1);
+    db.FavoriteVenues.Remove(existing);
+    await db.SaveChangesAsync();
+
+    var unFav = !await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(
+        db.FavoriteVenues, f => f.UserId == 1 && f.VenueId == 1
+    );
+    Check(unFav, "Venue unfavorited successfully");
+}
+
+// 12. Test Match Comments & Discussion
+using (var db = Context())
+{
+    var booking = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstAsync(db.Bookings);
+    var match = new OpenMatch
+    {
+        BookingId = booking.Id,
+        HostUserId = 1,
+        TotalExpectedPlayers = 4,
+        NeededPlayers = 2,
+        CostPerPerson = 50000,
+        Status = "Open",
+        SkillLevel = "Cơ bản",
+        CreatedAt = DateTime.UtcNow
+    };
+    db.OpenMatches.Add(match);
+    await db.SaveChangesAsync();
+
+    db.MatchComments.Add(new MatchComment
+    {
+        MatchId = match.Id,
+        UserId = 1,
+        Content = "Anh em nhớ mang giày sân thảm nhé!",
+        CreatedAt = DateTime.UtcNow
+    });
+    await db.SaveChangesAsync();
+
+    var comments = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+        db.MatchComments.Where(c => c.MatchId == match.Id)
+    );
+    Check(comments.Count > 0 && comments.First().Content.Contains("giày sân thảm"), "Match discussion comment saved and retrieved");
+}
+
+
+// 12. Test FCM Push Service (Token & Push notifications)
+using (var db = Context())
+{
+    var fcmConfig = new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build();
+    var fcmService = new FcmPushService(db, Microsoft.Extensions.Logging.Abstractions.NullLogger<FcmPushService>.Instance, fcmConfig);
+
+    // Save token
+    var saveTokenRes = await fcmService.SaveFcmTokenAsync(1, "fcm_test_token_user_1", "android");
+    Check(saveTokenRes, "Save FCM token for User 1 succeeds");
+
+    var user1 = await db.Users.FindAsync(1);
+    Check(user1 != null && user1.FcmToken == "fcm_test_token_user_1", "User 1 has updated FcmToken in database");
+
+    // Send fallback push directly to token
+    var pushRes = await fcmService.SendPushAsync("fcm_test_token_user_1", "Nhắc lịch thi đấu", "Bạn có trận cầu lông lúc 18:00");
+    Check(pushRes, "Fallback SendPushAsync succeeds without service account");
+
+    // Send push to user (persists in Notifications table + dispatches)
+    var sendUserRes = await fcmService.SendToUserAsync(1, "Kèo mới gần bạn", "Có 1 kèo Pickleball vừa mở", "match");
+    Check(sendUserRes, "SendToUserAsync succeeds and saves Notification entity");
+
+    var lastNotif = await db.Notifications.OrderByDescending(n => n.Id).FirstOrDefaultAsync();
+    Check(lastNotif != null && lastNotif.Title == "Kèo mới gần bạn" && lastNotif.UserId == 1, "Notification successfully persisted in database table");
+}
+
 Console.WriteLine($"All {passed} Module 5 backend checks passed!");

@@ -21,10 +21,30 @@ public class SportSpotDbContext : DbContext
     public DbSet<OpenMatch> OpenMatches => Set<OpenMatch>();
     public DbSet<MatchMember> MatchMembers => Set<MatchMember>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<FavoriteVenue> FavoriteVenues => Set<FavoriteVenue>();
+    public DbSet<MatchComment> MatchComments => Set<MatchComment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<FavoriteVenue>()
+            .HasIndex(f => new { f.UserId, f.VenueId })
+            .IsUnique();
+
+        modelBuilder.Entity<Review>()
+            .HasOne(r => r.Venue)
+            .WithMany(v => v.Reviews)
+            .HasForeignKey(r => r.VenueId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Review>()
+            .HasOne(r => r.User)
+            .WithMany()
+            .HasForeignKey(r => r.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Booking>().Property(b => b.RemainingBalance).IsConcurrencyToken();
         modelBuilder.Entity<Booking>().Property(b => b.Status).IsConcurrencyToken();

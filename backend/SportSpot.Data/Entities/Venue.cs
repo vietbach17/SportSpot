@@ -55,4 +55,5 @@ public class Venue
 
     public ICollection<SubVenue> SubVenues { get; set; } = new List<SubVenue>();
     public ICollection<Service> Services { get; set; } = new List<Service>();
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
 }

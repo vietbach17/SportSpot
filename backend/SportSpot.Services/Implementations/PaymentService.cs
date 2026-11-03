@@ -227,4 +227,33 @@ public class PaymentService : IPaymentService
             Transactions = items
         }, "Lấy lịch sử giao dịch Escrow và số dư ví thành công");
     }
+
+    public async Task<ApiResponse<WalletAndHistoryDto>> TopUpWalletAsync(TopUpWalletRequest request)
+    {
+        if (request.UserId <= 0) return ApiResponse<WalletAndHistoryDto>.Fail("Vui lòng đăng nhập", 401);
+        if (request.Amount <= 0) return ApiResponse<WalletAndHistoryDto>.Fail("Số tiền nạp phải lớn hơn 0", 400);
+
+        var user = await _unitOfWork.Users.GetByIdAsync(request.UserId);
+        if (user == null) return ApiResponse<WalletAndHistoryDto>.Fail("Không tìm thấy người dùng", 404);
+
+        user.WalletBalance += request.Amount;
+
+        var allBookings = await _unitOfWork.Bookings.GetAllAsync();
+        var dummyBookingId = allBookings.FirstOrDefault()?.Id ?? 1;
+
+        var tx = new Transaction
+        {
+            TransactionCode = $"TOPUP-{DateTime.UtcNow:yyyyMMddHHmmss}-{Random.Shared.Next(100, 999)}",
+            BookingId = dummyBookingId,
+            UserId = request.UserId,
+            Amount = request.Amount,
+            PaymentGateway = string.IsNullOrWhiteSpace(request.PaymentGateway) ? "VNPay" : request.PaymentGateway,
+            Status = "Settled",
+            CreatedAt = DateTime.UtcNow
+        };
+        await _unitOfWork.Transactions.AddAsync(tx);
+        await _unitOfWork.SaveChangesAsync();
+
+        return await GetUserTransactionsAsync(request.UserId);
+    }
 }

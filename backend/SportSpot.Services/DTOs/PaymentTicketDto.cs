@@ -49,6 +49,13 @@ public class TransactionHistoryDto
     public DateTime CreatedAt { get; set; }
 }
 
+public class TopUpWalletRequest
+{
+    public int UserId { get; set; }
+    public int Amount { get; set; }
+    public string PaymentGateway { get; set; } = "VNPay";
+}
+
 public class WalletAndHistoryDto
 {
     public int WalletBalance { get; set; }

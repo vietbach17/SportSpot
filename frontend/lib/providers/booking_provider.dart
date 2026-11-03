@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../../core/network/api_client.dart';
 import '../data/models/booking_model.dart';
+import '../data/models/ticket_model.dart';
 import '../data/repositories/booking_repository.dart';
 import '../widgets/recruitment_form.dart';
 
@@ -309,6 +310,15 @@ class BookingProvider extends ChangeNotifier {
       }
       rethrow;
     }
+  }
+
+  Future<CancelRefundResultModel> cancelBooking(int bookingId, {int? userId}) async {
+    final result = await _repository.cancelBooking(bookingId, userId: userId);
+    if (_venueDetail != null && _selectedSubVenue != null) {
+      await loadSlotsForCurrentDate();
+    }
+    notifyListeners();
+    return result;
   }
 
   void resetBookingState() {

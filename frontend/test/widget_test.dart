@@ -5,6 +5,7 @@ import 'package:sportspot/main.dart';
 import 'package:sportspot/providers/auth_provider.dart';
 import 'package:sportspot/providers/booking_provider.dart';
 import 'package:sportspot/providers/venue_provider.dart';
+import 'package:sportspot/providers/ticket_provider.dart';
 import 'test_http_client.dart';
 
 void main() {
@@ -19,6 +20,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => AuthProvider()),
           ChangeNotifierProvider(create: (_) => BookingProvider()),
           ChangeNotifierProvider(create: (_) => VenueProvider()),
+          ChangeNotifierProvider(create: (_) => TicketProvider()),
         ],
         child: const SportSpotApp(hasSeenOnboarding: true),
       ),

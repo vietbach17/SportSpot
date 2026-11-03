@@ -5,10 +5,15 @@ import '../../data/models/venue_model.dart';
 import '../../providers/venue_provider.dart';
 import '../../data/sportspot_mock_data.dart';
 import '../../data/sportspot_models.dart';
+import '../../providers/auth_provider.dart';
+import '../../data/repositories/match_repository.dart';
+import '../../data/models/match_model.dart';
+import '../../widgets/match_ui.dart';
 import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/bounce_interaction.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../venues/venue_detail_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToMatches;
@@ -36,10 +41,13 @@ class _HomeScreenState extends State<HomeScreen> {
     'Padel',
   ];
 
+  late Future<List<OpenMatch>> _featuredMatchesFuture;
+
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _featuredMatchesFuture = ApiMatchRepository().list();
   }
 
   void _onSearchChanged() {
@@ -112,69 +120,85 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFF00A859),
-                                width: 2,
-                              ),
-                            ),
-                            child: const CircleAvatar(
-                              radius: 17,
-                              backgroundImage: NetworkImage(SportSpotMockData.userNam),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        'Nam Nguyen',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    SizedBox(width: 4),
-                                    Icon(Icons.verified, size: 14, color: Color(0xFF00A859)),
-                                  ],
+                      child: Builder(
+                        builder: (ctx) {
+                          final auth = ctx.watch<AuthProvider>();
+                          final user = auth.currentUser;
+                          final isGuest = auth.isGuest || user == null;
+                          final displayName = isGuest ? 'Khách vãng lai' : (user.fullName.isNotEmpty ? user.fullName : 'Hội viên');
+                          final loc = ctx.watch<VenueProvider>().currentLocationName;
+
+                          return Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xFF00A859),
+                                    width: 2,
+                                  ),
                                 ),
-                                const SizedBox(height: 2),
-                                Row(
+                                child: CircleAvatar(
+                                  radius: 17,
+                                  backgroundColor: const Color(0xFF00A859),
+                                  child: isGuest
+                                      ? const Icon(Icons.person_outline_rounded, size: 17, color: Colors.white)
+                                      : Text(
+                                          user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(
-                                      Icons.location_on,
-                                      size: 12,
-                                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280),
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            displayName,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(isGuest ? Icons.person_pin_circle_outlined : Icons.verified, size: 14, color: const Color(0xFF00A859)),
+                                      ],
                                     ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: Text(
-                                        'Cầu Giấy, Hà Nội',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_on,
+                                          size: 12,
                                           color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280),
                                         ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                        const SizedBox(width: 2),
+                                        Expanded(
+                                          child: Text(
+                                            loc,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500,
+                                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
-                        ],
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -223,37 +247,46 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: borderColor, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        const Icon(Icons.notifications_outlined, size: 19),
-                        Positioned(
-                          right: -1,
-                          top: -1,
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF00A859),
-                              shape: BoxShape.circle,
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: borderColor, width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          const Icon(Icons.notifications_outlined, size: 19),
+                          Positioned(
+                            right: -1,
+                            top: -1,
+                            child: Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF00A859),
+                                shape: BoxShape.circle,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -472,10 +505,14 @@ class _HomeScreenState extends State<HomeScreen> {
               // Hero Promotional Banner
               BounceTap(
                 onTap: () {
+                  final vProv = context.read<VenueProvider>();
+                  final target = vProv.venues.isNotEmpty 
+                      ? vProv.venues.first.toSportSpotVenue() 
+                      : SportSpotMockData.venues.first;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => VenueDetailScreen(venue: SportSpotMockData.venues.first),
+                      builder: (_) => VenueDetailScreen(venue: target),
                     ),
                   );
                 },
@@ -749,99 +786,116 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: borderColor, width: 1.2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
+              FutureBuilder<List<OpenMatch>>(
+                future: _featuredMatchesFuture,
+                builder: (context, snapshot) {
+                  final list = snapshot.data ?? [];
+                  final match = list.isNotEmpty ? list.first : null;
+                  final hasMatch = match != null;
+
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: borderColor, width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF00A859), width: 2),
-                      ),
-                      child: const CircleAvatar(
-                        radius: 22,
-                        backgroundImage: NetworkImage(SportSpotMockData.coachMinh),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF00A859).withValues(alpha: 0.12),
+                            border: Border.all(color: const Color(0xFF00A859), width: 2),
+                          ),
+                          child: Icon(
+                            hasMatch ? matchSportIcon(match.sportId) : Icons.sports_tennis_rounded,
+                            color: const Color(0xFF00A859),
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Flexible(
-                                child: Text(
-                                  'Coach Minh Le',
-                                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      hasMatch ? match.venue : 'Mở Kèo Thể Thao Mới',
+                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.white10 : const Color(0xFFF1F3F5),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      hasMatch ? match.skill : 'Kèo Mở',
+                                      style: const TextStyle(fontSize: 9, color: Color(0xFF00A859), fontWeight: FontWeight.w800),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isDark ? Colors.white10 : const Color(0xFFF1F3F5),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  'Adv 4.0',
-                                  style: TextStyle(fontSize: 9, color: Color(0xFF00A859), fontWeight: FontWeight.w800),
-                                ),
+                              const SizedBox(height: 4),
+                              Text(
+                                hasMatch
+                                    ? '${match.sport} • ${match.slots.join(', ')}'
+                                    : 'Tìm bạn cùng chơi và chia sẻ chi phí tiền sân',
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(Icons.groups_rounded, size: 15, color: Color(0xFF00A859)),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      hasMatch
+                                          ? 'Thiếu ${match.remaining} người (${match.joined}/${match.needed})'
+                                          : 'Đang mở tuyển khắp khu vực',
+                                      style: const TextStyle(fontSize: 11, color: Color(0xFF00A859), fontWeight: FontWeight.w700),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Đôi nam nữ • 19:00 Tối nay',
-                            style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: widget.onNavigateToMatches,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF111315),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           ),
-                          const SizedBox(height: 4),
-                          const Row(
-                            children: [
-                              Icon(Icons.groups_rounded, size: 15, color: Color(0xFF00A859)),
-                              SizedBox(width: 5),
-                              Flexible(
-                                child: Text(
-                                  '3/4 Người đã tham gia',
-                                  style: TextStyle(fontSize: 11, color: Color(0xFF00A859), fontWeight: FontWeight.w700),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                          child: Text(hasMatch ? 'Vào kèo' : 'Tạo kèo', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: widget.onNavigateToMatches,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF111315),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      ),
-                      child: const Text('Vào kèo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ],
           ),
