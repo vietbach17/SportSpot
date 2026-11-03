@@ -17,6 +17,9 @@ public static class SqliteModule4Upgrade
             AddColumn(db, "Users", "FcmToken", "TEXT NULL");
             AddColumn(db, "OpenMatches", "Revision", "INTEGER NOT NULL DEFAULT 0");
             AddColumn(db, "OpenMatches", "SkillLevel", "TEXT NOT NULL DEFAULT 'Cơ bản'");
+            AddColumn(db, "OpenMatches", "Title", "TEXT NULL");
+            AddColumn(db, "OpenMatches", "HostNote", "TEXT NULL");
+            AddColumn(db, "OpenMatches", "HostPhone", "TEXT NULL");
             db.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS IX_MatchMembers_MatchId_UserId ON MatchMembers(MatchId, UserId)");
             db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Users_StaffVenueId ON Users(StaffVenueId)");
             db.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS Notifications (

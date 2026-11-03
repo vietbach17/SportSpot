@@ -295,6 +295,9 @@ class BookingProvider extends ChangeNotifier {
       totalExpectedPlayers: _recruitment.enabled ? _recruitment.total : null,
       neededPlayers: _recruitment.enabled ? _recruitment.needed : null,
       skillLevel: _recruitment.enabled ? _recruitment.skill : 'Cơ bản',
+      matchTitle: _recruitment.enabled && _recruitment.title.isNotEmpty ? _recruitment.title : null,
+      matchHostNote: _recruitment.enabled && _recruitment.hostNote.isNotEmpty ? _recruitment.hostNote : null,
+      matchHostPhone: _recruitment.enabled && _recruitment.hostPhone.isNotEmpty ? _recruitment.hostPhone : null,
       depositPercentage: _depositPercentage,
     );
 

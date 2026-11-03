@@ -32,6 +32,15 @@ public class OpenMatch
     [MaxLength(30)]
     public string SkillLevel { get; set; } = "Cơ bản";
 
+    [MaxLength(200)]
+    public string? Title { get; set; }
+
+    [MaxLength(1000)]
+    public string? HostNote { get; set; }
+
+    [MaxLength(20)]
+    public string? HostPhone { get; set; }
+
     [ConcurrencyCheck]
     public int Revision { get; set; }
 

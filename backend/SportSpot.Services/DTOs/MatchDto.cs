@@ -23,6 +23,15 @@ public class OpenMatchDto
     public string District { get; set; } = string.Empty;
     public string SkillLevel { get; set; } = string.Empty;
     public int RemainingBalanceForHost { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? HostNote { get; set; }
+    public string? HostPhone { get; set; }
+    public string? HostAvatarUrl { get; set; }
+    public string? VenueImageUrl { get; set; }
+    public decimal? Latitude { get; set; }
+    public decimal? Longitude { get; set; }
+    public double? DistanceKm { get; set; }
+    public string? Amenities { get; set; }
     public List<MatchMemberDto> Members { get; set; } = new();
 }
 
@@ -34,6 +43,9 @@ public class CreateMatchRequest
     public int TotalExpectedPlayers { get; set; }
     public int NeededPlayers { get; set; }
     public string SkillLevel { get; set; } = "Cơ bản";
+    public string? Title { get; set; }
+    public string? HostNote { get; set; }
+    public string? HostPhone { get; set; }
 }
 
 public class JoinMatchRequest

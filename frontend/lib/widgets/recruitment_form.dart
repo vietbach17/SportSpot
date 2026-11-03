@@ -10,11 +10,17 @@ class RecruitmentValue {
   final bool enabled;
   final int total, needed;
   final String skill;
+  final String title;
+  final String hostPhone;
+  final String hostNote;
   const RecruitmentValue({
     this.enabled = false,
     this.total = 10,
     this.needed = 4,
     this.skill = 'Cơ bản',
+    this.title = '',
+    this.hostPhone = '',
+    this.hostNote = '',
   });
   bool get valid => !enabled || (total > 1 && needed > 0 && needed < total);
   Map<String, dynamic> toJson() => {
@@ -23,6 +29,9 @@ class RecruitmentValue {
       'totalExpectedPlayers': total,
       'neededPlayers': needed,
       'skillLevel': skill,
+      if (title.isNotEmpty) 'matchTitle': title,
+      if (hostPhone.isNotEmpty) 'matchHostPhone': hostPhone,
+      if (hostNote.isNotEmpty) 'matchHostNote': hostNote,
     },
   };
 }
@@ -44,13 +53,114 @@ class _RecruitmentFormState extends State<RecruitmentForm> {
   bool enabled = false;
   int total = 10, needed = 4;
   String skill = 'Cơ bản';
+  String title = '';
+  String hostPhone = '';
+  final TextEditingController _noteController = TextEditingController();
+
+  final List<String> _quickRules = const [
+    'Vui vẻ giao lưu',
+    'Đến đúng giờ',
+    'Mang vợt/giày riêng',
+    'Bao gồm cầu/nước',
+    'Fair-play',
+  ];
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
   void emit() => widget.onChanged(
     RecruitmentValue(
       enabled: enabled,
       total: total,
       needed: needed,
       skill: skill,
+      title: title,
+      hostPhone: hostPhone,
+      hostNote: _noteController.text.trim(),
     ),
+  );
+
+  Widget titleField() => TextFormField(
+    decoration: const InputDecoration(
+      labelText: 'Tiêu đề kèo (Tùy chọn)',
+      hintText: 'VD: Kèo đôi nam nữ vui vẻ tối nay',
+      prefixIcon: Icon(Icons.sports_handball_rounded, size: 20),
+    ),
+    onChanged: (v) {
+      title = v.trim();
+      emit();
+    },
+  );
+
+  Widget phoneField() => TextFormField(
+    decoration: const InputDecoration(
+      labelText: 'SĐT / Zalo chủ kèo',
+      hintText: '0903xxxxxx',
+      prefixIcon: Icon(Icons.phone_iphone_rounded, size: 20),
+    ),
+    keyboardType: TextInputType.phone,
+    onChanged: (v) {
+      hostPhone = v.trim();
+      emit();
+    },
+  );
+
+  Widget noteField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      TextFormField(
+        controller: _noteController,
+        maxLines: 2,
+        decoration: const InputDecoration(
+          labelText: 'Ghi chú & Nội quy trận đấu',
+          hintText: 'VD: Có mặt trước 15p, tinh thần thể thao vui vẻ...',
+          prefixIcon: Icon(Icons.notes_rounded, size: 20),
+        ),
+        onChanged: (_) => emit(),
+      ),
+      const SizedBox(height: 8),
+      Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: _quickRules.map((rule) {
+          final isSelected = _noteController.text.contains(rule);
+          return ActionChip(
+            label: Text(rule),
+            avatar: Icon(
+              isSelected ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+              size: 14,
+              color: isSelected ? const Color(0xFF00A859) : MatchColors.blue,
+            ),
+            labelStyle: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? const Color(0xFF00A859) : MatchColors.ink,
+            ),
+            backgroundColor: isSelected ? const Color(0xFFE8F5E9) : const Color(0xFFF1F5F9),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+            onPressed: () {
+              if (isSelected) {
+                _noteController.text = _noteController.text
+                    .replaceAll(rule, '')
+                    .replaceAll(', ,', ',')
+                    .trim();
+              } else {
+                if (_noteController.text.isEmpty) {
+                  _noteController.text = rule;
+                } else {
+                  _noteController.text = '${_noteController.text}, $rule';
+                }
+              }
+              emit();
+              setState(() {});
+            },
+          );
+        }).toList(),
+      ),
+    ],
   );
 
   Widget totalField() => TextFormField(
@@ -178,6 +288,8 @@ class _RecruitmentFormState extends State<RecruitmentForm> {
                               ),
                       ),
                       const SizedBox(height: 14),
+                      titleField(),
+                      const SizedBox(height: 14),
                       DropdownButtonFormField<String>(
                         isExpanded: true,
                         initialValue: skill,
@@ -195,6 +307,10 @@ class _RecruitmentFormState extends State<RecruitmentForm> {
                           emit();
                         },
                       ),
+                      const SizedBox(height: 14),
+                      phoneField(),
+                      const SizedBox(height: 14),
+                      noteField(),
                       const SizedBox(height: 18),
                       Container(
                         width: double.infinity,

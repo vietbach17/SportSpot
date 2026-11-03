@@ -331,6 +331,14 @@ namespace SportSpot.Data.Migrations
                     b.Property<int>("CurrentJoinedPlayers")
                         .HasColumnType("integer");
 
+                    b.Property<string>("HostNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("HostPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<int>("HostUserId")
                         .HasColumnType("integer");
 
@@ -350,6 +358,10 @@ namespace SportSpot.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<int>("TotalExpectedPlayers")
                         .HasColumnType("integer");

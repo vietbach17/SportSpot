@@ -151,6 +151,9 @@ public class BookingService : IBookingService
                 CurrentJoinedPlayers = 0,
                 CostPerPerson = costPerPerson,
                 SkillLevel = request.SkillLevel,
+                Title = request.MatchTitle,
+                HostNote = request.MatchHostNote,
+                HostPhone = request.MatchHostPhone ?? booking.User?.PhoneNumber,
                 Status = "Open",
                 CreatedAt = DateTime.UtcNow
             };

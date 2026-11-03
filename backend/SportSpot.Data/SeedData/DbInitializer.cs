@@ -279,6 +279,22 @@ public static class DbInitializer
                 );
             }
         }
+        var matches = context.OpenMatches.ToList();
+        foreach (var m in matches)
+        {
+            if (string.IsNullOrEmpty(m.Title))
+            {
+                m.Title = "Kèo giao lưu cuối tuần vui vẻ phong trào";
+            }
+            if (string.IsNullOrEmpty(m.HostNote))
+            {
+                m.HostNote = "Tuyển anh em vui vẻ giao lưu, tinh thần fair-play, đến trước 10 phút khởi động!";
+            }
+            if (string.IsNullOrEmpty(m.HostPhone))
+            {
+                m.HostPhone = "0988888888";
+            }
+        }
         context.SaveChanges();
     }
 
@@ -320,6 +336,22 @@ public static class DbInitializer
                     u.AvatarUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80";
                 else
                     u.AvatarUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80";
+            }
+        }
+        var matches = context.OpenMatches.ToList();
+        foreach (var m in matches)
+        {
+            if (string.IsNullOrEmpty(m.Title))
+            {
+                m.Title = "Kèo giao lưu cuối tuần vui vẻ phong trào";
+            }
+            if (string.IsNullOrEmpty(m.HostNote))
+            {
+                m.HostNote = "Tuyển anh em vui vẻ giao lưu, tinh thần fair-play, đến trước 10 phút khởi động!";
+            }
+            if (string.IsNullOrEmpty(m.HostPhone))
+            {
+                m.HostPhone = "0988888888";
             }
         }
         context.SaveChanges();

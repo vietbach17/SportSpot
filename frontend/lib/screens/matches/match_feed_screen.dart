@@ -17,6 +17,9 @@ import '../../widgets/recruitment_form.dart';
 import '../auth/phone_input_screen.dart';
 import 'match_checkout_screen.dart';
 import 'match_discussion_sheet.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../data/repositories/venue_repository.dart';
+import '../venues/venue_detail_screen.dart';
 
 class MatchFeedScreen extends StatefulWidget {
   final Object? repository;
@@ -25,15 +28,12 @@ class MatchFeedScreen extends StatefulWidget {
 
   @override
   // ignore: no_logic_in_create_state
-  // ignore: no_logic_in_create_state
   State<MatchFeedScreen> createState() {
-    if (repository != null || staff) {
-      return _Module4MatchFeedState();
-    }
-    return _StitchMatchFeedState();
+    return _Module4MatchFeedState();
   }
 }
 
+// ignore: unused_element
 class _StitchMatchFeedState extends State<MatchFeedScreen> {
   String selectedSport = 'all';
   String selectedLevel = 'all';
@@ -1019,6 +1019,7 @@ class _MatchCard extends StatelessWidget {
   final OpenMatch match;
   final VoidCallback onTap;
   const _MatchCard({required this.match, required this.onTap});
+
   @override
   Widget build(BuildContext context) {
     final m = match;
@@ -1033,247 +1034,365 @@ class _MatchCard extends StatelessWidget {
           boxShadow: AppShadows.card,
         ),
         clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEDF3FF),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      matchSportIcon(m.sportId),
-                      color: MatchColors.blue,
-                      size: 25,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          m.sport,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          m.skill,
-                          style: const TextStyle(
-                            color: MatchColors.muted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  MatchPill(
-                    'Thiếu ${m.remaining} người',
-                    icon: Icons.people_alt_outlined,
-                    background: const Color(0xFFEDF8D9),
-                    foreground: const Color(0xFF3E6511),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                m.venue,
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -.4,
-                ),
-              ),
-              const SizedBox(height: 7),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    color: MatchColors.muted,
-                    size: 15,
-                  ),
-                  const SizedBox(width: 5),
-                  Expanded(
-                    child: Text(
-                      '${m.court} · ${m.district}',
-                      style: const TextStyle(
-                        color: MatchColors.muted,
-                        fontSize: 12,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: MatchColors.canvas,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: [
-                    _CardMeta(Icons.calendar_today_outlined, matchDay(m.date)),
-                    _CardMeta(Icons.schedule_rounded, m.slots.join(', ')),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'CHI PHÍ / NGƯỜI',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: MatchColors.muted,
-                            letterSpacing: 1.2,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          money(m.cost),
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: MatchColors.blue,
-                            letterSpacing: -.7,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cover Image with Badges & Title Overlay
+            Stack(
+              children: [
+                SizedBox(
+                  height: 155,
+                  width: double.infinity,
+                  child: Image.network(
+                    m.venueImageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
                       color: MatchColors.navy,
-                      borderRadius: BorderRadius.circular(10),
+                      child: Center(
+                        child: Icon(
+                          matchSportIcon(m.sportId),
+                          color: MatchColors.lime,
+                          size: 40,
+                        ),
+                      ),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Xem kèo',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.35),
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.85),
+                        ],
+                        stops: const [0.0, 0.45, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+                // Top header: Sport badge & Slots remaining badge
+                Positioned(
+                  top: 10,
+                  left: 12,
+                  right: 12,
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white24, width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(matchSportIcon(m.sportId), color: MatchColors.lime, size: 13),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  m.sport,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '• ${m.skill}',
+                                style: const TextStyle(
+                                  color: Color(0xFFD1D5DB),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      MatchPill(
+                        'Thiếu ${m.remaining} người',
+                        icon: Icons.people_alt_outlined,
+                        background: const Color(0xFFEDF8D9),
+                        foreground: const Color(0xFF3E6511),
+                      ),
+                    ],
+                  ),
+                ),
+                // Bottom overlay: Title
+                Positioned(
+                  left: 14,
+                  right: 14,
+                  bottom: 10,
+                  child: Text(
+                    m.title.isNotEmpty ? m.title : '${m.sport} giao lưu tại ${m.venue}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black87,
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Venue name
+                  Text(
+                    m.venue,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -.3,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  // Location + Distance chip
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        color: MatchColors.muted,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '${m.court} · ${m.district}',
+                          style: const TextStyle(
+                            color: MatchColors.muted,
                             fontSize: 12,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        SizedBox(width: 6),
-                        Icon(
-                          Icons.arrow_forward_rounded,
-                          color: MatchColors.lime,
-                          size: 16,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFBFDBFE), width: 0.8),
                         ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.near_me_rounded, size: 11, color: Color(0xFF2563EB)),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${m.distanceKm?.toStringAsFixed(1) ?? '1.8'} km',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2563EB),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Schedule box
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: MatchColors.canvas,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Wrap(
+                      spacing: 14,
+                      runSpacing: 6,
+                      children: [
+                        _CardMeta(Icons.calendar_today_outlined, matchDay(m.date)),
+                        _CardMeta(Icons.schedule_rounded, m.slots.join(', ')),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 14),
+                  // Cost / person & CTA button
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'CHI PHÍ / NGƯỜI',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: MatchColors.muted,
+                                letterSpacing: 1.1,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              money(m.cost),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: MatchColors.blue,
+                                letterSpacing: -.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: MatchColors.navy,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Xem kèo',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                            SizedBox(width: 5),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              color: MatchColors.lime,
+                              size: 15,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  AthleticProgressBar(
+                    joined: m.joined,
+                    total: m.needed,
+                    height: 6,
+                  ),
+                  const SizedBox(height: 10),
+                  // Host avatar & Stacked members
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: const Color(0xFFEDF3FF),
+                        foregroundColor: MatchColors.blue,
+                        foregroundImage: m.hostAvatarUrl != null && m.hostAvatarUrl!.isNotEmpty
+                            ? NetworkImage(m.hostAvatarUrl!)
+                            : null,
+                        onForegroundImageError: (_, _) {},
+                        child: Text(
+                          m.host.trim().isEmpty ? 'H' : m.host.trim().characters.first.toUpperCase(),
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          'Host: ${m.host}',
+                          style: const TextStyle(
+                            color: Color(0xFF374151),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      StackedAvatars(
+                        joinedCount: m.joined,
+                        totalNeeded: m.needed,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${m.joined}/${m.needed}',
+                        style: const TextStyle(
+                          color: MatchColors.muted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Divider(height: 1, color: MatchColors.line),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => MatchDiscussionSheet.show(
+                          context,
+                          matchId: m.id,
+                          matchTitle: '${m.sport} • ${m.venue}',
+                        ),
+                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 14),
+                        label: const Text('Thảo luận'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          side: const BorderSide(color: MatchColors.line),
+                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => showRefereeSheet(context, m),
+                        icon: const Icon(Icons.sports_rounded, size: 14, color: MatchColors.blue),
+                        label: const Text('Trọng tài'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: MatchColors.blue,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          side: const BorderSide(color: MatchColors.line),
+                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              const SizedBox(height: 14),
-              AthleticProgressBar(
-                joined: m.joined,
-                total: m.needed,
-                height: 7,
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  StackedAvatars(
-                    joinedCount: m.joined,
-                    totalNeeded: m.needed,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${m.joined}/${m.needed} vãng lai · Host: ${m.host}',
-                      style: const TextStyle(
-                        color: MatchColors.muted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const Divider(height: 1, color: MatchColors.line),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                alignment: WrapAlignment.end,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => MatchDiscussionSheet.show(
-                      context,
-                      matchId: m.id,
-                      matchTitle: '${m.sport} • ${m.venue}',
-                    ),
-                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 14),
-                    label: const Text('Thảo luận'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      side: const BorderSide(color: MatchColors.line),
-                      textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => showRefereeSheet(context, m),
-                    icon: const Icon(Icons.sports_rounded, size: 14, color: MatchColors.blue),
-                    label: const Text('Trọng tài'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: MatchColors.blue,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      side: const BorderSide(color: MatchColors.line),
-                      textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -1644,6 +1763,81 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     });
   }
 
+  Future<void> _callHost(String phone) async {
+    final clean = phone.replaceAll(RegExp(r'\s+'), '');
+    final uri = Uri.parse('tel:$clean');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _openGoogleMaps(double? lat, double? lng, String address) async {
+    Uri uri;
+    if (lat != null && lng != null && lat != 0.0 && lng != 0.0) {
+      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    } else {
+      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}');
+    }
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _openVenueDetail(BuildContext context, OpenMatch m) async {
+    try {
+      final venueRepo = VenueRepository();
+      final venue = await venueRepo.getVenueDetail(m.venueId);
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => VenueDetailScreen(venue: venue)),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VenueDetailScreen(
+            venue: {
+              'id': m.venueId,
+              'name': m.venue,
+              'address': m.address,
+              'images': [m.venueImageUrl],
+              'latitude': m.latitude ?? 21.0285,
+              'longitude': m.longitude ?? 105.8542,
+              'amenities': m.amenities,
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  IconData _getAmenityIcon(String name) {
+    final lower = name.toLowerCase();
+    if (lower.contains('wifi')) return Icons.wifi_rounded;
+    if (lower.contains('đỗ') || lower.contains('xe') || lower.contains('parking')) {
+      return Icons.local_parking_rounded;
+    }
+    if (lower.contains('nước') || lower.contains('uống') || lower.contains('tin')) {
+      return Icons.local_cafe_rounded;
+    }
+    if (lower.contains('tắm') || lower.contains('thay đồ')) {
+      return Icons.shower_rounded;
+    }
+    if (lower.contains('điều hòa') || lower.contains('lạnh')) {
+      return Icons.ac_unit_rounded;
+    }
+    if (lower.contains('thuê') || lower.contains('vợt') || lower.contains('bóng')) {
+      return Icons.sports_tennis_rounded;
+    }
+    return Icons.check_circle_outline_rounded;
+  }
+
   Future<void> act(String question, Future<void> Function() action) async {
     final auth = context.read<AuthProvider>();
     if (!auth.isAuthenticated) {
@@ -1793,31 +1987,402 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
                 children: [
-                  MatchHero(
-                    eyebrow:
-                        '${m.sport.toUpperCase()} / MATCH #${m.id.toString().padLeft(3, '0')}',
-                    title: m.venue,
-                    subtitle: '${m.court} · ${m.address}',
-                    footer: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                  // 1. Top Banner Image with Overlay
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Stack(
                       children: [
-                        MatchPill(
-                          matchStatus(m.status),
-                          icon: Icons.circle,
-                          background: MatchColors.lime,
-                          foreground: MatchColors.navy,
+                        SizedBox(
+                          height: 210,
+                          width: double.infinity,
+                          child: Image.network(
+                            m.venueImageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              height: 210,
+                              color: MatchColors.navy,
+                              child: Center(
+                                child: Icon(
+                                  matchSportIcon(m.sportId),
+                                  size: 56,
+                                  color: MatchColors.lime,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        MatchPill(
-                          m.skill,
-                          icon: Icons.bar_chart_rounded,
-                          background: const Color(0xFF315778),
-                          foreground: Colors.white,
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.35),
+                                  Colors.transparent,
+                                  Colors.black.withValues(alpha: 0.88),
+                                ],
+                                stops: const [0.0, 0.45, 1.0],
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Top Badges
+                        Positioned(
+                          top: 12,
+                          left: 12,
+                          right: 12,
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              MatchPill(
+                                matchStatus(m.status),
+                                icon: Icons.circle,
+                                background: MatchColors.lime,
+                                foreground: MatchColors.navy,
+                              ),
+                              MatchPill(
+                                m.skill,
+                                icon: Icons.bar_chart_rounded,
+                                background: const Color(0xFF315778),
+                                foreground: Colors.white,
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.white24, width: 0.8),
+                                ),
+                                child: Text(
+                                  '#${m.id.toString().padLeft(3, '0')}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Bottom Info
+                        Positioned(
+                          left: 16,
+                          right: 16,
+                          bottom: 14,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                m.title.isNotEmpty ? m.title : '${m.sport} giao lưu tại ${m.venue}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.4,
+                                  shadows: [
+                                    Shadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 1)),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${m.venue} • ${m.court}',
+                                style: const TextStyle(
+                                  color: Color(0xFFE5E7EB),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
+
+                  // 2. Host Contact Card
+                  MatchSurface(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const MatchSectionTitle(
+                          'Chủ kèo & Liên hệ',
+                          'Người mở kèo và trực tiếp điều phối trận đấu.',
+                        ),
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 24,
+                              backgroundColor: const Color(0xFFEDF3FF),
+                              foregroundColor: MatchColors.blue,
+                              foregroundImage: m.hostAvatarUrl != null && m.hostAvatarUrl!.isNotEmpty
+                                  ? NetworkImage(m.hostAvatarUrl!)
+                                  : null,
+                              onForegroundImageError: (_, _) {},
+                              child: Text(
+                                m.host.trim().isEmpty ? 'H' : m.host.trim().characters.first.toUpperCase(),
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    m.host,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    m.hostPhone != null && m.hostPhone!.isNotEmpty
+                                        ? 'SĐT/Zalo: ${m.hostPhone}'
+                                        : 'Đội trưởng · Chủ kèo',
+                                    style: TextStyle(
+                                      color: m.hostPhone != null && m.hostPhone!.isNotEmpty
+                                          ? MatchColors.blue
+                                          : MatchColors.muted,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (m.hostPhone != null && m.hostPhone!.isNotEmpty)
+                              FilledButton.tonalIcon(
+                                onPressed: () => _callHost(m.hostPhone!),
+                                icon: const Icon(Icons.phone_in_talk_rounded, size: 16),
+                                label: const Text('Gọi ngay'),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 3. Host Note / Ground Rules Card
+                  MatchSurface(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const MatchSectionTitle(
+                          'Ghi chú & Nội quy trận đấu',
+                          'Yêu cầu và lưu ý từ chủ kèo để trận đấu vui vẻ, trọn vẹn.',
+                        ),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.rule_rounded,
+                                color: MatchColors.blue,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  m.hostNote != null && m.hostNote!.trim().isNotEmpty
+                                      ? m.hostNote!
+                                      : 'Vui vẻ giao lưu, tôn trọng đối thủ, đến đúng giờ để giữ nhiệt trận đấu!',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    height: 1.5,
+                                    color: Color(0xFF334155),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 4. Venue Amenities Card
+                  if (m.amenityList.isNotEmpty) ...[
+                    MatchSurface(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const MatchSectionTitle(
+                            'Tiện ích sân bãi',
+                            'Các tiện nghi sẵn có tại cơ sở phục vụ người chơi.',
+                          ),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: m.amenityList.map((item) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(_getAmenityIcon(item), size: 15, color: MatchColors.blue),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      item,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // 5. Mini Map & Directions Card
+                  MatchSurface(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const MatchSectionTitle(
+                          'Địa điểm & Chỉ đường',
+                          'Vị trí sân và chỉ đường nhanh chóng qua Google Maps.',
+                        ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: MatchColors.canvas,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.location_on_rounded,
+                                color: MatchColors.blue,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    m.venue,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '${m.court} · ${m.address}',
+                                    style: const TextStyle(
+                                      color: MatchColors.muted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFBFDBFE)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.near_me_rounded, size: 12, color: Color(0xFF2563EB)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${m.distanceKm?.toStringAsFixed(1) ?? '1.8'} km',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF2563EB),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _openGoogleMaps(
+                                  m.latitude,
+                                  m.longitude,
+                                  m.address.isNotEmpty ? m.address : m.venue,
+                                ),
+                                icon: const Icon(Icons.directions_rounded, size: 16),
+                                label: const Text('Chỉ đường'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  side: const BorderSide(color: MatchColors.blue),
+                                  foregroundColor: MatchColors.blue,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => _openVenueDetail(context, m),
+                                icon: const Icon(Icons.storefront_rounded, size: 16),
+                                label: const Text('Chi tiết sân'),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 6. Schedule Card
                   MatchSurface(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1839,14 +2404,16 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                         ),
                         const SizedBox(height: 18),
                         _DetailLine(
-                          Icons.person_outline_rounded,
-                          'Đội trưởng',
-                          m.host,
+                          Icons.sports_rounded,
+                          'Bộ môn thi đấu',
+                          '${m.sport} · Trình độ: ${m.skill}',
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
+
+                  // 7. Team Lineup (Đội hình vãng lai)
                   MatchSurface(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1915,17 +2482,18 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                                   foregroundColor: MatchColors.blue,
                                   foregroundImage:
                                       mm.avatarUrl == null ||
-                                          mm.avatarUrl!.isEmpty
-                                      ? null
-                                      : NetworkImage(mm.avatarUrl!),
+                                              mm.avatarUrl!.isEmpty
+                                          ? null
+                                          : NetworkImage(mm.avatarUrl!),
+                                  onForegroundImageError: (_, _) {},
                                   child: Text(
                                     mm.name.trim().isEmpty
                                         ? '?'
                                         : mm.name
-                                              .trim()
-                                              .characters
-                                              .first
-                                              .toUpperCase(),
+                                            .trim()
+                                            .characters
+                                            .first
+                                            .toUpperCase(),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -1969,6 +2537,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+
+                  // 8. Cost Breakdown & Balance
                   MatchSurface(
                     color: MatchColors.navy,
                     child: Column(
@@ -2034,6 +2604,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+
+                  // Actions
                   if (busy)
                     const Padding(
                       padding: EdgeInsets.only(bottom: 12),
