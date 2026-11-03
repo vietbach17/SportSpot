@@ -63,7 +63,10 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
             Booking = booking, HostUserId = userId, HostUser = booking.User,
             TotalExpectedPlayers = request.TotalExpectedPlayers, NeededPlayers = request.NeededPlayers,
             CostPerPerson = MatchRules.SplitCost(booking.CourtPrice, request.TotalExpectedPlayers),
-            SkillLevel = request.SkillLevel
+            SkillLevel = request.SkillLevel,
+            Title = request.Title,
+            HostNote = request.HostNote,
+            HostPhone = request.HostPhone ?? booking.User?.PhoneNumber
         };
         booking.BookingType = "OpenMatch";
         await unitOfWork.Matches.AddAsync(match);
@@ -179,6 +182,15 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
         TotalExpectedPlayers = m.TotalExpectedPlayers, NeededPlayers = m.NeededPlayers,
         CurrentJoinedPlayers = m.CurrentJoinedPlayers, CostPerPerson = m.CostPerPerson,
         Status = m.Status, SkillLevel = m.SkillLevel, RemainingBalanceForHost = m.Booking?.RemainingBalance ?? 0,
+        Title = !string.IsNullOrWhiteSpace(m.Title) ? m.Title : $"{m.Booking?.SubVenue?.Venue?.Sport?.Name ?? "Kèo thể thao"} - {m.Booking?.SubVenue?.Venue?.Name ?? "Sân thi đấu"}",
+        HostNote = m.HostNote,
+        HostPhone = m.HostPhone ?? m.HostUser?.PhoneNumber,
+        HostAvatarUrl = m.HostUser?.AvatarUrl,
+        VenueImageUrl = m.Booking?.SubVenue?.Venue?.ImageUrl,
+        Latitude = m.Booking?.SubVenue?.Venue?.Latitude,
+        Longitude = m.Booking?.SubVenue?.Venue?.Longitude,
+        DistanceKm = 1.8,
+        Amenities = m.Booking?.SubVenue?.Venue?.Amenities,
         Members = m.MatchMembers.OrderBy(mm => mm.JoinedAt).Select(mm => new MatchMemberDto(
             mm.Id, mm.UserId, mm.User?.FullName ?? "Khách tại quầy", mm.User?.AvatarUrl, mm.MemberType)).ToList()
     };

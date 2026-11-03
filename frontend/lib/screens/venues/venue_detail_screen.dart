@@ -124,6 +124,22 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     return 4.9;
   }
 
+  String get _venueImage {
+    try {
+      if (widget.venue is SportSpotVenue) {
+        final img = (widget.venue as SportSpotVenue).image;
+        if (img.isNotEmpty) return img;
+      }
+      if (widget.venue.image != null && widget.venue.image.toString().isNotEmpty) {
+        return widget.venue.image.toString();
+      }
+      if (widget.venue.imageUrl != null && widget.venue.imageUrl.toString().isNotEmpty) {
+        return widget.venue.imageUrl.toString();
+      }
+    } catch (_) {}
+    return 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1200';
+  }
+
   int get _basePrice {
     try {
       if (widget.venue.basePrice != null) return (widget.venue.basePrice as num).toInt();
@@ -357,7 +373,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             width: double.infinity,
             color: const Color(0xFF1E293B),
             child: Image.network(
-              'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1200',
+              _venueImage,
               height: 220,
               width: double.infinity,
               fit: BoxFit.cover,
@@ -810,10 +826,15 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               CircleAvatar(
                 radius: 16,
                 backgroundColor: const Color(0xFF2563EB),
-                child: Text(
-                  r.userName.isNotEmpty ? r.userName[0].toUpperCase() : 'U',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                ),
+                backgroundImage: (r.userAvatarUrl != null && r.userAvatarUrl!.isNotEmpty)
+                    ? NetworkImage(r.userAvatarUrl!)
+                    : null,
+                child: (r.userAvatarUrl != null && r.userAvatarUrl!.isNotEmpty)
+                    ? null
+                    : Text(
+                        r.userName.isNotEmpty ? r.userName[0].toUpperCase() : 'U',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
               ),
               const SizedBox(width: 10),
               Expanded(

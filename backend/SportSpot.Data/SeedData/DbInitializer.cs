@@ -17,6 +17,7 @@ public static class DbInitializer
                 Email = "devuser@sportspot.vn",
                 Role = "Customer",
                 WalletBalance = 500000,
+                AvatarUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80",
                 IsFindMatchEnabled = true,
                 FavoriteSports = "Cầu lông, Bóng đá mini",
                 CreatedAt = DateTime.UtcNow
@@ -43,7 +44,7 @@ public static class DbInitializer
                 PeakPrice = 140000,
                 Rating = 4.9m,
                 Amenities = "Bãi đỗ ô tô, Căn tin, Phòng tắm nóng lạnh, Cho thuê vợt cao cấp, Wifi tốc độ cao",
-                ImageUrl = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800",
+                ImageUrl = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1200&q=80",
                 IsActive = true
             });
         }
@@ -64,7 +65,7 @@ public static class DbInitializer
                 PeakPrice = 650000,
                 Rating = 4.8m,
                 Amenities = "Đèn chiếu sáng ban đêm, Trọng tài, Căn tin, Giữ xe miễn phí, Khán đài cổ vũ",
-                ImageUrl = "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800",
+                ImageUrl = "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=1200&q=80",
                 IsActive = true
             });
         }
@@ -85,7 +86,7 @@ public static class DbInitializer
                 PeakPrice = 180000,
                 Rating = 4.9m,
                 Amenities = "Phòng thay đồ, Huấn luyện viên, Cho thuê bóng & vợt, Ghế nghỉ ngơi, Nước uống miễn phí",
-                ImageUrl = "https://images.unsplash.com/photo-1599586120429-48281b6f0ece?w=800",
+                ImageUrl = "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1200&q=80",
                 IsActive = true
             });
         }
@@ -106,7 +107,7 @@ public static class DbInitializer
                 PeakPrice = 350000,
                 Rating = 4.7m,
                 Amenities = "Sàn gỗ FIBA, Máy lạnh, Phòng tắm, Căn tin dinh dưỡng, Bãi đỗ xe rộng rãi",
-                ImageUrl = "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800",
+                ImageUrl = "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&q=80",
                 IsActive = true
             });
         }
@@ -127,7 +128,7 @@ public static class DbInitializer
                 PeakPrice = 150000,
                 Rating = 4.8m,
                 Amenities = "Công viên xanh, Phòng thay đồ cao cấp, Khu hồi phục cơ, Căn tin, Cho thuê dụng cụ",
-                ImageUrl = "https://images.unsplash.com/photo-1613918108466-292b78a8ef95?w=800",
+                ImageUrl = "https://images.unsplash.com/photo-1613918108466-292b78a8ef95?w=1200&q=80",
                 IsActive = true
             });
         }
@@ -141,6 +142,7 @@ public static class DbInitializer
         SeedSubVenuesAndServices(context);
         SeedReviews(context);
         SeedNotificationsAndFavorites(context);
+        UpdateRealImagesAndAvatars(context);
     }
 
     private static void SeedNotificationsAndFavorites(SportSpotDbContext context)
@@ -275,6 +277,81 @@ public static class DbInitializer
                     new Service { VenueId = venue.Id, Name = venue.SportId == 3 ? "Thuê áo pitch phân đội (bộ)" : "Thuê vợt thi đấu cao cấp", Type = "Rental", Price = venue.SportId == 3 ? 20000 : 30000, StockQuantity = 20 },
                     new Service { VenueId = venue.Id, Name = venue.SportId == 3 ? "Thuê bóng thi đấu số 5" : "Ống cầu lông / Bóng tập", Type = "Rental", Price = 25000, StockQuantity = 30 }
                 );
+            }
+        }
+        var matches = context.OpenMatches.ToList();
+        foreach (var m in matches)
+        {
+            if (string.IsNullOrEmpty(m.Title))
+            {
+                m.Title = "Kèo giao lưu cuối tuần vui vẻ phong trào";
+            }
+            if (string.IsNullOrEmpty(m.HostNote))
+            {
+                m.HostNote = "Tuyển anh em vui vẻ giao lưu, tinh thần fair-play, đến trước 10 phút khởi động!";
+            }
+            if (string.IsNullOrEmpty(m.HostPhone))
+            {
+                m.HostPhone = "0988888888";
+            }
+        }
+        context.SaveChanges();
+    }
+
+    private static void UpdateRealImagesAndAvatars(SportSpotDbContext context)
+    {
+        var venues = context.Venues.ToList();
+        foreach (var v in venues)
+        {
+            if (v.SportId == 1)
+            {
+                v.ImageUrl = v.Name.Contains("Celadon")
+                    ? "https://images.unsplash.com/photo-1613918108466-292b78a8ef95?w=1200&q=80"
+                    : "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1200&q=80";
+            }
+            else if (v.SportId == 2)
+            {
+                v.ImageUrl = "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1200&q=80";
+            }
+            else if (v.SportId == 3)
+            {
+                v.ImageUrl = v.Name.Contains("Prime")
+                    ? "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=80"
+                    : "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=1200&q=80";
+            }
+            else if (v.SportId == 4)
+            {
+                v.ImageUrl = "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&q=80";
+            }
+        }
+
+        var users = context.Users.ToList();
+        foreach (var u in users)
+        {
+            if (string.IsNullOrEmpty(u.AvatarUrl))
+            {
+                if (u.Id == 1 || u.FullName.Contains("Host") || u.FullName.Contains("Nam"))
+                    u.AvatarUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80";
+                else if (u.FullName.Contains("Trang") || u.FullName.Contains("Linh") || u.FullName.Contains("Hương"))
+                    u.AvatarUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80";
+                else
+                    u.AvatarUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80";
+            }
+        }
+        var matches = context.OpenMatches.ToList();
+        foreach (var m in matches)
+        {
+            if (string.IsNullOrEmpty(m.Title))
+            {
+                m.Title = "Kèo giao lưu cuối tuần vui vẻ phong trào";
+            }
+            if (string.IsNullOrEmpty(m.HostNote))
+            {
+                m.HostNote = "Tuyển anh em vui vẻ giao lưu, tinh thần fair-play, đến trước 10 phút khởi động!";
+            }
+            if (string.IsNullOrEmpty(m.HostPhone))
+            {
+                m.HostPhone = "0988888888";
             }
         }
         context.SaveChanges();

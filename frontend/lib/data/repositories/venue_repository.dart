@@ -145,7 +145,7 @@ class VenueRepository {
         latitude: 10.8498,
         longitude: 106.7720,
         hotline: '0934567890',
-        imageUrl: 'https://images.unsplash.com/photo-1599586120429-48281b6f0ece?w=800',
+        imageUrl: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1200&q=80',
         basePrice: 120000,
         peakPrice: 180000,
         rating: 4.9,
@@ -153,7 +153,7 @@ class VenueRepository {
         description: 'Sân Pickleball mặt sân cao cấp USAPA, mái che thoáng mát, trang thiết bị hiện đại bậc nhất khu Đông.',
         distanceKm: 0.5,
         galleryImages: [
-          'https://images.unsplash.com/photo-1599586120429-48281b6f0ece?w=1200',
+          'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1200&q=80',
           'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200',
         ],
         subVenues: [

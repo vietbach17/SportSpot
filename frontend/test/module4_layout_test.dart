@@ -34,6 +34,7 @@ Future<void> preview(GlobalKey key, String name) async {
 void main() {
   WidgetController.hitTestWarningShouldBeFatal = true;
   HttpOverrides.global = MockHttpOverrides();
+  setUp(() => HttpOverrides.global = MockHttpOverrides());
   setUpAll(() async {
     final config = jsonDecode(
       File('.dart_tool/package_config.json').readAsStringSync(),

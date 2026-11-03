@@ -141,12 +141,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: CircleAvatar(
                                   radius: 17,
                                   backgroundColor: const Color(0xFF00A859),
+                                  backgroundImage: (!isGuest && user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
+                                      ? NetworkImage(user.avatarUrl!)
+                                      : null,
                                   child: isGuest
                                       ? const Icon(Icons.person_outline_rounded, size: 17, color: Colors.white)
-                                      : Text(
-                                          user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
-                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
-                                        ),
+                                      : (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
+                                          ? null
+                                          : Text(
+                                              user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
+                                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                                            ),
                                 ),
                               ),
                               const SizedBox(width: 10),

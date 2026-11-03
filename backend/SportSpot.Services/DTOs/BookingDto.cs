@@ -11,6 +11,9 @@ public class CreateBookingRequest
     public int? TotalExpectedPlayers { get; set; }
     public int? NeededPlayers { get; set; }
     public string SkillLevel { get; set; } = "Cơ bản";
+    public string? MatchTitle { get; set; }
+    public string? MatchHostNote { get; set; }
+    public string? MatchHostPhone { get; set; }
     public int DepositPercentage { get; set; } = 100; // 30% hoặc 100%
     public string PaymentGateway { get; set; } = "MockPayment";
 }

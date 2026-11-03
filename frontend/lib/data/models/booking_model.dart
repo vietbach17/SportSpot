@@ -184,6 +184,9 @@ class BookingRequestModel {
   final int? totalExpectedPlayers;
   final int? neededPlayers;
   final String skillLevel;
+  final String? matchTitle;
+  final String? matchHostNote;
+  final String? matchHostPhone;
   final int depositPercentage;
   final String paymentGateway;
 
@@ -196,6 +199,9 @@ class BookingRequestModel {
     this.totalExpectedPlayers,
     this.neededPlayers,
     this.skillLevel = 'Cơ bản',
+    this.matchTitle,
+    this.matchHostNote,
+    this.matchHostPhone,
     this.depositPercentage = 100,
     this.paymentGateway = 'MockPayment',
   });
@@ -210,6 +216,9 @@ class BookingRequestModel {
       'totalExpectedPlayers': totalExpectedPlayers,
       'neededPlayers': neededPlayers,
       'skillLevel': skillLevel,
+      if (matchTitle != null && matchTitle!.isNotEmpty) 'matchTitle': matchTitle,
+      if (matchHostNote != null && matchHostNote!.isNotEmpty) 'matchHostNote': matchHostNote,
+      if (matchHostPhone != null && matchHostPhone!.isNotEmpty) 'matchHostPhone': matchHostPhone,
     },
     'depositPercentage': depositPercentage,
     'paymentGateway': paymentGateway,
