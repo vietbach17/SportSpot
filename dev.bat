@@ -15,7 +15,7 @@ echo       - Frontend : http://localhost:3000 (Flutter Web / Edge)
 echo.
 echo   [2] Khoi dong lai toan bo Server (Restart)
 echo.
-echo   [3] Dung tat ca Server (Stop Backend va Frontend)
+echo   [3] Dung va dong tat ca cua so Server (Stop BE ^& FE)
 echo.
 echo   [0] Thoat (Exit)
 echo.
@@ -38,18 +38,8 @@ echo ================================================================
 echo           DANG KHOI DONG BACKEND VA FRONTEND...
 echo ================================================================
 echo.
-
-:: 1. Kiem tra va khoi dong Backend tai cong 5000
-echo [*] Dang khoi dong Backend .NET 8 (Port 5000)...
-start "SportSpot Backend (Port 5000)" cmd /k "cd /d %~dp0backend\SportSpot.API && title SportSpot Backend (Port 5000) && dotnet run --urls http://localhost:5000"
-
-echo [*] Cho Backend on dinh trong 3 giay...
-timeout /t 3 > nul
-
-:: 2. Khoi dong Frontend Flutter tai cong 3000
-echo [*] Dang khoi dong Frontend Flutter (Port 3000 tren Edge)...
-start "SportSpot Frontend (Port 3000)" cmd /k "cd /d %~dp0frontend && title SportSpot Frontend (Port 3000) && flutter run -d edge --web-port 3000"
-
+call :DO_STOP_SILENT
+call :DO_START
 echo.
 echo ================================================================
 echo [V] DA KHOI DONG THANH CONG CAC CUA SO SERVER!
@@ -65,25 +55,13 @@ goto MENU
 :STOP_SERVERS
 cls
 echo ================================================================
-echo                 DANG DUNG CAC TIEN TRINH SERVER...
+echo            DANG DUNG VA DONG CAC CUA SO SERVER...
 echo ================================================================
 echo.
-
-echo [*] Dang tat cac cua so Backend va Frontend...
-taskkill /FI "WINDOWTITLE eq SportSpot Backend*" /F /T > nul 2>&1
-taskkill /FI "WINDOWTITLE eq SportSpot Frontend*" /F /T > nul 2>&1
-taskkill /IM SportSpot.API.exe /F /T > nul 2>&1
-
-:: Giai phong cac cong 5000 va 3000 neu con treo
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000') do (
-    taskkill /F /PID %%a > nul 2>&1
-)
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3000') do (
-    taskkill /F /PID %%a > nul 2>&1
-)
-
+echo [*] Dang tat tiến trình va dong cua so Backend ^& Frontend...
+call :DO_STOP_SILENT
 echo.
-echo [V] Da dung toan bo cac server thanh cong!
+echo [V] Da dung server va dong toan bo cua so thanh cong!
 echo.
 echo Nhan phim bat ky de quay lai menu...
 pause > nul
@@ -95,34 +73,50 @@ echo ================================================================
 echo                 DANG KHOI DONG LAI TOAN BO SERVER...
 echo ================================================================
 echo.
-echo [*] Buoc 1: Dung cac server dang chay...
-taskkill /FI "WINDOWTITLE eq SportSpot Backend*" /F /T > nul 2>&1
-taskkill /FI "WINDOWTITLE eq SportSpot Frontend*" /F /T > nul 2>&1
-taskkill /IM SportSpot.API.exe /F /T > nul 2>&1
-
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000') do (
-    taskkill /F /PID %%a > nul 2>&1
-)
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3000') do (
-    taskkill /F /PID %%a > nul 2>&1
-)
-
-timeout /t 2 > nul
-
-echo [*] Buoc 2: Bat lai Backend (Port 5000)...
-start "SportSpot Backend (Port 5000)" cmd /k "cd /d %~dp0backend\SportSpot.API && title SportSpot Backend (Port 5000) && dotnet run --urls http://localhost:5000"
-
-timeout /t 3 > nul
-
-echo [*] Buoc 3: Bat lai Frontend (Port 3000)...
-start "SportSpot Frontend (Port 3000)" cmd /k "cd /d %~dp0frontend && title SportSpot Frontend (Port 3000) && flutter run -d edge --web-port 3000"
-
+echo [*] Buoc 1: Dung va dong cac cua so server dang chay...
+call :DO_STOP_SILENT
+timeout /t 1 > nul
+echo.
+echo [*] Buoc 2: Khoi dong lai Backend va Frontend...
+call :DO_START
 echo.
 echo [V] Da khoi dong lai toan bo server thanh cong!
 echo.
 echo Nhan phim bat ky de quay lai menu...
 pause > nul
 goto MENU
+
+:: ================================================================
+:: SUBROUTINES: DO_START & DO_STOP_SILENT
+:: ================================================================
+:DO_START
+echo [*] Dang khoi dong Backend .NET 8 (Port 5000)...
+start "SportSpot Backend (Port 5000)" cmd /c "set SPORTSPOT_SERVER=BE && cd /d "%~dp0backend\SportSpot.API" && title SportSpot Backend (Port 5000) && dotnet run --urls http://localhost:5000 & exit 0"
+
+echo [*] Cho Backend on dinh trong 3 giay...
+timeout /t 3 > nul
+
+echo [*] Dang khoi dong Frontend Flutter (Port 3000 tren Edge)...
+start "SportSpot Frontend (Port 3000)" cmd /c "set SPORTSPOT_SERVER=FE && cd /d "%~dp0frontend" && title SportSpot Frontend (Port 3000) && call flutter run -d edge --web-port 3000 & exit 0"
+exit /b 0
+
+:DO_STOP_SILENT
+:: 1. Tim cac cua so cmd.exe cua Backend & Frontend, tat tien trinh con (/T) de cmd tu thoat voi exit code 0 (dong luon tab/cua so), sau do ep dong cmd neu con sot
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$parents = Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'cmd.exe' -and ($_.CommandLine -match 'SPORTSPOT_SERVER|SportSpot\.API|web-port 3000') }; foreach ($p in $parents) { Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $p.ProcessId } | ForEach-Object { taskkill /F /T /PID $_.ProcessId 2>$null | Out-Null } }; Start-Sleep -Milliseconds 400; foreach ($p in $parents) { taskkill /F /T /PID $p.ProcessId 2>$null | Out-Null }" > nul 2>&1
+
+:: 2. Quet them theo Window Title va ten file thuc thi
+taskkill /FI "WINDOWTITLE eq SportSpot Backend*" /F /T > nul 2>&1
+taskkill /FI "WINDOWTITLE eq SportSpot Frontend*" /F /T > nul 2>&1
+taskkill /IM SportSpot.API.exe /F /T > nul 2>&1
+
+:: 3. Giai phong triet de cong 5000 va 3000 (kem /T de dong ca cua so con)
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5000" ^| findstr "LISTENING"') do (
+    if not "%%a"=="0" taskkill /F /T /PID %%a > nul 2>&1
+)
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3000" ^| findstr "LISTENING"') do (
+    if not "%%a"=="0" taskkill /F /T /PID %%a > nul 2>&1
+)
+exit /b 0
 
 :EXIT_PROG
 exit
