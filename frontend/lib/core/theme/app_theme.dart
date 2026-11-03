@@ -60,9 +60,9 @@ class AppTheme {
     ),
   ];
 
-  // Authentic Athletic Typography: Barlow (Headings/Numbers) + Plus Jakarta Sans (Body/Interface)
-  static String? get headingFont => GoogleFonts.barlow().fontFamily;
-  static String? get bodyFont => GoogleFonts.plusJakartaSans().fontFamily;
+  // Soft & Friendly Modern Typography: Nunito (Headings/Titles/Buttons/Prices) + Be Vietnam Pro (Body/Interface)
+  static String? get headingFont => GoogleFonts.nunito().fontFamily;
+  static String? get bodyFont => GoogleFonts.beVietnamPro().fontFamily;
 
   static TextStyle headingStyle({
     double fontSize = 16,
@@ -109,7 +109,7 @@ class AppTheme {
         surfaceContainerHighest: const Color(0xFFEBEBE7),
       ),
       scaffoldBackgroundColor: background,
-      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
+      fontFamily: GoogleFonts.beVietnamPro().fontFamily,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -120,7 +120,7 @@ class AppTheme {
           color: carbon,
           fontSize: 18,
           fontWeight: FontWeight.w800,
-          letterSpacing: -0.2,
+          letterSpacing: 0,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -136,7 +136,7 @@ class AppTheme {
             fontFamily: headingFont,
             fontSize: 14,
             fontWeight: FontWeight.w800,
-            letterSpacing: 0.1,
+            letterSpacing: 0,
           ),
         ),
       ),
@@ -197,7 +197,7 @@ class AppTheme {
         secondary: turfGreen,
         surface: darkSurface,
       ),
-      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
+      fontFamily: GoogleFonts.beVietnamPro().fontFamily,
       useMaterial3: true,
       appBarTheme: AppBarTheme(
         backgroundColor: darkSurface,
@@ -209,7 +209,7 @@ class AppTheme {
           color: darkTextPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w800,
-          letterSpacing: -0.2,
+          letterSpacing: 0,
         ),
       ),
       cardTheme: CardThemeData(

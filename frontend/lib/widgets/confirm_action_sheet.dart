@@ -164,7 +164,7 @@ class SportSpotConfirmSheet extends StatelessWidget {
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                         color: textColor,
-                        letterSpacing: -0.3,
+                        letterSpacing: 0,
                       ),
                     ),
                     const SizedBox(height: 3),
