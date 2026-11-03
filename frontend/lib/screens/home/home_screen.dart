@@ -6,6 +6,8 @@ import '../../providers/venue_provider.dart';
 import '../../data/sportspot_mock_data.dart';
 import '../../data/sportspot_models.dart';
 import '../../widgets/confirm_action_sheet.dart';
+import '../../widgets/bounce_interaction.dart';
+import '../../widgets/shimmer_skeleton.dart';
 import '../venues/venue_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -402,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     final cat = categories[index];
                     final isSelected = selectedCategory == cat;
-                    return GestureDetector(
+                    return BounceTap(
                       onTap: () {
                         setState(() => selectedCategory = cat);
                         context.read<VenueProvider>().selectSport(_getSportId(cat));
@@ -468,7 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
 
               // Hero Promotional Banner
-              GestureDetector(
+              BounceTap(
                 onTap: () {
                   Navigator.push(
                     context,
@@ -701,11 +703,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 12),
                       if (venueProvider.isLoading)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
-                          child: Center(
-                            child: CircularProgressIndicator(color: Color(0xFF00A859)),
-                          ),
+                        Column(
+                          children: const [
+                            SkeletonCard(height: 220),
+                            SizedBox(height: 14),
+                            SkeletonCard(height: 220),
+                          ],
                         )
                       else
                         ...displayVenues.map((venue) => _buildVenueCard(context, venue, isDark, borderColor, cardBg)),
@@ -1084,8 +1087,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    ElevatedButton(
-                      onPressed: () {
+                    BounceTap(
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -1093,14 +1096,24 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF111315),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => VenueDetailScreen(venue: venue),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF111315),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Đặt Sân Ngay', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                       ),
-                      child: const Text('Đặt Sân Ngay', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                     ),
                   ],
                 ),

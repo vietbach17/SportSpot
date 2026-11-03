@@ -3,6 +3,8 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../data/repositories/ticket_repository.dart';
 import '../../providers/ticket_provider.dart';
+import '../../widgets/boarding_pass_ticket.dart';
+import '../../widgets/shimmer_skeleton.dart';
 import 'ticket_qr_detail_screen.dart';
 
 class MyTicketsScreen extends StatefulWidget {
@@ -124,9 +126,12 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 
                 // 4. Ticket List
                 if (_provider.isLoading && _provider.tickets.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48),
-                    child: Center(child: CircularProgressIndicator()),
+                  Column(
+                    children: const [
+                      SkeletonCard(height: 160),
+                      SizedBox(height: 12),
+                      SkeletonCard(height: 160),
+                    ],
                   )
                 else if (tickets.isEmpty)
                   _buildEmptyState(cardColor, borderColor, textColor, mutedColor)
@@ -384,6 +389,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     required Color textColor,
     required Color mutedColor,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF111315) : const Color(0xFFF6F6F3);
     final isCheckedIn = ticket.isCheckedIn || ticket.status == 'Completed';
     final isCancelled = ticket.status == 'Cancelled';
 
@@ -518,7 +525,9 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
+                TicketTearDivider(backgroundColor: bgColor, cutoutRadius: 8),
+                const SizedBox(height: 10),
 
                 // Bottom row: Booking code + View QR Pass CTA
                 Row(
@@ -562,37 +571,12 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   }
 
   Widget _buildEmptyState(Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.sports_tennis_rounded, size: 36, color: Color(0xFF64748B)),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'Chưa có vé nào trong mục này',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Đặt sân và nhận vé điện tử kèm mã QR điểm danh tự động.',
-            style: TextStyle(fontSize: 12.5, color: mutedColor),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return LivelyEmptyState(
+      icon: Icons.confirmation_number_outlined,
+      title: 'Chưa có vé nào trong mục này',
+      subtitle: 'Đặt sân và nhận vé điện tử kèm mã QR điểm danh tự động.',
+      actionLabel: 'Làm mới vé',
+      onAction: () => _provider.loadTickets(),
     );
   }
 }

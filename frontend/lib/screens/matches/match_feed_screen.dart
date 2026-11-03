@@ -10,6 +10,8 @@ import '../../data/sportspot_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/match_ui.dart';
+import '../../widgets/stacked_avatars.dart';
+import '../../widgets/shimmer_skeleton.dart';
 import '../../widgets/recruitment_form.dart';
 import '../auth/phone_input_screen.dart';
 import 'match_checkout_screen.dart';
@@ -866,13 +868,15 @@ class _Module4MatchFeedState extends State<MatchFeedScreen> {
                           ),
                         ),
                         if (loading)
-                          const SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.all(48),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                ),
+                          const SliverPadding(
+                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            sliver: SliverToBoxAdapter(
+                              child: Column(
+                                children: [
+                                  SkeletonCard(height: 180),
+                                  SizedBox(height: 14),
+                                  SkeletonCard(height: 180),
+                                ],
                               ),
                             ),
                           )
@@ -1138,19 +1142,34 @@ class _MatchCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: m.needed == 0 ? 0 : (m.joined / m.needed).clamp(0, 1),
-                  minHeight: 4,
-                  color: MatchColors.blue,
-                  backgroundColor: MatchColors.line,
-                ),
+              AthleticProgressBar(
+                joined: m.joined,
+                total: m.needed,
+                height: 7,
               ),
-              const SizedBox(height: 9),
-              Text(
-                '${m.joined}/${m.needed} vãng lai đã tham gia · Host: ${m.host}',
-                style: const TextStyle(color: MatchColors.muted, fontSize: 11),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  StackedAvatars(
+                    joinedCount: m.joined,
+                    totalNeeded: m.needed,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${m.joined}/${m.needed} vãng lai · Host: ${m.host}',
+                      style: const TextStyle(
+                        color: MatchColors.muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

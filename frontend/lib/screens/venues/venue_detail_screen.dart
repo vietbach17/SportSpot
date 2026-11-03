@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/sportspot_models.dart';
 import '../booking/court_slots_screen.dart';
+import '../../widgets/mini_pitch_map.dart';
 
 class VenueDetailScreen extends StatefulWidget {
   final dynamic venue;
@@ -255,7 +256,16 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             _buildCourtSpecsGrid(cardColor, borderColor, textColor, mutedColor),
             const SizedBox(height: 20),
 
-            // 5. Booking Flow Entry Invitation Card
+            // 5. Mini Pitch Map
+            MiniPitchMap(
+              sportType: selectedSport,
+              onCourtSelected: (court) {
+                // Interactive court selection
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // 6. Booking Flow Entry Invitation Card
             _buildBookingInvitation(cardColor, borderColor, textColor, mutedColor),
             const SizedBox(height: 20),
 

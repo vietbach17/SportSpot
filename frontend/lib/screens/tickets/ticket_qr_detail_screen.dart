@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../../widgets/boarding_pass_ticket.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../providers/ticket_provider.dart';
@@ -263,11 +264,14 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                                   width: 2,
                                 ),
                               ),
-                              child: QrImageView(
-                                data: _currentTicket.qrPayload,
-                                version: QrVersions.auto,
-                                size: 210,
-                                backgroundColor: Colors.white,
+                              child: QrLaserScanLine(
+                                isScanning: !isSettled && !isCancelled,
+                                child: QrImageView(
+                                  data: _currentTicket.qrPayload,
+                                  version: QrVersions.auto,
+                                  size: 210,
+                                  backgroundColor: Colors.white,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -315,7 +319,7 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                         ),
                       ),
 
-                      const Divider(height: 1),
+                      const TicketTearDivider(backgroundColor: AppTheme.background, cutoutRadius: 10),
 
                       // Thông tin chi tiết lịch đá & tiền cọc Escrow
                       Padding(
