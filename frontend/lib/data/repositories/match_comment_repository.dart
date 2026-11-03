@@ -14,6 +14,7 @@ class MockMatchCommentRepository implements IMatchCommentRepository {
         matchId: 1,
         userId: 1,
         userName: 'Host Minh',
+        userAvatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
         content: 'Anh em nhớ mang giày đế kếp sân thảm để bảo vệ sân nhé!',
         createdAt: DateTime.now().subtract(const Duration(hours: 2)),
       ),
@@ -22,6 +23,7 @@ class MockMatchCommentRepository implements IMatchCommentRepository {
         matchId: 1,
         userId: 2,
         userName: 'Thành viên Hùng',
+        userAvatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
         content: 'Mình mang theo ống cầu Victor Gold, lát chia nhau test nhé!',
         createdAt: DateTime.now().subtract(const Duration(hours: 1)),
       ),
@@ -40,6 +42,7 @@ class MockMatchCommentRepository implements IMatchCommentRepository {
       matchId: matchId,
       userId: 99,
       userName: 'Bạn',
+      userAvatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80',
       content: content,
       createdAt: DateTime.now(),
     );

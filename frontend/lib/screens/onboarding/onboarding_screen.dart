@@ -4,6 +4,7 @@ import '../../data/services/token_service.dart';
 import '../../providers/auth_provider.dart';
 import '../auth/phone_input_screen.dart';
 import '../main/main_screen.dart';
+import '../../data/sportspot_mock_data.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -160,7 +161,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           fit: StackFit.expand,
                           children: [
                             Image.network(
-                              'https://lh3.googleusercontent.com/aida-public/AB6AXuDLvh14dW4buaYmSxSIL55ZTGNm88oVR4b1RRNDe6s5w8VNO-QAbrkqhHgfB5Myul8L9t0mtB-RUT3tiLA5qeq26kVO9Oy7ETVMD97o-6mwvBqHDURVb37v6j-DQSytGfq5M4jU4H7R4iLNGTiu-dNl1gL-s05QaEa9j7PYO_EvWULu2PfAIpx04Vu9teMhOiR1wyxk05_FbTehsd04pWk0Pjj0FllP79ChiQOPPbWJ5aMzwWcfFAreQw',
+                              SportSpotMockData.onboardingAthlete,
                               fit: BoxFit.cover,
                             ),
                             Container(

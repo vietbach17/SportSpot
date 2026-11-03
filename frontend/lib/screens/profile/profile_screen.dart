@@ -243,16 +243,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: CircleAvatar(
                             radius: 40,
                             backgroundColor: const Color(0xFF00A859).withValues(alpha: 0.15),
+                            backgroundImage: (!isGuest && user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
+                                ? NetworkImage(user.avatarUrl!)
+                                : null,
                             child: isGuest
                                 ? const Icon(Icons.person_outline_rounded, size: 40, color: Color(0xFF00A859))
-                                : Text(
-                                    (user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U'),
-                                    style: const TextStyle(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFF00A859),
-                                    ),
-                                  ),
+                                : (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
+                                    ? null
+                                    : Text(
+                                        (user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U'),
+                                        style: const TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFF00A859),
+                                        ),
+                                      ),
                           ),
                         ),
                         if (!isGuest)
