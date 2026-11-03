@@ -115,7 +115,7 @@ class FloatingBottomNavBar extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                            letterSpacing: -0.1,
+                            letterSpacing: 0,
                             color: isSelected
                                 ? Colors.white
                                 : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280)),
