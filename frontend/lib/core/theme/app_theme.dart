@@ -31,6 +31,73 @@ class AppTheme {
   static const Color accentAmber = Color(0xFFF59E0B);
   static const Color accentRose = terracotta;
 
+  // Modern Mobile-First Gradients & Shadows
+  static const LinearGradient greenEnergyGradient = LinearGradient(
+    colors: [Color(0xFF00C853), Color(0xFF00A859)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient darkCarbonGradient = LinearGradient(
+    colors: [Color(0xFF1E2128), Color(0xFF111315)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static List<BoxShadow> get softShadow => [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.04),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static List<BoxShadow> get cardElevation => [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.06),
+      blurRadius: 20,
+      offset: const Offset(0, 6),
+    ),
+  ];
+
+  // Authentic Athletic Typography: Barlow (Headings/Numbers) + Plus Jakarta Sans (Body/Interface)
+  static String? get headingFont => GoogleFonts.barlow().fontFamily;
+  static String? get bodyFont => GoogleFonts.plusJakartaSans().fontFamily;
+
+  static TextStyle headingStyle({
+    double fontSize = 16,
+    FontWeight fontWeight = FontWeight.w800,
+    Color? color,
+    double? letterSpacing,
+    double? height,
+  }) {
+    return TextStyle(
+      fontFamily: headingFont,
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
+  }
+
+  static TextStyle bodyStyle({
+    double fontSize = 13,
+    FontWeight fontWeight = FontWeight.normal,
+    Color? color,
+    double? letterSpacing,
+    double? height,
+  }) {
+    return TextStyle(
+      fontFamily: bodyFont,
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
+  }
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -43,14 +110,15 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: background,
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: carbon),
+        iconTheme: const IconThemeData(color: carbon),
         titleTextStyle: TextStyle(
+          fontFamily: headingFont,
           color: carbon,
-          fontSize: 17,
+          fontSize: 18,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.2,
         ),
@@ -62,26 +130,28 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
           ),
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
+            fontFamily: headingFont,
             fontSize: 14,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.1,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.1,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: carbon,
-          side: const BorderSide(color: borderSubtle, width: 1),
+          side: const BorderSide(color: borderSubtle, width: 1.2),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
           ),
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
+            fontFamily: headingFont,
             fontSize: 14,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ),
@@ -129,6 +199,19 @@ class AppTheme {
       ),
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       useMaterial3: true,
+      appBarTheme: AppBarTheme(
+        backgroundColor: darkSurface,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: darkTextPrimary),
+        titleTextStyle: TextStyle(
+          fontFamily: headingFont,
+          color: darkTextPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.2,
+        ),
+      ),
       cardTheme: CardThemeData(
         color: darkCard,
         elevation: 0,

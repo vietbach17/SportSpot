@@ -229,39 +229,55 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
               // Trending Sports Tape
               SizedBox(
-                height: 38,
+                height: 42,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   children: ['Pickleball', 'Badminton', 'Padel', 'Mini Football'].map((sport) {
                     final isSelected = _activeTrendingSport == sport;
                     return GestureDetector(
                       onTap: () => setState(() => _activeTrendingSport = sport),
-                      child: Container(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xFF2563EB)
-                              : (isDark ? const Color(0xFF242834) : Colors.white),
-                          borderRadius: BorderRadius.circular(8),
+                              ? (isDark ? Colors.white : const Color(0xFF111315))
+                              : (isDark ? const Color(0xFF1F222B) : Colors.white),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? Colors.transparent : (isDark ? Colors.white12 : Colors.black12),
+                            color: isSelected ? Colors.transparent : (isDark ? Colors.white12 : const Color(0xFFE5E7EB)),
+                            width: 1.2,
                           ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.15),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : null,
                         ),
                         child: Row(
                           children: [
                             Icon(
                               sport.contains('Football') ? Icons.sports_soccer_rounded : Icons.sports_tennis_rounded,
                               size: 16,
-                              color: isSelected ? Colors.white : Colors.grey,
+                              color: isSelected
+                                  ? (isDark ? const Color(0xFF111315) : Colors.white)
+                                  : const Color(0xFF00A859),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 7),
                             Text(
                               sport,
                               style: TextStyle(
                                 fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected
+                                    ? (isDark ? const Color(0xFF111315) : Colors.white)
+                                    : (isDark ? Colors.white70 : Colors.black87),
                               ),
                             ),
                           ],
@@ -347,16 +363,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           backgroundColor: const Color(0xFF111315),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          elevation: 4,
+                          elevation: 0,
                         ),
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               'Đăng nhập / Đăng ký',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                             ),
                             Icon(Icons.arrow_forward_rounded, size: 20),
                           ],

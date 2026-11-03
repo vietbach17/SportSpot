@@ -4,6 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../providers/ticket_provider.dart';
+import '../../widgets/confirm_action_sheet.dart';
 import 'cancel_ticket_dialog.dart';
 
 class TicketQrDetailScreen extends StatefulWidget {
@@ -33,6 +34,27 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
   }
 
   Future<void> _simulateStaffScanCheckIn() async {
+    final confirmed = await SportSpotConfirmSheet.show(
+      context,
+      title: 'Xác nhận Quét QR Điểm danh',
+      message: 'Hành động này sẽ giải ngân (Settled) toàn bộ số tiền cọc Escrow cho chủ sân.',
+      confirmLabel: 'Xác nhận Điểm danh',
+      cancelLabel: 'Hủy',
+      icon: Icons.qr_code_scanner_rounded,
+      actionType: ConfirmActionType.success,
+      infoRows: [
+        ConfirmInfoRow(label: 'Mã vé', value: _currentTicket.bookingCode),
+        ConfirmInfoRow(label: 'Sân đấu', value: _currentTicket.venueName),
+        ConfirmInfoRow(
+          label: 'Tiền cọc giải ngân',
+          value: CancelTicketDialog.formatVnd(_currentTicket.depositAmount),
+          isBold: true,
+          valueColor: const Color(0xFF16A34A),
+        ),
+      ],
+    );
+    if (confirmed != true) return;
+
     setState(() => _isCheckingIn = true);
     try {
       final res = await widget.provider.verifyQrCheckIn(_currentTicket.qrPayload);
@@ -351,7 +373,7 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                 const SizedBox(height: 20),
 
                 // Nút Giả lập Lễ tân quét mã QR Check-in & Giải ngân Escrow
-                if (!isSettled && !isCancelled)
+                if (!isSettled && !isCancelled) ...[
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -359,6 +381,7 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                         backgroundColor: const Color(0xFF16A34A),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: _isCheckingIn ? null : _simulateStaffScanCheckIn,
                       icon: _isCheckingIn
@@ -376,6 +399,48 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFDC2626),
+                        side: const BorderSide(color: Color(0xFFDC2626), width: 1.2),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        final messenger = ScaffoldMessenger.of(context);
+                        showDialog(
+                          context: context,
+                          builder: (_) => CancelTicketDialog(
+                            ticket: _currentTicket,
+                            onConfirmCancel: () async {
+                              final cancelRes = await widget.provider.cancelTicket(_currentTicket);
+                              if (!mounted) return;
+                              setState(() {
+                                _currentTicket = _currentTicket.copyWith(status: 'Cancelled');
+                              });
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  backgroundColor: const Color(0xFF16A34A),
+                                  content: Text(
+                                    'Hủy vé thành công! Hoàn +${CancelTicketDialog.formatVnd(cancelRes.refundAmount)} vào Ví.',
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.cancel_outlined, size: 18),
+                      label: const Text(
+                        'Hủy Vé & Yêu Cầu Hoàn Tiền',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

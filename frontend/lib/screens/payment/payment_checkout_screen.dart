@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/ticket_provider.dart';
+import '../../widgets/confirm_action_sheet.dart';
 import '../tickets/cancel_ticket_dialog.dart';
 import '../tickets/ticket_qr_detail_screen.dart';
 
@@ -642,6 +643,32 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
   }
 
   Future<void> _handleCheckout(String playDate, List<int> slotIds) async {
+    final venue = _venues.firstWhere((v) => v['subVenueId'] == _selectedSubVenueId);
+    final totalPrice = (venue['pricePerSlot'] as int) * slotIds.length;
+    final amountToPay = (totalPrice * _depositPercent) ~/ 100;
+
+    final confirmed = await SportSpotConfirmSheet.show(
+      context,
+      title: 'Xác nhận Thanh Toán & Ký Quỹ Escrow',
+      message: 'Số tiền sẽ được ký quỹ Escrow an toàn và chỉ giải ngân cho sân sau khi quét mã QR.',
+      confirmLabel: 'Xác nhận Thanh Toán',
+      cancelLabel: 'Xem lại',
+      icon: Icons.lock_rounded,
+      actionType: ConfirmActionType.success,
+      infoRows: [
+        ConfirmInfoRow(label: 'Sân đấu', value: venue['venueName'] as String),
+        ConfirmInfoRow(label: 'Cổng thanh toán', value: _selectedGateway),
+        ConfirmInfoRow(label: 'Mức đặt cọc', value: '$_depositPercent%'),
+        ConfirmInfoRow(
+          label: 'Số tiền nạp Escrow',
+          value: CancelTicketDialog.formatVnd(amountToPay),
+          isBold: true,
+          valueColor: const Color(0xFF16A34A),
+        ),
+      ],
+    );
+    if (confirmed != true) return;
+
     setState(() => _isSubmitting = true);
     final ticket = await widget.ticketProvider.createSandboxBookingAndPay(
       subVenueId: _selectedSubVenueId,

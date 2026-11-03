@@ -8,6 +8,7 @@ import '../../data/repositories/match_repository.dart';
 import '../../data/sportspot_mock_data.dart';
 import '../../data/sportspot_models.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/match_ui.dart';
 import '../../widgets/recruitment_form.dart';
 import '../auth/phone_input_screen.dart';
@@ -33,9 +34,26 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
   String selectedLevel = 'all';
   List<SportSpotMatch> matches = List.from(SportSpotMockData.openMatches);
 
-  void _joinMatch(int index) {
+  void _joinMatch(int index) async {
+    final current = matches[index];
+    if (current.isJoined) {
+      final confirmed = await SportSpotConfirmSheet.show(
+        context,
+        title: 'Xác nhận Rời Trận Đấu',
+        message: 'Vị trí của bạn trong đội hình sẽ được mở lại cho người chơi khác.',
+        confirmLabel: 'Rời trận',
+        cancelLabel: 'Ở lại',
+        icon: Icons.exit_to_app_rounded,
+        actionType: ConfirmActionType.destructive,
+        infoRows: [
+          ConfirmInfoRow(label: 'Trận đấu', value: current.venueName),
+          ConfirmInfoRow(label: 'Thời gian', value: current.timeDisplay),
+        ],
+      );
+      if (confirmed != true) return;
+    }
+
     setState(() {
-      final current = matches[index];
       final isNowJoined = !current.isJoined;
       matches[index] = current.copyWith(
         isJoined: isNowJoined,
@@ -44,6 +62,7 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
       );
     });
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(matches[index].isJoined

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_theme.dart';
 import '../../data/sportspot_models.dart';
 import '../booking/court_slots_screen.dart';
 
@@ -93,11 +94,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final textColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final bgColor = isDark ? const Color(0xFF111216) : const Color(0xFFF7F8FA);
+    final cardColor = isDark ? const Color(0xFF191A20) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E313A) : const Color(0xFFE5E7EB);
+    final textColor = isDark ? const Color(0xFFF6F6F3) : const Color(0xFF111315);
+    final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -153,10 +154,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                       Text(
                         _venueName,
                         style: TextStyle(
-                          fontSize: 20,
+                          fontFamily: AppTheme.headingFont,
+                          fontSize: 22,
                           fontWeight: FontWeight.w900,
                           color: textColor,
-                          letterSpacing: -0.3,
+                          letterSpacing: -0.2,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -521,10 +523,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   Text(
                     '${_formatVnd(_basePrice)} / giờ',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontFamily: AppTheme.headingFont,
+                      fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: isDark ? Colors.white : const Color(0xFF111315),
-                      letterSpacing: -0.3,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ],
@@ -536,12 +539,16 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                 backgroundColor: const Color(0xFF111315),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 elevation: 0,
               ),
-              child: const Text(
+              child: Text(
                 'Đặt Sân Ngay',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                style: TextStyle(
+                  fontFamily: AppTheme.headingFont,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ],

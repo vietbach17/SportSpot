@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../data/repositories/ticket_repository.dart';
 import '../../providers/ticket_provider.dart';
@@ -66,11 +67,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final textColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final bgColor = isDark ? const Color(0xFF111216) : const Color(0xFFF7F8FA);
+    final cardColor = isDark ? const Color(0xFF191A20) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E313A) : const Color(0xFFE5E7EB);
+    final textColor = isDark ? const Color(0xFFF6F6F3) : const Color(0xFF111315);
+    final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
 
     final tickets = _filteredTickets;
     final reminders = _provider.upcomingReminders;
@@ -161,11 +162,18 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     Color mutedColor,
   ) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -188,10 +196,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     Text(
                       _formatVnd(_provider.walletBalance),
                       key: const Key('wallet_balance_text'),
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
+                        fontSize: 18,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF16A34A),
+                        color: const Color(0xFF16A34A),
                       ),
                     ),
                   ],
@@ -216,10 +225,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     Text(
                       _formatVnd(_provider.escrowHoldingTotal),
                       key: const Key('escrow_holding_text'),
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
+                        fontSize: 18,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF111315),
+                        color: const Color(0xFF111315),
                       ),
                     ),
                   ],
@@ -395,13 +405,20 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
       key: Key('ticket_card_${ticket.bookingId}'),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(16),
           onTap: () {
             Navigator.push(
               context,
@@ -463,10 +480,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                 Text(
                   ticket.venueName,
                   style: TextStyle(
-                    fontSize: 17,
+                    fontFamily: AppTheme.headingFont,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: textColor,
-                    letterSpacing: -0.3,
+                    letterSpacing: -0.2,
                   ),
                 ),
                 const SizedBox(height: 2),

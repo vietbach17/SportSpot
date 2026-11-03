@@ -6,6 +6,7 @@ import '../../core/network/api_client.dart';
 import '../../data/models/booking_model.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/ticket_provider.dart';
+import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/match_ui.dart';
 import '../../widgets/recruitment_form.dart';
 import '../main/main_screen.dart';
@@ -110,6 +111,33 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
   }
 
   Future<void> _handleConfirmBooking(BookingProvider provider) async {
+    final confirmed = await SportSpotConfirmSheet.show(
+      context,
+      title: 'Xác nhận Đặt Sân & Đặt Cọc',
+      message: 'Vui lòng kiểm tra lại thông tin sân đấu và số tiền cọc trước khi hoàn tất.',
+      confirmLabel: 'Xác nhận Đặt Sân',
+      cancelLabel: 'Xem lại',
+      icon: Icons.sports_tennis_rounded,
+      actionType: ConfirmActionType.success,
+      infoRows: [
+        ConfirmInfoRow(
+          label: 'Sân đấu',
+          value: provider.venueDetail?.name ?? 'Sân Thể Thao',
+        ),
+        ConfirmInfoRow(
+          label: 'Mức đặt cọc',
+          value: '${provider.depositPercentage}%',
+        ),
+        ConfirmInfoRow(
+          label: 'Số tiền cọc',
+          value: currencyFormat.format(provider.depositAmount),
+          isBold: true,
+          valueColor: const Color(0xFF00A859),
+        ),
+      ],
+    );
+    if (confirmed != true) return;
+
     setState(() => _isSubmitting = true);
 
     try {
