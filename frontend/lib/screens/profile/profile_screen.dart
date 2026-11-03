@@ -207,7 +207,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Thông số thi đấu, chỉ số kỹ năng và ví điện tử.',
+                isGuest
+                    ? 'Thông số thi đấu và ví điện tử (Chế độ khách vãng lai).'
+                    : 'Thông số thi đấu, chỉ số kỹ năng và ví điện tử.',
                 style: TextStyle(fontSize: 13, color: mutedColor, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 18),
@@ -550,39 +552,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Skill Ratings Breakdown
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: borderColor, width: 1.2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+              // Skill Ratings Breakdown (Chỉ hiển thị cho Hội viên, ẩn đối với khách vãng lai)
+              if (!isGuest) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: borderColor, width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Bộ Môn & Đánh Giá Kỹ Năng',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor),
+                      ),
+                      const SizedBox(height: 14),
+                      _buildSkillTile('Cầu lông', 'Nâng cao 4.0 • Xác thực bởi Host', 0.85, const Color(0xFF00A859), isDark, textColor, mutedColor),
+                      const SizedBox(height: 12),
+                      _buildSkillTile('Pickleball', 'Trung cấp 3.5 • DUPR Rating', 0.70, const Color(0xFF00C853), isDark, textColor, mutedColor),
+                      const SizedBox(height: 12),
+                      _buildSkillTile('Bóng đá mini', 'Hạng B+ • Tốc độ & Thể lực', 0.78, const Color(0xFFF59E0B), isDark, textColor, mutedColor),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Bộ Môn & Đánh Giá Kỹ Năng',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor),
-                    ),
-                    const SizedBox(height: 14),
-                    _buildSkillTile('Cầu lông', 'Nâng cao 4.0 • Xác thực bởi Host', 0.85, const Color(0xFF00A859), isDark, textColor, mutedColor),
-                    const SizedBox(height: 12),
-                    _buildSkillTile('Pickleball', 'Trung cấp 3.5 • DUPR Rating', 0.70, const Color(0xFF00C853), isDark, textColor, mutedColor),
-                    const SizedBox(height: 12),
-                    _buildSkillTile('Bóng đá mini', 'Hạng B+ • Tốc độ & Thể lực', 0.78, const Color(0xFFF59E0B), isDark, textColor, mutedColor),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
 
               // Preferences Settings
               Container(
