@@ -170,7 +170,7 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
                   color: isSelected ? MatchColors.blue : MatchColors.line,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 onSelected: (selected) {
@@ -183,13 +183,11 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
           ),
           const SizedBox(height: 14),
           Container(
-            height: 74,
+            height: 64,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFEBF3FC), Color(0xFFF3F7FC), Color(0xFFEBF3FC)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0x332563EB)),
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: MatchColors.line),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -202,12 +200,12 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.15),
+                          color: const Color(0xFF111315).withValues(alpha: 0.15),
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFF2563EB)),
+                          border: Border.all(color: const Color(0xFF111315)),
                         ),
                         alignment: Alignment.center,
-                        child: const Text('C1', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                        child: const Text('C1', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF111315))),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -216,7 +214,7 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(provider.selectedSubVenue?.name ?? 'Sân thi đấu tiêu chuẩn', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: MatchColors.ink), overflow: TextOverflow.ellipsis, maxLines: 1),
-                            const Text('BWF Level 2 Certified • Pro Cushioned', style: TextStyle(fontSize: 11, color: Color(0xFF10B981), fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis, maxLines: 1),
+                            const Text('Tiêu chuẩn BWF Quốc tế • Thảm giảm chấn cao cấp', style: TextStyle(fontSize: 11, color: Color(0xFF00A859), fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis, maxLines: 1),
                           ],
                         ),
                       ),
@@ -227,11 +225,11 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(9999),
-                    border: Border.all(color: const Color(0xFF10B981)),
+                    color: const Color(0xFF00A859).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: const Color(0xFF00A859)),
                   ),
-                  child: const Text('LIVE CLEAR', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w800)),
+                  child: const Text('SÂN KHẢ DỤNG', style: TextStyle(color: Color(0xFF00A859), fontSize: 10, fontWeight: FontWeight.w800)),
                 ),
               ],
             ),
@@ -313,7 +311,7 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
     if (hasSelection) {
       final first = provider.selectedSlots.first.startTime;
       final last = provider.selectedSlots.last.endTime;
-      slotSummaryText = '$count slot đã chọn ($first - $last)';
+      slotSummaryText = '$count khung giờ đã chọn ($first - $last)';
     }
 
     return SafeArea(
@@ -356,11 +354,11 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
                       ),
                       if (hasSelection)
                         Text(
-                          'hoặc ~' + currencyFormat.format((courtTotal / 4).round()) + '/người (chia 4)',
+                          'hoặc ~${currencyFormat.format((courtTotal / 4).round())}/người (chia 4)',
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF2563EB),
+                            color: Color(0xFF111315),
                           ),
                         ),
                     ],

@@ -23,7 +23,7 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
     {
         return await _context.TimeSlots
             .Where(ts => slotIds.Contains(ts.Id))
-            .OrderBy(ts => ts.Id)
+            .OrderBy(ts => ts.StartTime)
             .ToListAsync();
     }
 

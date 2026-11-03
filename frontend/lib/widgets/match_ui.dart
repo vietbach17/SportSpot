@@ -3,13 +3,13 @@ import 'package:intl/intl.dart';
 
 /// Visual language scoped to matchmaking; the other modules retain their theme.
 abstract final class MatchColors {
-  static const ink = Color(0xFF10243A);
-  static const navy = Color(0xFF102D4D);
-  static const blue = Color(0xFF2563EB);
-  static const lime = Color(0xFFCBF36B);
-  static const canvas = Color(0xFFF3F6FA);
-  static const muted = Color(0xFF6C7D90);
-  static const line = Color(0xFFE5EBF2);
+  static const ink = Color(0xFF111315);
+  static const navy = Color(0xFF111315);
+  static const blue = Color(0xFF111315);
+  static const lime = Color(0xFF00A859);
+  static const canvas = Color(0xFFF6F6F3);
+  static const muted = Color(0xFF6B7280);
+  static const line = Color(0xFFE4E4E0);
 }
 
 class MatchTheme extends StatelessWidget {
@@ -51,7 +51,7 @@ class MatchTheme extends StatelessWidget {
             minimumSize: const Size(0, 52),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(8),
             ),
             textStyle: const TextStyle(
               fontFamily: 'Roboto',
@@ -66,7 +66,7 @@ class MatchTheme extends StatelessWidget {
             minimumSize: const Size(0, 50),
             side: const BorderSide(color: MatchColors.line),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
         ),
@@ -79,15 +79,15 @@ class MatchTheme extends StatelessWidget {
             vertical: 18,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(8),
             borderSide: const BorderSide(color: MatchColors.line),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(8),
             borderSide: const BorderSide(color: MatchColors.line),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(8),
             borderSide: const BorderSide(color: MatchColors.blue, width: 1.5),
           ),
         ),
@@ -95,7 +95,7 @@ class MatchTheme extends StatelessWidget {
           behavior: SnackBarBehavior.floating,
           backgroundColor: MatchColors.navy,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
       ),
@@ -119,7 +119,7 @@ class MatchSurface extends StatelessWidget {
     padding: padding,
     decoration: BoxDecoration(
       color: color,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(10),
       border: Border.all(color: MatchColors.line),
     ),
     child: child,
@@ -312,7 +312,7 @@ class MatchHero extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(26),
+    borderRadius: BorderRadius.circular(10),
     child: Container(
       width: double.infinity,
       decoration: const BoxDecoration(

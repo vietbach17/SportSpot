@@ -39,7 +39,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF181A22) : const Color(0xFFFAF8FF),
+      backgroundColor: isDark ? const Color(0xFF121316) : const Color(0xFFF6F6F3),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -54,7 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xE61E212B) : Colors.white,
-                      borderRadius: BorderRadius.circular(9999),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isDark ? Colors.white12 : Colors.black12,
                       ),
@@ -65,7 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           width: 26,
                           height: 26,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF2563EB),
+                            color: Color(0xFF00A859),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.sports_tennis_rounded,
@@ -97,7 +97,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xCC1E212B) : Colors.white,
-                      borderRadius: BorderRadius.circular(9999),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isDark ? Colors.white12 : Colors.black12,
                       ),
@@ -141,13 +141,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               ? [const Color(0xFF2C303F), const Color(0xFF181A22)]
                               : [const Color(0xFFCCE4F7), Colors.white],
                         ),
-                        borderRadius: BorderRadius.circular(44),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isDark ? Colors.white12 : Colors.black12,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2563EB).withOpacity(0.15),
+                            color: const Color(0xFF2563EB).withValues(alpha: 0.15),
                             blurRadius: 30,
                             offset: const Offset(0, 10),
                           )
@@ -155,7 +155,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       padding: const EdgeInsets.all(8),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(36),
+                        borderRadius: BorderRadius.circular(10),
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -187,8 +187,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.75),
-                          borderRadius: BorderRadius.circular(9999),
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
@@ -209,15 +209,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.75),
-                          borderRadius: BorderRadius.circular(9999),
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.bolt_rounded, size: 16, color: Color(0xFF10B981)),
                             SizedBox(width: 4),
-                            Text('FAST MATCH', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                            Text('GHÉP TRẬN NHANH', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -243,7 +243,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           color: isSelected
                               ? const Color(0xFF2563EB)
                               : (isDark ? const Color(0xFF242834) : Colors.white),
-                          borderRadius: BorderRadius.circular(9999),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isSelected ? Colors.transparent : (isDark ? Colors.white12 : Colors.black12),
                           ),
@@ -279,13 +279,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF222632) : Colors.white,
-                  borderRadius: BorderRadius.circular(32),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isDark ? Colors.white10 : Colors.black12,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     )
@@ -297,13 +297,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(9999),
+                        color: const Color(0xFF2563EB).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
-                        'SOCIAL SPORTS CLUB',
+                        'CỘNG ĐỒNG THỂ THAO',
                         style: TextStyle(
-                          color: Color(0xFF2563EB),
+                          color: Color(0xFF00A859),
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
@@ -320,9 +320,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           color: isDark ? Colors.white : Colors.black,
                         ),
                         children: const [
-                          TextSpan(text: 'Find Court.\n'),
-                          TextSpan(text: 'Split Cost.\n', style: TextStyle(color: Color(0xFF2563EB))),
-                          TextSpan(text: 'Play Sport.'),
+                          TextSpan(text: 'Tìm Sân.\n'),
+                          TextSpan(text: 'Chia Tiền.\n', style: TextStyle(color: Color(0xFF00A859))),
+                          TextSpan(text: 'Chơi Thể Thao.'),
                         ],
                       ),
                     ),
@@ -344,10 +344,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: ElevatedButton(
                         onPressed: _onLoginRegister,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
+                          backgroundColor: const Color(0xFF111315),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(9999),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           elevation: 4,
                         ),

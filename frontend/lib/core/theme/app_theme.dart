@@ -2,37 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Bảng màu chuẩn theo yêu cầu dự án
-  static const Color pastelBlue = Color(0xFFE0EEF9);
-  static const Color accentBlue = Color(0xFF2563EB);
-  static const Color darkBlue = Color(0xFF1E3A8A);
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color textDark = Color(0xFF0F172A);
-  static const Color textGray = Color(0xFF64748B);
+  // Nike Training / Strava Editorial Design System
+  static const Color background = Color(0xFFF6F6F3); // Sáng ấm (warm paper)
+  static const Color carbon = Color(0xFF111315); // Carbon đậm cho chữ & nút chính
+  static const Color turfGreen = Color(0xFF00A859); // Xanh sân đấu thể thao
+  static const Color terracotta = Color(0xFFD9532F); // Cam đất nhấn
+  static const Color borderSubtle = Color(0xFFE4E4E0); // Viền mảnh 1px cấu trúc
   static const Color cardBg = Colors.white;
+  static const Color textDark = Color(0xFF111315);
+  static const Color textGray = Color(0xFF6B7280);
+  static const Color textMuted = Color(0xFF6B7280);
 
-  // Dark Theme Colors (Slate Athletic Glass)
-  static const Color darkBackground = Color(0xFF181A22);
-  static const Color darkSurface = Color(0xFF1E212B);
-  static const Color darkCard = Color(0xFF242834);
-  static const Color darkBorder = Color(0x1FFFFFFF);
-  static const Color darkTextPrimary = Color(0xFFF8FAFC);
+  // Backward-compatible semantic aliases mapped to Nike/Strava palette
+  static const Color accentBlue = carbon;
+  static const Color darkBlue = carbon;
+  static const Color pastelBlue = Color(0xFFEBEBE7);
+
+  // Dark Theme Colors (Carbon Athletic Slate)
+  static const Color darkBackground = Color(0xFF121316);
+  static const Color darkSurface = Color(0xFF191A1E);
+  static const Color darkCard = Color(0xFF22242A);
+  static const Color darkBorder = Color(0xFF2E313A);
+  static const Color darkTextPrimary = Color(0xFFF6F6F3);
   static const Color darkTextSecondary = Color(0xFF94A3B8);
 
   // Accents
-  static const Color accentEmerald = Color(0xFF10B981);
+  static const Color accentEmerald = turfGreen;
   static const Color accentAmber = Color(0xFFF59E0B);
-  static const Color accentRose = Color(0xFFF43F5E);
+  static const Color accentRose = terracotta;
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: accentBlue,
-        primary: accentBlue,
-        secondary: darkBlue,
+        seedColor: carbon,
+        primary: carbon,
+        secondary: turfGreen,
         surface: background,
-        surfaceContainerHighest: pastelBlue,
+        surfaceContainerHighest: const Color(0xFFEBEBE7),
       ),
       scaffoldBackgroundColor: background,
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
@@ -40,66 +47,73 @@ class AppTheme {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: textDark),
+        iconTheme: IconThemeData(color: carbon),
         titleTextStyle: TextStyle(
-          color: textDark,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
+          color: carbon,
+          fontSize: 17,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.2,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accentBlue,
+          backgroundColor: carbon,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(9999),
+            borderRadius: BorderRadius.circular(8),
           ),
           textStyle: const TextStyle(
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
+            letterSpacing: -0.1,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: accentBlue,
-          side: const BorderSide(color: accentBlue, width: 1.5),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          foregroundColor: carbon,
+          side: const BorderSide(color: borderSubtle, width: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(9999),
+            borderRadius: BorderRadius.circular(8),
           ),
           textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(9999),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: borderSubtle, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(9999),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: borderSubtle, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(9999),
-          borderSide: const BorderSide(color: accentBlue, width: 2),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: carbon, width: 1.5),
         ),
       ),
       cardTheme: CardThemeData(
         color: cardBg,
-        elevation: 1,
-        shadowColor: Colors.black.withOpacity(0.05),
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: borderSubtle, width: 1),
         ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: borderSubtle,
+        thickness: 1,
+        space: 1,
       ),
     );
   }
@@ -109,12 +123,20 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: darkBackground,
       colorScheme: const ColorScheme.dark(
-        primary: accentBlue,
-        secondary: darkCard,
+        primary: darkTextPrimary,
+        secondary: turfGreen,
         surface: darkSurface,
       ),
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       useMaterial3: true,
+      cardTheme: CardThemeData(
+        color: darkCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: darkBorder, width: 1),
+        ),
+      ),
     );
   }
 }

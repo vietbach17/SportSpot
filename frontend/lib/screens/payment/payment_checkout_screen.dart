@@ -54,7 +54,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
     {
       'subVenueId': 3,
       'venueName': 'CLB Pickleball Thảo Điền',
-      'subVenueName': 'Court P1 (Mái che)',
+      'subVenueName': 'Sân P1 (Mái che)',
       'sportName': 'Pickleball',
       'pricePerSlot': 160000,
       'icon': Icons.sports_baseball_rounded,
@@ -90,7 +90,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
       },
       {
         'label': 'Sáng mai (08:00 - 09:00)',
-        'badge': '1 Slot đơn lẻ',
+        'badge': '1 Khung giờ đơn lẻ',
         'playDate': fmt.format(tomorrow),
         'slotIds': [3],
         'color': Colors.deepPurple,

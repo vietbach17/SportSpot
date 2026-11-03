@@ -24,10 +24,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('My Profile', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+              const Text('Hồ Sơ Cá Nhân', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
               const SizedBox(height: 4),
               const Text(
-                'Personal stats, skill ratings, and digital wallet.',
+                'Thông số thi đấu, chỉ số kỹ năng và ví điện tử.',
                 style: TextStyle(fontSize: 13, color: Colors.grey),
               ),
               const SizedBox(height: 18),
@@ -37,12 +37,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF242834) : Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                  color: isDark ? const Color(0xFF191A1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: isDark ? const Color(0xFF2E313A) : const Color(0xFFE4E4E0), width: 1),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                       blurRadius: 18,
                       offset: const Offset(0, 6),
                     ),
@@ -63,7 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: const BoxDecoration(
-                              color: Color(0xFF2563EB),
+                              color: Color(0xFF111315),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(Icons.edit, size: 14, color: Colors.white),
@@ -77,23 +77,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Text('Nam Nguyen', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                         SizedBox(width: 6),
-                        Icon(Icons.verified, size: 18, color: Color(0xFF2563EB)),
+                        Icon(Icons.verified, size: 18, color: Color(0xFF00A859)),
                       ],
                     ),
                     const SizedBox(height: 3),
-                    const Text('Cau Giay District, Hanoi', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const Text('Quận Cầu Giấy, Hà Nội', style: TextStyle(fontSize: 12, color: Colors.grey)),
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(9999),
+                        color: const Color(0xFF111315).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(
-                        '⚡ SportSpot Pro Member',
+                        '⚡ Hội viên SportSpot Pro',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF2563EB),
+                          color: Color(0xFF111315),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -106,11 +106,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Stats Row
               Row(
                 children: [
-                  _buildStatCard('28', 'Matches', const Color(0xFF2563EB), isDark),
+                  _buildStatCard('28', 'Trận đấu', const Color(0xFF111315), isDark),
                   const SizedBox(width: 10),
-                  _buildStatCard('56h', 'On Court', const Color(0xFF10B981), isDark),
+                  _buildStatCard('56h', 'Giờ ra sân', const Color(0xFF10B981), isDark),
                   const SizedBox(width: 10),
-                  _buildStatCard('1.4M', 'Split Saved', Colors.amber, isDark),
+                  _buildStatCard('1.4M', 'Tiết kiệm', Colors.amber, isDark),
                 ],
               ),
               const SizedBox(height: 16),
@@ -120,9 +120,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF242834) : Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                  color: isDark ? const Color(0xFF191A1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: isDark ? const Color(0xFF2E313A) : const Color(0xFFE4E4E0), width: 1),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -130,7 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('SPORTSPOT WALLET', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5)),
+                        Text('VÍ ĐIỆN TỬ SPORTSPOT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5)),
                         SizedBox(height: 4),
                         Text('320,000 VND', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
                       ],
@@ -139,19 +139,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('⚡ Instant Top-up via VNPay / Momo simulation'),
-                            backgroundColor: Color(0xFF2563EB),
+                            content: Text('⚡ Giả lập nạp tiền tức thì qua VNPay / MoMo'),
+                            backgroundColor: Color(0xFF111315),
                           ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
+                        backgroundColor: const Color(0xFF111315),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       ),
-                      child: const Text('+ Top Up', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: const Text('+ Nạp Tiền', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -163,20 +163,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF242834) : Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                  color: isDark ? const Color(0xFF191A1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: isDark ? const Color(0xFF2E313A) : const Color(0xFFE4E4E0), width: 1),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Skill Ratings & Verification', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    const Text('Đánh giá kỹ năng & Xác thực', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 14),
-                    _buildSkillTile('Badminton', 'Advanced 4.0 • Verified Coach Match', 0.85, const Color(0xFF2563EB), isDark),
+                    _buildSkillTile('Cầu lông', 'Nâng cao 4.0 • Kiểm định bởi HLV', 0.85, const Color(0xFF111315), isDark),
                     const SizedBox(height: 12),
-                    _buildSkillTile('Pickleball', 'Intermediate 3.5 • DUPR Sync', 0.70, const Color(0xFF10B981), isDark),
+                    _buildSkillTile('Pickleball', 'Trung cấp 3.5 • Đồng bộ DUPR', 0.70, const Color(0xFF10B981), isDark),
                     const SizedBox(height: 12),
-                    _buildSkillTile('Football (Mini)', 'Rank B+ • 14 Goals recorded', 0.78, Colors.amber, isDark),
+                    _buildSkillTile('Bóng đá mini', 'Hạng B+ • Đã ghi 14 bàn thắng', 0.78, Colors.amber, isDark),
                   ],
                 ),
               ),
@@ -185,29 +185,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Preferences Settings
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF242834) : Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                  color: isDark ? const Color(0xFF191A1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: isDark ? const Color(0xFF2E313A) : const Color(0xFFE4E4E0), width: 1),
                 ),
                 child: Material(
                   color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(10),
                   child: Column(
                     children: [
                       SwitchListTile(
                         value: isFindMatch,
                         onChanged: (val) => setState(() => isFindMatch = val),
-                        title: const Text('Open for Quick Matches', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                        subtitle: const Text('Allow nearby squad hosts to invite you', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                        activeColor: const Color(0xFF2563EB),
+                        title: const Text('Sẵn sàng ghép trận nhanh', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        subtitle: const Text('Cho phép đội trưởng gần bạn gửi lời mời', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        activeThumbColor: const Color(0xFF111315),
                       ),
                       const Divider(height: 1),
                       SwitchListTile(
                         value: notificationsEnabled,
                         onChanged: (val) => setState(() => notificationsEnabled = val),
-                        title: const Text('Match Reminders & Push', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                        subtitle: const Text('Get notified 2 hours before court time', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                        activeColor: const Color(0xFF2563EB),
+                        title: const Text('Nhắc nhở trận đấu & Thông báo', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        subtitle: const Text('Nhận thông báo nhắc nhở 2 tiếng trước giờ vào sân', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        activeThumbColor: const Color(0xFF111315),
                       ),
                     ],
                   ),
@@ -227,9 +227,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   },
                   icon: const Icon(Icons.preview_rounded, size: 18),
-                  label: const Text('Preview Splash & Onboarding Deck', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  label: const Text('Xem giới thiệu & Hướng dẫn bắt đầu', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                   style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
               ),
@@ -242,11 +242,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: TextButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logged out of SportSpot session')),
+                      const SnackBar(content: Text('Đã đăng xuất khỏi tài khoản SportSpot')),
                     );
                   },
                   icon: const Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
-                  label: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                  label: const Text('Đăng Xuất', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -261,9 +261,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF242834) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+          color: isDark ? const Color(0xFF191A1E) : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: isDark ? const Color(0xFF2E313A) : const Color(0xFFE4E4E0), width: 1),
         ),
         child: Column(
           children: [
@@ -289,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(9999),
+          borderRadius: BorderRadius.circular(6),
           child: LinearProgressIndicator(
             value: progress,
             backgroundColor: isDark ? const Color(0xFF1E212B) : Colors.grey.shade200,

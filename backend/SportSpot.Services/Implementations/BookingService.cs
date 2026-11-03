@@ -39,17 +39,26 @@ public class BookingService : IBookingService
             return ApiResponse<BookingResponseDto>.Fail("Không tìm thấy sân con hoặc sân đang bảo trì", 404);
         }
 
-        var selectedSlots = await _unitOfWork.Bookings.GetTimeSlotsByIdsAsync(request.SlotIds);
+        var selectedSlots = (await _unitOfWork.Bookings.GetTimeSlotsByIdsAsync(request.SlotIds))
+            .OrderBy(s => s.StartTime).ToList();
         if (selectedSlots.Count != request.SlotIds.Count)
         {
             return ApiResponse<BookingResponseDto>.Fail("Một số khung giờ được chọn không hợp lệ");
         }
 
-        if (request.IsOpenMatch && (request.PlayDate < DateOnly.FromDateTime(MatchRules.VietnamNow)
-            || request.PlayDate > DateOnly.FromDateTime(MatchRules.VietnamNow).AddDays(6)
+        if (request.PlayDate < DateOnly.FromDateTime(MatchRules.VietnamNow))
+            return ApiResponse<BookingResponseDto>.Fail("Không thể đặt sân cho ngày trong quá khứ");
+
+        if (request.IsOpenMatch && (request.PlayDate > DateOnly.FromDateTime(MatchRules.VietnamNow).AddDays(6)
+
             || !TimeOnly.TryParse(selectedSlots[0].StartTime, out var startTime)
             || request.PlayDate.ToDateTime(startTime) <= MatchRules.VietnamNow))
             return ApiResponse<BookingResponseDto>.Fail("Kèo phải diễn ra trong 7 ngày tới và chưa bắt đầu");
+
+        if (!request.IsOpenMatch && request.PlayDate == DateOnly.FromDateTime(MatchRules.VietnamNow)
+            && TimeOnly.TryParse(selectedSlots[0].StartTime, out var stdStart)
+            && request.PlayDate.ToDateTime(stdStart) <= MatchRules.VietnamNow)
+            return ApiResponse<BookingResponseDto>.Fail("Khung giờ đã qua hoặc đang diễn ra, vui lòng chọn khung giờ khác");
 
         for (int i = 0; i < selectedSlots.Count - 1; i++)
         {
@@ -194,6 +203,7 @@ public class BookingService : IBookingService
         {
             BookingId = booking.Id,
             BookingCode = booking.BookingCode,
+            VenueId = subVenue.VenueId,
             VenueName = subVenue.Venue.Name,
             SubVenueName = subVenue.Name,
             SportName = subVenue.Venue.Sport?.Name ?? string.Empty,
@@ -206,6 +216,7 @@ public class BookingService : IBookingService
             DepositAmount = booking.DepositAmount,
             RemainingBalance = booking.RemainingBalance,
             Status = booking.Status,
+            EscrowStatus = "Holding",
             QrPayload = fullQrPayload,
             IsCheckedIn = booking.IsCheckedIn
         };

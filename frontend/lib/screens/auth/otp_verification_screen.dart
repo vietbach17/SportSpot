@@ -148,7 +148,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 width: 46,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: hasValue ? AppTheme.pastelBlue.withOpacity(0.3) : Colors.white,
+                  color: hasValue ? AppTheme.pastelBlue.withValues(alpha: 0.3) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isFocused
@@ -159,7 +159,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   boxShadow: isFocused
                       ? [
                           BoxShadow(
-                            color: AppTheme.accentBlue.withOpacity(0.2),
+                            color: AppTheme.accentBlue.withValues(alpha: 0.2),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
