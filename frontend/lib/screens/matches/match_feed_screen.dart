@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-
 import '../../core/theme/app_theme.dart';
 import '../../data/models/match_model.dart';
 import '../../data/repositories/match_repository.dart';
@@ -15,6 +14,7 @@ import '../../widgets/stacked_avatars.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../../widgets/recruitment_form.dart';
 import '../auth/phone_input_screen.dart';
+import '../../data/services/database_helper.dart';
 import 'match_checkout_screen.dart';
 import 'match_discussion_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1306,10 +1306,12 @@ class _MatchCard extends StatelessWidget {
                         radius: 12,
                         backgroundColor: const Color(0xFFEDF3FF),
                         foregroundColor: MatchColors.blue,
-                        foregroundImage: m.hostAvatarUrl != null && m.hostAvatarUrl!.isNotEmpty
+                        foregroundImage: (m.hostAvatarUrl != null && m.hostAvatarUrl!.isNotEmpty)
                             ? NetworkImage(m.hostAvatarUrl!)
                             : null,
-                        onForegroundImageError: (_, _) {},
+                        onForegroundImageError: (m.hostAvatarUrl != null && m.hostAvatarUrl!.isNotEmpty)
+                            ? (_, _) {}
+                            : null,
                         child: Text(
                           m.host.trim().isEmpty ? 'H' : m.host.trim().characters.first.toUpperCase(),
                           style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
@@ -1751,10 +1753,29 @@ class MatchDetailScreen extends StatefulWidget {
 class _MatchDetailScreenState extends State<MatchDetailScreen> {
   late Future<OpenMatch> result;
   bool busy = false;
+  bool _hasGuestJoined = false;
+  String? _guestTicketQr;
+  int _guestWalletBalance = 60000;
+
   @override
   void initState() {
     super.initState();
+    _checkGuestStatus();
     reload();
+  }
+
+  Future<void> _checkGuestStatus() async {
+    final balance = await DatabaseHelper().getGuestWalletBalance();
+    final ticketData = await DatabaseHelper().getGuestJoinedTicket(widget.id);
+    if (mounted) {
+      setState(() {
+        _guestWalletBalance = balance;
+        if (ticketData != null) {
+          _hasGuestJoined = true;
+          _guestTicketQr = ticketData['qr_payload'] as String?;
+        }
+      });
+    }
   }
 
   void reload() {
@@ -1896,7 +1917,17 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   Future<void> showTicket(OpenMatch m) async {
     setState(() => busy = true);
     try {
-      final qr = await widget.repository.ticket(m.id);
+      String qr = '';
+      if (_guestTicketQr != null && _guestTicketQr!.isNotEmpty) {
+        qr = _guestTicketQr!;
+      } else {
+        final localGuest = await DatabaseHelper().getGuestJoinedTicket(m.id);
+        if (localGuest != null && localGuest['qr_payload'] != null) {
+          qr = localGuest['qr_payload'] as String;
+        } else {
+          qr = await widget.repository.ticket(m.id);
+        }
+      }
       if (!mounted) return;
       await showDialog<void>(
         context: context,
@@ -1943,6 +1974,404 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     }
   }
 
+  Future<void> _handleJoin(OpenMatch m) async {
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated) {
+      await act(
+        'Thanh toán GIẢ LẬP ${money(m.cost)} và tham gia? Chức năng này dành cho môi trường phát triển.',
+        () => widget.repository.join(m.id),
+      );
+    } else {
+      await _showGuestQuickJoinDialog(m);
+    }
+  }
+
+  Future<void> _showGuestQuickJoinDialog(OpenMatch m) async {
+    final balance = await DatabaseHelper().getGuestWalletBalance();
+    if (!mounted) return;
+
+    final nameController = TextEditingController(text: 'Khách vãng lai');
+    final phoneController = TextEditingController();
+    String paymentMethod = balance >= m.cost ? 'wallet' : 'mock';
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+              contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: MatchColors.blue.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.flash_on_rounded, color: MatchColors.blue, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Tham gia ghép trận', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                        Text('Dành cho Khách vãng lai (không cần tài khoản)', style: TextStyle(fontSize: 11, color: MatchColors.muted)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 360,
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF242834) : const Color(0xFFF3F7FC),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: MatchColors.line),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(m.venue, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              const SizedBox(height: 2),
+                              Text('${m.court} · ${matchDay(m.date)} (${m.slots.join(', ')})', style: const TextStyle(fontSize: 11, color: MatchColors.muted)),
+                              const Divider(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Tiền cọc vãng lai:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                  Text(money(m.cost), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: MatchColors.blue)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text('Họ tên hiển thị:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 4),
+                        TextFormField(
+                          controller: nameController,
+                          decoration: InputDecoration(
+                            hintText: 'VD: Tuấn Vãng Lai',
+                            isDense: true,
+                            prefixIcon: const Icon(Icons.person_outline_rounded, size: 20),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Vui lòng nhập tên hiển thị' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text('Số điện thoại liên hệ:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 4),
+                        TextFormField(
+                          controller: phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            hintText: 'VD: 0901234567 (Đội trưởng liên lạc)',
+                            isDense: true,
+                            prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text('Phương thức thanh toán cọc:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 6),
+                        Material(
+                          color: paymentMethod == 'wallet' ? const Color(0x0D2563EB) : Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(color: paymentMethod == 'wallet' ? MatchColors.blue : MatchColors.line, width: paymentMethod == 'wallet' ? 1.5 : 1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: RadioListTile<String>(
+                            value: 'wallet',
+                            groupValue: paymentMethod,
+                            onChanged: balance >= m.cost ? (val) => setDialogState(() => paymentMethod = val!) : null,
+                            title: const Text('Ví tạm trên máy', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                            subtitle: Text('Số dư: ${money(balance)}${balance < m.cost ? ' (Không đủ số dư)' : ' (Trừ trực tiếp)'}', style: TextStyle(fontSize: 11, color: balance < m.cost ? Colors.red : MatchColors.muted)),
+                            secondary: const Icon(Icons.account_balance_wallet_rounded, color: MatchColors.blue),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Material(
+                          color: paymentMethod == 'mock' ? const Color(0x0D2563EB) : Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(color: paymentMethod == 'mock' ? MatchColors.blue : MatchColors.line, width: paymentMethod == 'mock' ? 1.5 : 1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: RadioListTile<String>(
+                            value: 'mock',
+                            groupValue: paymentMethod,
+                            onChanged: (val) => setDialogState(() => paymentMethod = val!),
+                            title: const Text('Cổng thanh toán giả lập', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                            subtitle: const Text('Mô phỏng thanh toán cọc tức thì', style: TextStyle(fontSize: 11, color: MatchColors.muted)),
+                            secondary: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF10B981)),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                          ),
+                          child: const Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.shield_outlined, color: Colors.amber, size: 18),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Chính sách vãng lai: Nếu sân bị hủy, tiền cọc hoàn 100% vào Ví tạm trên máy này để dùng cho lượt sau, hoặc gửi email hỗ trợ (support@sportspot.vn) để rút tiền về ngân hàng.',
+                                  style: TextStyle(fontSize: 11, height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Quay lại'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    Navigator.pop(ctx);
+                    await _executeGuestJoin(
+                      match: m,
+                      name: nameController.text.trim(),
+                      phone: phoneController.text.trim(),
+                      useWallet: paymentMethod == 'wallet',
+                    );
+                  },
+                  child: const Text('Xác nhận & Tham gia'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _executeGuestJoin({
+    required OpenMatch match,
+    required String name,
+    required String phone,
+    required bool useWallet,
+  }) async {
+    setState(() => busy = true);
+    try {
+      if (useWallet) {
+        await DatabaseHelper().deductGuestWalletBalance(match.cost);
+      }
+      final bookingCode = 'GST-M${match.id}-${DateTime.now().millisecondsSinceEpoch % 100000}';
+      final qrPayload = 'SPOTPASS|$bookingCode|0|JoinedPlayer|Guest_${name.replaceAll(' ', '_')}|${DateTime.now().millisecondsSinceEpoch}';
+
+      await DatabaseHelper().upsertOfflineBooking({
+        'booking_code': bookingCode,
+        'venue_id': match.venueId,
+        'venue_name': match.venue,
+        'sport_name': match.sport,
+        'sub_venue_name': match.court,
+        'address': match.address,
+        'play_date': match.date.toString(),
+        'time_slots': match.slots.join(', '),
+        'user_role_in_match': 'Khách vãng lai ($name)',
+        'total_price': match.cost,
+        'deposit_amount': match.cost,
+        'status': 'Upcoming',
+        'qr_payload': qrPayload,
+        'is_checked_in': 0,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      await DatabaseHelper().recordGuestJoinedMatch(
+        matchId: match.id,
+        bookingCode: bookingCode,
+        qrPayload: qrPayload,
+        guestName: name,
+        guestPhone: phone,
+      );
+
+      try {
+        await widget.repository.guestJoin(
+          match.id,
+          name: name,
+          phone: phone,
+          gateway: useWallet ? 'GuestWallet' : 'MockPayment',
+        );
+      } catch (_) {
+        try {
+          await widget.repository.join(match.id);
+        } catch (_) {}
+      }
+
+      final newBalance = await DatabaseHelper().getGuestWalletBalance();
+      if (mounted) {
+        setState(() {
+          _hasGuestJoined = true;
+          _guestTicketQr = qrPayload;
+          _guestWalletBalance = newBalance;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎉 $name đã tham gia kèo thành công! Mã QR vé đã lưu trên máy.'),
+            backgroundColor: const Color(0xFF10B981),
+          ),
+        );
+        reload();
+        await showTicket(match);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tham gia: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _handleLeave(OpenMatch m) async {
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated) {
+      await act(
+        'Rời kèo? Hoàn về ví: trước ≥4 giờ 100%, từ 2–4 giờ 50%, dưới 2 giờ 0%.',
+        () => widget.repository.leave(m.id),
+      );
+    } else {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Rời kèo vãng lai?'),
+          content: Text(
+            'Bạn có chắc muốn rời kèo đấu này? Tiền cọc ${money(m.cost)} sẽ được hoàn 100% vào Ví tạm trên máy này để bạn tiếp tục tìm các trận khác (hoặc rút về tài khoản ngân hàng qua email).',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Không'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Xác nhận hoàn cọc'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !mounted) return;
+      setState(() => busy = true);
+      try {
+        await DatabaseHelper().addGuestWalletBalance(m.cost);
+        final ticket = await DatabaseHelper().getGuestJoinedTicket(m.id);
+        if (ticket != null && ticket['booking_code'] != null) {
+          await DatabaseHelper().updateOfflineBookingStatus(
+            ticket['booking_code'] as String,
+            status: 'Cancelled',
+          );
+        }
+        try {
+          await widget.repository.leave(m.id);
+        } catch (_) {}
+
+        final newBalance = await DatabaseHelper().getGuestWalletBalance();
+        if (mounted) {
+          setState(() {
+            _hasGuestJoined = false;
+            _guestTicketQr = null;
+            _guestWalletBalance = newBalance;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đã rời kèo. Đã hoàn ${money(m.cost)} vào Ví tạm trên máy!'),
+              backgroundColor: const Color(0xFF10B981),
+            ),
+          );
+          reload();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi: $e')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => busy = false);
+      }
+    }
+  }
+
+  void _showGuestWalletInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: const Row(
+          children: [
+            Icon(Icons.account_balance_wallet_rounded, color: MatchColors.blue),
+            SizedBox(width: 10),
+            Text('Ví tạm trên máy', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Số dư khả dụng: ${money(_guestWalletBalance)}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF10B981)),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '• Dành riêng cho Khách vãng lai: Bạn có thể tham gia các trận ghép trên ứng dụng mà không cần phải đăng ký tài khoản thành viên.',
+              style: TextStyle(fontSize: 12, height: 1.4),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '• Tự động hoàn tiền: Nếu sân bị chủ sân hủy, hoặc bạn rời kèo đúng hạn, số tiền cọc sẽ lưu lại trong ví này của thiết bị để tiếp tục sử dụng cho các trận sau mà không cần thao tác quét ngân hàng.',
+              style: TextStyle(fontSize: 12, height: 1.4),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '• Rút về ngân hàng: Nếu không có nhu cầu thi đấu tiếp, vui lòng gửi email về: support@sportspot.vn kèm thông tin mã vé để được hỗ trợ chuyển khoản hoàn tất.',
+              style: TextStyle(fontSize: 12, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đã hiểu'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => MatchTheme(
     child: Scaffold(
@@ -1976,9 +2405,9 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
           final m = snapshot.data!;
           final user = context.watch<AuthProvider>().currentUser;
           final host = user?.userId == m.hostId;
-          final joined = m.members.any(
-            (mm) => mm.userId == user?.userId && mm.type == 'AppUser',
-          );
+          final joined = (user != null && m.members.any(
+            (mm) => mm.userId == user.userId && mm.type == 'AppUser',
+          )) || _hasGuestJoined;
           final open = m.status == 'Open' && m.remaining > 0;
           return Align(
             alignment: Alignment.topCenter,
@@ -1987,6 +2416,41 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
                 children: [
+                  if (!context.watch<AuthProvider>().isAuthenticated)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: MatchColors.blue.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: MatchColors.blue.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.account_balance_wallet_outlined, color: MatchColors.blue, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Chế độ Khách vãng lai (Chưa đăng nhập)',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: MatchColors.blue),
+                                ),
+                                Text(
+                                  'Ví tạm trên máy: ${money(_guestWalletBalance)}',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _showGuestWalletInfo,
+                            child: const Text('Chi tiết ví', style: TextStyle(fontSize: 12)),
+                          ),
+                        ],
+                      ),
+                    ),
                   // 1. Top Banner Image with Overlay
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
@@ -2120,10 +2584,12 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                               radius: 24,
                               backgroundColor: const Color(0xFFEDF3FF),
                               foregroundColor: MatchColors.blue,
-                              foregroundImage: m.hostAvatarUrl != null && m.hostAvatarUrl!.isNotEmpty
+                              foregroundImage: (m.hostAvatarUrl != null && m.hostAvatarUrl!.isNotEmpty)
                                   ? NetworkImage(m.hostAvatarUrl!)
                                   : null,
-                              onForegroundImageError: (_, _) {},
+                              onForegroundImageError: (m.hostAvatarUrl != null && m.hostAvatarUrl!.isNotEmpty)
+                                  ? (_, _) {}
+                                  : null,
                               child: Text(
                                 m.host.trim().isEmpty ? 'H' : m.host.trim().characters.first.toUpperCase(),
                                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
@@ -2480,12 +2946,12 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                                   radius: 22,
                                   backgroundColor: const Color(0xFFEDF3FF),
                                   foregroundColor: MatchColors.blue,
-                                  foregroundImage:
-                                      mm.avatarUrl == null ||
-                                              mm.avatarUrl!.isEmpty
-                                          ? null
-                                          : NetworkImage(mm.avatarUrl!),
-                                  onForegroundImageError: (_, _) {},
+                                  foregroundImage: (mm.avatarUrl != null && mm.avatarUrl!.isNotEmpty)
+                                      ? NetworkImage(mm.avatarUrl!)
+                                      : null,
+                                  onForegroundImageError: (mm.avatarUrl != null && mm.avatarUrl!.isNotEmpty)
+                                      ? (_, _) {}
+                                      : null,
                                   child: Text(
                                     mm.name.trim().isEmpty
                                         ? '?'
@@ -2624,10 +3090,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                       icon: const Icon(Icons.bolt_rounded),
                       onPressed: busy
                           ? null
-                          : () => act(
-                              'Thanh toán GIẢ LẬP ${money(m.cost)} và tham gia? Chức năng này dành cho môi trường phát triển.',
-                              () => widget.repository.join(m.id),
-                            ),
+                          : () => _handleJoin(m),
                       label: const Text('Tham gia kèo · Thanh toán mock'),
                     ),
                   if (open && host)
@@ -2656,10 +3119,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                     OutlinedButton(
                       onPressed: busy
                           ? null
-                          : () => act(
-                              'Rời kèo? Hoàn về ví: trước ≥4 giờ 100%, từ 2–4 giờ 50%, dưới 2 giờ 0%.',
-                              () => widget.repository.leave(m.id),
-                            ),
+                          : () => _handleLeave(m),
                       child: const Text('Rời kèo'),
                     ),
                   const SizedBox(height: 12),

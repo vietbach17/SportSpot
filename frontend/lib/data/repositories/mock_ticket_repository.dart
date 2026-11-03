@@ -400,4 +400,40 @@ class MockTicketRepository implements TicketRepository {
       transactions: List.unmodifiable(_transactions),
     );
   }
+
+  @override
+  Future<Map<String, dynamic>> requestBankWithdrawal({
+    required String bankName,
+    required String accountNumber,
+    required String accountHolder,
+    required int amount,
+  }) async {
+    if (amount <= 0 || amount > _walletBalance) {
+      throw Exception('Số tiền rút không hợp lệ hoặc vượt quá số dư ví hiện có');
+    }
+    _walletBalance -= amount;
+    final code = 'WD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    final txn = TransactionHistoryModel(
+      id: _transactions.length + 1,
+      transactionCode: code,
+      bookingId: 0,
+      bookingCode: 'WITHDRAWAL',
+      venueName: 'Rút về $bankName ($accountNumber - $accountHolder)',
+      amount: amount,
+      paymentGateway: 'BankTransfer',
+      status: 'Processing',
+      createdAt: DateTime.now().toIso8601String(),
+    );
+    _transactions.insert(0, txn);
+    return {
+      'withdrawalCode': code,
+      'amount': amount,
+      'bankName': bankName,
+      'accountNumber': accountNumber,
+      'accountHolder': accountHolder,
+      'status': 'Processing',
+      'remainingBalance': _walletBalance,
+      'message': 'Yêu cầu rút tiền $code đã được tiếp nhận và xử lý trong 24h.',
+    };
+  }
 }

@@ -7,6 +7,7 @@ import '../../data/models/ticket_model.dart';
 import '../../providers/ticket_provider.dart';
 import '../../widgets/confirm_action_sheet.dart';
 import 'cancel_ticket_dialog.dart';
+import 'ticket_share_helper.dart';
 
 class TicketQrDetailScreen extends StatefulWidget {
   final TicketModel ticket;
@@ -403,48 +404,72 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFDC2626),
-                        side: const BorderSide(color: Color(0xFFDC2626), width: 1.2),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.share_rounded, size: 16),
+                          label: const Text('Chia Sẻ Vé'),
+                          onPressed: () {
+                            TicketShareHelper.shareTicket(
+                              context,
+                              bookingCode: _currentTicket.bookingCode,
+                              venueName: _currentTicket.venueName,
+                              subVenueName: _currentTicket.subVenueName,
+                              sportName: _currentTicket.sportName,
+                              playDate: _currentTicket.playDate,
+                              timeSlots: _currentTicket.timeSlots,
+                              status: _currentTicket.status,
+                              escrowStatus: _currentTicket.escrowStatus,
+                            );
+                          },
+                        ),
                       ),
-                      onPressed: () {
-                        final messenger = ScaffoldMessenger.of(context);
-                        showDialog(
-                          context: context,
-                          builder: (_) => CancelTicketDialog(
-                            ticket: _currentTicket,
-                            onConfirmCancel: () async {
-                              final cancelRes = await widget.provider.cancelTicket(_currentTicket);
-                              if (!mounted) return;
-                              setState(() {
-                                _currentTicket = _currentTicket.copyWith(status: 'Cancelled');
-                              });
-                              messenger.showSnackBar(
-                                SnackBar(
-                                  backgroundColor: const Color(0xFF16A34A),
-                                  content: Text(
-                                    'Hủy vé thành công! Hoàn +${CancelTicketDialog.formatVnd(cancelRes.refundAmount)} vào Ví.',
-                                  ),
+                      if (!isSettled && !isCancelled) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFDC2626),
+                              side: const BorderSide(color: Color(0xFFDC2626), width: 1.2),
+                            ),
+                            icon: const Icon(Icons.cancel_outlined, size: 16),
+                            label: const Text('Hủy Đặt Sân'),
+                            onPressed: () {
+                              final messenger = ScaffoldMessenger.of(context);
+                              showDialog(
+                                context: context,
+                                builder: (_) => CancelTicketDialog(
+                                  ticket: _currentTicket,
+                                  onConfirmCancel: () async {
+                                    Navigator.of(context).pop();
+                                    final cancelRes = await widget.provider.cancelTicket(_currentTicket);
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _currentTicket = _currentTicket.copyWith(
+                                        status: 'Cancelled',
+                                        escrowStatus: cancelRes.refundPercentage > 0 ? 'Refunded' : 'Settled',
+                                      );
+                                    });
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        backgroundColor: const Color(0xFF16A34A),
+                                        content: Text(
+                                          'Hủy vé thành công! Hoàn +${CancelTicketDialog.formatVnd(cancelRes.refundAmount)} vào Ví.',
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               );
                             },
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.cancel_outlined, size: 18),
-                      label: const Text(
-                        'Hủy Vé & Yêu Cầu Hoàn Tiền',
-                        style: TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                    ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
               ],
             ),
           ),

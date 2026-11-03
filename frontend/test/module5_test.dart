@@ -5,6 +5,7 @@ import 'package:sportspot/data/repositories/mock_ticket_repository.dart';
 import 'package:sportspot/providers/ticket_provider.dart';
 import 'package:sportspot/screens/tickets/my_tickets_screen.dart';
 import 'package:sportspot/screens/tickets/ticket_qr_detail_screen.dart';
+import 'package:sportspot/screens/tickets/ticket_share_helper.dart';
 import 'dart:io';
 import 'test_http_client.dart';
 
@@ -182,6 +183,51 @@ void main() {
       expect(find.text('Sân Cầu Lông Viettel'), findsOneWidget);
       expect(find.textContaining('SPORTSPOT|SP-882410|1|Host|'), findsOneWidget);
       expect(find.textContaining('SHA-256 Checksum:'), findsOneWidget);
+    });
+
+    test('Bank withdrawal request deducts WalletBalance and creates Processing audit log', () async {
+      final repo = MockTicketRepository();
+      final summaryBefore = await repo.getWalletAndHistory();
+      final balanceBefore = summaryBefore.walletBalance;
+      expect(balanceBefore, greaterThan(0));
+
+      final withdrawAmount = 50000;
+      final res = await repo.requestBankWithdrawal(
+        bankName: 'Vietcombank (VCB)',
+        accountNumber: '190367891234',
+        accountHolder: 'NGUYEN VAN A',
+        amount: withdrawAmount,
+      );
+
+      expect(res['status'], 'Processing');
+      expect(res['withdrawalCode'], startsWith('WD-'));
+      expect(res['remainingBalance'], balanceBefore - withdrawAmount);
+
+      final summaryAfter = await repo.getWalletAndHistory();
+      expect(summaryAfter.walletBalance, balanceBefore - withdrawAmount);
+      final firstTxn = summaryAfter.transactions.first;
+      expect(firstTxn.bookingCode, 'WITHDRAWAL');
+      expect(firstTxn.status, 'Processing');
+      expect(firstTxn.amount, withdrawAmount);
+    });
+
+    test('TicketShareHelper formats valid match pass message for team sharing', () {
+      final text = TicketShareHelper.formatTicketShareText(
+        bookingCode: 'SP-882410',
+        venueName: 'CLB Cầu Lông Cầu Giấy',
+        subVenueName: 'Sân 1',
+        sportName: 'Cầu lông',
+        playDate: '2026-10-30',
+        timeSlots: const ['18:00-19:00', '19:00-20:00'],
+        status: 'Upcoming',
+        escrowStatus: 'Holding',
+      );
+
+      expect(text, contains('🏸 THẺ VÉ VÀO SÂN SPORTSPOT'));
+      expect(text, contains('• Mã đặt sân: SP-882410'));
+      expect(text, contains('• Sân đấu: CLB Cầu Lông Cầu Giấy - Sân 1 (Cầu lông)'));
+      expect(text, contains('• Khung giờ: 18:00-19:00, 19:00-20:00'));
+      expect(text, contains('Ký quỹ Escrow Holding'));
     });
   });
 }

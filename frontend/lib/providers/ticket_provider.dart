@@ -149,4 +149,30 @@ class TicketProvider extends ChangeNotifier {
     );
     notifyListeners();
   }
+
+  Future<Map<String, dynamic>> requestBankWithdrawal({
+    required String bankName,
+    required String accountNumber,
+    required String accountHolder,
+    required int amount,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final res = await _repository.requestBankWithdrawal(
+        bankName: bankName,
+        accountNumber: accountNumber,
+        accountHolder: accountHolder,
+        amount: amount,
+      );
+      await loadTickets(forceOffline: _isOfflineMode);
+      return res;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
 }
