@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/theme/app_theme.dart';
 
 class FloatingBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -113,6 +114,7 @@ class FloatingBottomNavBar extends StatelessWidget {
                         Text(
                           item['label'] as String,
                           style: TextStyle(
+                            fontFamily: AppTheme.headingFont,
                             fontSize: 10,
                             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                             letterSpacing: 0,

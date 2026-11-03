@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../widgets/recruitment_form.dart';
 import '../../widgets/match_ui.dart';
+import '../../widgets/brand_header.dart';
 
 /// A small checkout using booking APIs; RecruitmentForm can also be embedded in its full checkout.
 class MatchCheckoutScreen extends StatefulWidget {
@@ -174,7 +175,7 @@ class _MatchCheckoutScreenState extends State<MatchCheckoutScreen> {
   @override
   Widget build(BuildContext context) => MatchTheme(
     child: Scaffold(
-      appBar: AppBar(title: const Text('Đặt sân & tuyển vãng lai')),
+      appBar: const SportSpotUnifiedHeader(screenName: 'Đặt Sân & Tuyển Vãng Lai'),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(

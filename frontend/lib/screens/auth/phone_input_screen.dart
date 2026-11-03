@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import 'otp_verification_screen.dart';
+import '../../widgets/brand_header.dart';
 
 class PhoneInputScreen extends StatefulWidget {
   const PhoneInputScreen({super.key});
@@ -67,8 +68,8 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
     final isLoading = context.watch<AuthProvider>().isLoading;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Đăng nhập / Đăng ký'),
+      appBar: const SportSpotUnifiedHeader(
+        screenName: 'Đăng Nhập / Đăng Ký',
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -78,7 +79,14 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const Center(
+                  child: SportSpotBrandLogo(size: 54, iconSize: 32),
+                ),
                 const SizedBox(height: 12),
+                const Center(
+                  child: SportSpotBrandWordmark(fontSize: 26),
+                ),
+                const SizedBox(height: 20),
                 const Text(
                   'Chào mừng bạn đến SportSpot 👋',
                   style: TextStyle(

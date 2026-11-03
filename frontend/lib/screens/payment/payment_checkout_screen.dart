@@ -2,6 +2,7 @@ import '../../data/models/ticket_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/brand_header.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../../providers/ticket_provider.dart';
@@ -124,8 +125,8 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        title: const Text('Thanh Toán Escrow & Tạo Vé QR'),
+      appBar: const SportSpotUnifiedHeader(
+        screenName: 'Thanh Toán Escrow & Tạo Vé QR',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

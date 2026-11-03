@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/ticket_provider.dart';
+import '../../widgets/brand_header.dart';
 
 class QrScannerScreen extends StatefulWidget {
   final TicketProvider provider;
@@ -81,8 +82,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     final upcoming = widget.provider.upcomingTickets;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quầy Lễ Tân: Quét QR Check-in'),
+      appBar: const SportSpotUnifiedHeader(
+        screenName: 'Quầy Lễ Tân: Quét QR',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -183,24 +184,48 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _tamperCurrentPayload,
-                        icon: const Icon(Icons.warning_amber_rounded, size: 18),
-                        label: const Text('Thử sửa giả mạo QR (Test lỗi Checksum)'),
+                      child: SizedBox(
+                        height: 44,
+                        child: OutlinedButton.icon(
+                          style: AppTheme.secondaryButtonStyle(
+                            borderRadius: 12,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                          ),
+                          onPressed: _tamperCurrentPayload,
+                          icon: const Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFD97706)),
+                          label: Text(
+                            'Thử sửa giả mạo QR (Test Checksum)',
+                            style: TextStyle(
+                              fontFamily: AppTheme.headingFont,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                AppPressable(
-                  onTap: _isVerifying ? null : _verifyQrPayload,
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _isVerifying ? null : _verifyQrPayload,
-                      icon: const Icon(Icons.verified_rounded),
-                      label: Text(
-                        _isVerifying ? 'Đang kiểm tra chữ ký SHA-256...' : 'Xác thực QR & Check-in Nhận Sân',
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    style: AppTheme.primaryButtonStyle(borderRadius: 14),
+                    onPressed: _isVerifying ? null : _verifyQrPayload,
+                    icon: _isVerifying
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.verified_rounded, size: 20),
+                    label: Text(
+                      _isVerifying ? 'Đang kiểm tra chữ ký SHA-256...' : 'Xác thực QR & Check-in Nhận Sân',
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
                       ),
                     ),
                   ),

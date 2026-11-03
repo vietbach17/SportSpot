@@ -9,6 +9,8 @@ import 'qr_scanner_screen.dart';
 import 'package:provider/provider.dart';
 import 'ticket_qr_detail_screen.dart';
 import 'cancel_ticket_dialog.dart';
+import '../../widgets/brand_header.dart';
+import '../../widgets/bounce_interaction.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   final Object? repository;
@@ -97,19 +99,9 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: cardColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Vé Thi Đấu & Lịch Sân',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w900,
-            color: textColor,
-            letterSpacing: 0,
-          ),
-        ),
+      appBar: SportSpotUnifiedHeader(
+        screenName: 'Vé Thi Đấu & Lịch Sân',
+        showBackButton: false,
         actions: [
           IconButton(
             key: const Key('open_qr_scanner_btn'),
@@ -383,30 +375,37 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
       child: Row(
         children: List.generate(tabs.length, (index) {
           final isSelected = _selectedTabIndex == index;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              showCheckmark: false,
-              label: Text(tabs[index]),
-              selected: isSelected,
-              selectedColor: const Color(0xFF111315),
-              backgroundColor: cardColor,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : textColor,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                fontSize: 12,
+            child: BounceTap(
+              onTap: () => setState(() => _selectedTabIndex = index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF111315) : cardColor,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFF111315) : borderColor,
+                    width: 1.2,
+                  ),
+                ),
+                child: Text(
+                  tabs[index],
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  style: TextStyle(
+                    fontFamily: AppTheme.headingFont,
+                    color: isSelected ? Colors.white : textColor,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
               ),
-              side: BorderSide(
-                color: isSelected ? const Color(0xFF111315) : borderColor,
-              ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              onSelected: (val) {
-                if (val) setState(() => _selectedTabIndex = index);
-              },
             ),
           );
         }),
@@ -590,7 +589,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                                     if (!mounted) return;
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        backgroundColor: const Color(0xFF16A34A),
+                                        backgroundColor: AppPrimitives.turf500,
                                         content: Text(
                                           'Hủy vé thành công! Hoàn +${CancelTicketDialog.formatVnd(res.refundAmount)} vào Ví.',
                                         ),
@@ -601,32 +600,72 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                               );
                             },
                             borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: Text(
-                                'Hủy đặt',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.red.shade600,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDC2626).withValues(alpha: isDark ? 0.16 : 0.08),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFFDC2626).withValues(alpha: isDark ? 0.4 : 0.28),
+                                  width: 1,
                                 ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.cancel_outlined,
+                                    size: 13,
+                                    color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Hủy đặt',
+                                    style: TextStyle(
+                                      fontFamily: AppTheme.headingFont,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 8),
                         ],
-                        const Icon(Icons.qr_code_2_rounded, size: 18, color: Color(0xFF2563EB)),
-                        const SizedBox(width: 4),
-                        const Text(
-                          'Mở Vé QR',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF111315),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF2E313A) : const Color(0xFF111315),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.12),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.qr_code_2_rounded, size: 15, color: Colors.white),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Mở Vé QR',
+                                style: TextStyle(
+                                  fontFamily: AppTheme.headingFont,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              const Icon(Icons.chevron_right_rounded, size: 14, color: Colors.white70),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 2),
-                        const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF2563EB)),
                       ],
                     ),
                   ],

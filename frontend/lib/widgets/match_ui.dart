@@ -131,8 +131,8 @@ class SportSpotLogo extends StatelessWidget {
   final double iconSize;
   const SportSpotLogo({
     super.key,
-    this.size = 32,
-    this.iconSize = 24,
+    this.size = 28,
+    this.iconSize = 17,
   });
 
   @override
@@ -141,13 +141,29 @@ class SportSpotLogo extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: MatchColors.blue,
-        borderRadius: BorderRadius.circular(size * 10 / 32),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF00A859), // Athletic turf green
+            Color(0xFF00753C),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(size * 0.3),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00A859).withValues(alpha: 0.25),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Icon(
-        Icons.bolt_rounded,
-        color: MatchColors.lime,
-        size: iconSize,
+      child: Center(
+        child: Icon(
+          Icons.bolt_rounded,
+          color: Colors.white,
+          size: iconSize,
+        ),
       ),
     );
   }
@@ -159,25 +175,57 @@ class SportSpotBrandTitle extends StatelessWidget {
   const SportSpotBrandTitle({
     super.key,
     this.title = 'SportSpot',
-    this.fontSize = 20,
+    this.fontSize = 16,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF111315);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SportSpotLogo(),
-        const SizedBox(width: 9),
+        const SportSpotLogo(size: 28, iconSize: 17),
+        const SizedBox(width: 8),
         Text(
-          title,
+          'SportSpot',
           style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: fontSize,
-            color: MatchColors.ink,
-            letterSpacing: -.5,
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w900,
+            fontSize: 15.5,
+            color: textColor,
+            letterSpacing: -0.4,
           ),
         ),
+        if (title.isNotEmpty && title != 'SportSpot') ...[
+          const SizedBox(width: 8),
+          Container(
+            width: 1.2,
+            height: 14,
+            color: isDark ? const Color(0xFF3B4050) : const Color(0xFFD1D5DB),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00A859).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: const Color(0xFF00A859).withValues(alpha: 0.28),
+                width: 0.8,
+              ),
+            ),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+                color: Color(0xFF00A859),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

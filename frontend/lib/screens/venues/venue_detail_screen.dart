@@ -6,6 +6,7 @@ import '../../widgets/mini_pitch_map.dart';
 import '../../data/models/review_model.dart';
 import '../../data/repositories/review_repository.dart';
 import '../../data/repositories/favorite_repository.dart';
+import '../../widgets/brand_header.dart';
 
 class VenueDetailScreen extends StatefulWidget {
   final dynamic venue;
@@ -169,18 +170,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: cardColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: textColor),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Chi Tiết Sân Thi Đấu',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor),
-        ),
+      appBar: SportSpotUnifiedHeader(
+        screenName: 'Chi Tiết Sân Thi Đấu',
         actions: [
           IconButton(
             icon: Icon(
@@ -195,14 +186,6 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Đã sao chép liên kết sân thi đấu! 📋')),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.favorite_border_rounded, color: Color(0xFFE11D48)),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đã lưu vào danh sách yêu thích! ❤️')),
               );
             },
           ),

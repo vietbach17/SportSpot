@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/brand_header.dart';
 import '../../providers/ticket_provider.dart';
 
 class WalletHistoryScreen extends StatelessWidget {
@@ -32,18 +33,8 @@ class WalletHistoryScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        title: Text(
-          'Ví SportSpot & Lịch Sử Giao Dịch',
-          style: TextStyle(
-            fontFamily: AppTheme.headingFont,
-            fontWeight: FontWeight.w900,
-            fontSize: 18,
-            color: textColor,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: const SportSpotUnifiedHeader(
+        screenName: 'Ví SportSpot & Lịch Sử Giao Dịch',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

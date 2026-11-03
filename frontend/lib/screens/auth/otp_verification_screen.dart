@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../main/main_screen.dart';
+import '../../widgets/brand_header.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -191,8 +192,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Xác thực mã OTP'),
+      appBar: const SportSpotUnifiedHeader(
+        screenName: 'Xác Thực OTP',
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -213,12 +214,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  style: const TextStyle(fontSize: 14, color: AppTheme.textGray),
+                  style: TextStyle(fontFamily: AppTheme.bodyFont, fontSize: 14, color: AppTheme.textGray),
                   children: [
                     const TextSpan(text: 'Mã xác thực đã được gửi đến số điện thoại\n'),
                     TextSpan(
                       text: widget.phoneNumber,
-                      style: const TextStyle(
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.textDark,
                       ),

@@ -11,6 +11,7 @@ import '../tickets/qr_scanner_screen.dart';
 import '../owner/owner_dashboard_screen.dart';
 import '../payment/wallet_history_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../../widgets/brand_header.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -188,6 +189,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
+      appBar: const SportSpotUnifiedHeader(
+        screenName: 'Hồ Sơ Cá Nhân',
+        showBackButton: false,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -690,8 +695,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (!isGuest)
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
-                  child: TextButton.icon(
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    style: AppTheme.destructiveButtonStyle(borderRadius: 12),
                     onPressed: () async {
                       final confirmed = await SportSpotConfirmSheet.show(
                         context,
@@ -715,8 +721,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                       }
                     },
-                    icon: const Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
-                    label: const Text('Đăng Xuất', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w800)),
+                    icon: const Icon(Icons.logout_rounded, size: 18),
+                    label: Text(
+                      'Đăng Xuất',
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
             ],

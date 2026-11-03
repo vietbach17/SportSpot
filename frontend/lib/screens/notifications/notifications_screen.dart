@@ -4,6 +4,8 @@ import '../../data/models/notification_model.dart';
 import '../../data/repositories/notification_repository.dart';
 import '../../data/services/fcm_push_service.dart';
 import '../../data/services/floating_notification_service.dart';
+import '../../widgets/brand_header.dart';
+import '../../widgets/bounce_interaction.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final INotificationRepository? repository;
@@ -85,18 +87,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        title: Text(
-          'Thông Báo & Nhắc Lịch',
-          style: TextStyle(
-            fontFamily: AppTheme.headingFont,
-            fontWeight: FontWeight.w900,
-            fontSize: 18,
-            color: textColor,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: SportSpotUnifiedHeader(
+        screenName: 'Thông Báo & Nhắc Lịch',
         actions: [
           IconButton(
             icon: const Icon(Icons.flash_on_rounded, color: Color(0xFFFF5E1F)),
@@ -127,31 +119,61 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                ChoiceChip(
-                  label: Text('Tất cả (${notifications.length})'),
-                  selected: _selectedFilterIndex == 0,
-                  onSelected: (val) {
-                    if (val) setState(() => _selectedFilterIndex = 0);
-                  },
-                  selectedColor: const Color(0xFFEFF6FF),
-                  labelStyle: TextStyle(
-                    color: _selectedFilterIndex == 0 ? const Color(0xFF2563EB) : mutedColor,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12.5,
+                BounceTap(
+                  onTap: () => setState(() => _selectedFilterIndex = 0),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _selectedFilterIndex == 0 ? const Color(0xFFEFF6FF) : Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _selectedFilterIndex == 0
+                            ? const Color(0xFF2563EB)
+                            : const Color(0xFFE2E8F0),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Text(
+                      'Tất cả (${notifications.length})',
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
+                        color: _selectedFilterIndex == 0 ? const Color(0xFF2563EB) : mutedColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                ChoiceChip(
-                  label: Text('Chưa đọc (${_summary?.unreadCount ?? 0})'),
-                  selected: _selectedFilterIndex == 1,
-                  onSelected: (val) {
-                    if (val) setState(() => _selectedFilterIndex = 1);
-                  },
-                  selectedColor: const Color(0xFFEFF6FF),
-                  labelStyle: TextStyle(
-                    color: _selectedFilterIndex == 1 ? const Color(0xFF2563EB) : mutedColor,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12.5,
+                BounceTap(
+                  onTap: () => setState(() => _selectedFilterIndex = 1),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _selectedFilterIndex == 1 ? const Color(0xFFEFF6FF) : Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _selectedFilterIndex == 1
+                            ? const Color(0xFF2563EB)
+                            : const Color(0xFFE2E8F0),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Text(
+                      'Chưa đọc (${_summary?.unreadCount ?? 0})',
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
+                        color: _selectedFilterIndex == 1 ? const Color(0xFF2563EB) : mutedColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
+                    ),
                   ),
                 ),
               ],

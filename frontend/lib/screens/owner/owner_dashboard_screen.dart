@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/brand_header.dart';
 import '../../data/models/owner_dashboard_model.dart';
 import '../../data/repositories/owner_repository.dart';
 
@@ -118,19 +119,8 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        title: Text(
-          'Bảng Điều Khiển Chủ Sân',
-          style: TextStyle(
-            fontFamily: AppTheme.headingFont,
-            fontWeight: FontWeight.w900,
-            fontSize: 18,
-            color: textColor,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
+      appBar: SportSpotUnifiedHeader(
+        screenName: 'Bảng Điều Khiển Chủ Sân',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Color(0xFF2563EB)),
