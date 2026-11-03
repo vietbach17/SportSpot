@@ -5,6 +5,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/network/api_client.dart';
 import '../../data/models/booking_model.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/ticket_provider.dart';
+import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/match_ui.dart';
 import '../../widgets/recruitment_form.dart';
 import '../main/main_screen.dart';
@@ -53,7 +55,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -109,6 +111,33 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
   }
 
   Future<void> _handleConfirmBooking(BookingProvider provider) async {
+    final confirmed = await SportSpotConfirmSheet.show(
+      context,
+      title: 'Xác nhận Đặt Sân & Đặt Cọc',
+      message: 'Vui lòng kiểm tra lại thông tin sân đấu và số tiền cọc trước khi hoàn tất.',
+      confirmLabel: 'Xác nhận Đặt Sân',
+      cancelLabel: 'Xem lại',
+      icon: Icons.sports_tennis_rounded,
+      actionType: ConfirmActionType.success,
+      infoRows: [
+        ConfirmInfoRow(
+          label: 'Sân đấu',
+          value: provider.venueDetail?.name ?? 'Sân Thể Thao',
+        ),
+        ConfirmInfoRow(
+          label: 'Mức đặt cọc',
+          value: '${provider.depositPercentage}%',
+        ),
+        ConfirmInfoRow(
+          label: 'Số tiền cọc',
+          value: currencyFormat.format(provider.depositAmount),
+          isBold: true,
+          valueColor: const Color(0xFF00A859),
+        ),
+      ],
+    );
+    if (confirmed != true) return;
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -140,7 +169,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -210,7 +239,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         child: SizedBox(
           width: 340,
           child: SingleChildScrollView(
@@ -257,7 +286,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: MatchColors.line),
                   ),
                   child: QrImageView(
@@ -292,7 +321,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF7F9FC),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: MatchColors.line),
                   ),
                   child: Column(
@@ -350,6 +379,30 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                     onPressed: () {
                       final bookingProvider = context.read<BookingProvider>();
                       bookingProvider.resetBookingState();
+                      try {
+                        context.read<TicketProvider>().loadTickets();
+                      } catch (_) {}
+                      Navigator.of(dialogContext).pop();
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const MainScreen(initialIndex: 2),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                    child: const Text('Xem Vé Của Tôi'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      final bookingProvider = context.read<BookingProvider>();
+                      bookingProvider.resetBookingState();
+                      try {
+                        context.read<TicketProvider>().loadTickets();
+                      } catch (_) {}
                       Navigator.of(dialogContext).pop();
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(
@@ -425,23 +478,23 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
   Widget _buildHoldTimerBanner(BookingProvider provider) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
       decoration: const BoxDecoration(
-        color: Color(0xFFFFFBEB),
-        border: Border(bottom: BorderSide(color: Color(0xFFFDE68A))),
+        color: Color(0xFF0F172A),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.timer_outlined, size: 18, color: Color(0xFFD97706)),
+          const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF38BDF8)),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
-              'Giữ chỗ tạm thời: ${provider.formattedHoldTime}',
+              'THỜI GIAN GIỮ CHỖ CÒN LẠI: ${provider.formattedHoldTime}',
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12.5,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFFB45309),
+                color: Colors.white,
+                letterSpacing: 0.5,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -478,7 +531,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: const Color(0xFFEDF3FF),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   matchSportIcon(venue?.sportId ?? 1),
@@ -609,7 +662,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                   Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFF7F9FC),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: MatchColors.line),
                     ),
                     child: Row(
@@ -713,7 +766,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFEDF3FF) : const Color(0xFFF7F9FC),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? MatchColors.blue : MatchColors.line,
             width: isSelected ? 1.5 : 1,
@@ -782,9 +835,9 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFEDF3FF),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: MatchColors.line),
             ),
             child: Column(
               children: [

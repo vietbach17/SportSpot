@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_theme.dart';
 import '../../data/models/venue_model.dart';
 import '../../providers/venue_provider.dart';
 import '../../data/sportspot_mock_data.dart';
 import '../../data/sportspot_models.dart';
+import '../../widgets/confirm_action_sheet.dart';
 import '../venues/venue_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -59,6 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Bán kính tìm kiếm: $radiusKm km xung quanh bạn'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 1),
       ),
     );
@@ -74,44 +78,54 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? const Color(0xFF2E313A) : const Color(0xFFE5E7EB);
+    final cardBg = isDark ? const Color(0xFF191A20) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF111216) : const Color(0xFFF7F8FA);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF181A22) : const Color(0xFFFAF8FF),
+      backgroundColor: bgColor,
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Top User Profile & Quick Controls Bar
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF242834) : Colors.white,
-                        borderRadius: BorderRadius.circular(9999),
-                        border: Border.all(
-                          color: isDark ? Colors.white12 : Colors.black12,
-                        ),
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: borderColor, width: 1.2),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03),
                             blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          )
+                            offset: const Offset(0, 3),
+                          ),
                         ],
                       ),
                       child: Row(
                         children: [
-                          const CircleAvatar(
-                            radius: 18,
-                            backgroundImage: NetworkImage(SportSpotMockData.userNam),
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFF00A859),
+                                width: 2,
+                              ),
+                            ),
+                            child: const CircleAvatar(
+                              radius: 17,
+                              backgroundImage: NetworkImage(SportSpotMockData.userNam),
+                            ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,25 +137,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                         'Nam Nguyen',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: -0.2,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     SizedBox(width: 4),
-                                    Icon(Icons.verified, size: 14, color: Color(0xFF2563EB)),
+                                    Icon(Icons.verified, size: 14, color: Color(0xFF00A859)),
                                   ],
                                 ),
+                                const SizedBox(height: 2),
                                 Row(
                                   children: [
-                                    const Icon(Icons.location_on, size: 12, color: Color(0xFF2563EB)),
+                                    Icon(
+                                      Icons.location_on,
+                                      size: 12,
+                                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280),
+                                    ),
                                     const SizedBox(width: 2),
                                     Expanded(
                                       child: Text(
                                         'Cầu Giấy, Hà Nội',
                                         style: TextStyle(
-                                          fontSize: 10,
-                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280),
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -155,135 +176,183 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
 
-                  // Right Utility Pills
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: _cycleRadius,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF242834) : Colors.white,
-                            borderRadius: BorderRadius.circular(9999),
-                            border: Border.all(
-                              color: isDark ? Colors.white12 : Colors.black12,
+                  // Right Utility Controls: Radius + Notification
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _cycleRadius,
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: borderColor, width: 1.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.radar_rounded, size: 16, color: Color(0xFF00A859)),
+                            const SizedBox(width: 5),
+                            Text(
+                              '$radiusKm km',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(
+                              width: 0,
+                              height: 0,
+                              child: OverflowBox(
+                                maxWidth: 0,
+                                maxHeight: 0,
+                                child: Text('Bán kính quét khoảng cách'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: borderColor, width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(Icons.notifications_outlined, size: 19),
+                        Positioned(
+                          right: -1,
+                          top: -1,
+                          child: Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF00A859),
+                              shape: BoxShape.circle,
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.explore_outlined, size: 16, color: Color(0xFF2563EB)),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$radiusKm km',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(
-                                width: 0,
-                                height: 0,
-                                child: OverflowBox(
-                                  maxWidth: 0,
-                                  maxHeight: 0,
-                                  child: Text('Bán kính quét khoảng cách'),
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF242834) : Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark ? Colors.white12 : Colors.black12,
-                          ),
-                        ),
-                        child: const Icon(Icons.notifications_none_rounded, size: 20),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // Search Bar Pill
+              // Search Bar
               Container(
                 height: 50,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF242834) : Colors.white,
-                  borderRadius: BorderRadius.circular(9999),
-                  border: Border.all(
-                    color: isDark ? Colors.white12 : Colors.black12,
-                  ),
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: borderColor, width: 1.2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03),
+                      blurRadius: 12,
                       offset: const Offset(0, 4),
-                    )
+                    ),
                   ],
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.search_rounded,
-                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                      size: 22,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280),
+                      size: 21,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
                         controller: _searchController,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                         decoration: InputDecoration(
                           hintText: 'Tìm kiếm sân, cụm sân hoặc quận...',
                           hintStyle: TextStyle(
                             fontSize: 13,
-                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            fontWeight: FontWeight.normal,
+                            color: isDark ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF),
                           ),
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2E3342) : Colors.grey.shade100,
-                        shape: BoxShape.circle,
+                        color: isDark ? const Color(0xFF2A2D37) : const Color(0xFFF1F3F5),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.tune_rounded, size: 16),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
               // Quick Tactical Shortcuts
               Row(
                 children: [
-                  _buildQuickAction('Đăng ký sân', Icons.add_circle_outline_rounded, const Color(0xFF2563EB), () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Mở mẫu đăng ký cụm sân mới')),
+                  _buildQuickAction('Đăng ký sân', Icons.add_business_rounded, const Color(0xFF111315), () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final confirmed = await SportSpotConfirmSheet.show(
+                      context,
+                      title: 'Đăng Ký Cụm Sân Mới',
+                      message: 'Bạn muốn trở thành đối tác chủ sân trên hệ thống SportSpot? Đội ngũ quản trị sẽ liên hệ xác minh.',
+                      confirmLabel: 'Mở mẫu đăng ký',
+                      cancelLabel: 'Để sau',
+                      icon: Icons.add_business_rounded,
+                      actionType: ConfirmActionType.success,
                     );
-                  }, isDark),
+                    if (!mounted) return;
+                    if (confirmed == true) {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Mở mẫu đăng ký cụm sân mới'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }, isDark, borderColor, cardBg),
                   const SizedBox(width: 8),
-                  _buildQuickAction('Tạo trận', Icons.group_add_outlined, const Color(0xFF10B981), () {
+                  _buildQuickAction('Tạo trận', Icons.group_add_rounded, const Color(0xFF00A859), () {
                     if (widget.onNavigateToMatches != null) {
                       widget.onNavigateToMatches!();
                     }
-                  }, isDark),
+                  }, isDark, borderColor, cardBg),
                   const SizedBox(width: 8),
-                  _buildQuickAction('Hỗ trợ', Icons.support_agent_rounded, Colors.grey, () {
+                  _buildQuickAction('Hỗ trợ', Icons.support_agent_rounded, const Color(0xFF6B7280), () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Hỗ trợ trực tuyến 24/7')),
+                      const SnackBar(
+                        content: Text('Hỗ trợ trực tuyến 24/7'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
                     );
-                  }, isDark),
+                  }, isDark, borderColor, cardBg),
                 ],
               ),
               const SizedBox(height: 20),
@@ -292,22 +361,44 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Category',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Expanded(
+                    child: Text(
+                      'Bộ Môn Thể Thao',
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   TextButton(
                     onPressed: () {},
-                    child: const Text('See All', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      'Xem tất cả',
+                      style: TextStyle(
+                        color: Color(0xFF00A859),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
               SizedBox(
-                height: 40,
+                height: 42,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   itemCount: categories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     final cat = categories[index];
                     final isSelected = selectedCategory == cat;
@@ -316,16 +407,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         setState(() => selectedCategory = cat);
                         context.read<VenueProvider>().selectSport(_getSportId(cat));
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xFF2563EB)
-                              : (isDark ? const Color(0xFF242834) : Colors.white),
-                          borderRadius: BorderRadius.circular(9999),
+                              ? (isDark ? Colors.white : const Color(0xFF111315))
+                              : cardBg,
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? Colors.transparent : (isDark ? Colors.white12 : Colors.black12),
+                            color: isSelected ? Colors.transparent : borderColor,
+                            width: 1.2,
                           ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.15),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : null,
                         ),
                         child: Row(
                           children: [
@@ -334,17 +437,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ? Icons.sports_tennis_rounded
                                   : cat.contains('Football')
                                       ? Icons.sports_soccer_rounded
-                                      : Icons.sports_baseball_rounded,
+                                      : cat.contains('Basketball')
+                                          ? Icons.sports_basketball_rounded
+                                          : cat.contains('Pickleball')
+                                              ? Icons.sports_baseball_rounded
+                                              : Icons.tune_rounded,
                               size: 16,
-                              color: isSelected ? Colors.white : Colors.grey,
+                              color: isSelected
+                                  ? (isDark ? const Color(0xFF111315) : Colors.white)
+                                  : const Color(0xFF00A859),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 7),
                             Text(
                               cat,
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected
+                                    ? (isDark ? const Color(0xFF111315) : Colors.white)
+                                    : (isDark ? const Color(0xFFF6F6F3) : const Color(0xFF111315)),
                               ),
                             ),
                           ],
@@ -369,21 +480,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   height: 170,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
+                    color: const Color(0xFF111315),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: borderColor, width: 1.2),
                     image: const DecorationImage(
                       image: NetworkImage(SportSpotMockData.heroBanner),
                       fit: BoxFit.cover,
+                      opacity: 0.72,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Stack(
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(17),
                           gradient: const LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Color(0xEB111319)],
+                            colors: [
+                              Colors.transparent,
+                              Color(0xD90D0E12),
+                              Color(0xF50D0E12),
+                            ],
                           ),
                         ),
                       ),
@@ -396,21 +521,41 @@ class _HomeScreenState extends State<HomeScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.7),
-                                    borderRadius: BorderRadius.circular(9999),
+                                Flexible(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.6),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.white24),
+                                    ),
+                                    child: const Text(
+                                      "⚡ Chia tiền tức thì",
+                                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
                                   ),
-                                  child: const Text('⚡ Instant Split', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                                 ),
+                                const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981),
-                                    borderRadius: BorderRadius.circular(9999),
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF00C853), Color(0xFF00A859)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF00A859).withValues(alpha: 0.4),
+                                        blurRadius: 6,
+                                      ),
+                                    ],
                                   ),
-                                  child: const Text('Save 30%', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  child: const Text(
+                                    "Tiết kiệm 30%",
+                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
+                                  ),
                                 ),
                               ],
                             ),
@@ -422,10 +567,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('PRIME WEEKEND TURF', style: TextStyle(color: Color(0xFF3B82F6), fontSize: 10, fontWeight: FontWeight.bold)),
                                       Text(
-                                        'Book with Friends & Split Cost Instantly',
-                                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900),
+                                        'SÂN ĐẸP CUỐI TUẦN',
+                                        style: TextStyle(
+                                          color: Color(0xFF00E676),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.6,
+                                        ),
+                                      ),
+                                      SizedBox(height: 3),
+                                      Text(
+                                        'Đặt Sân Cùng Bạn Bè & Chia Tiền Tức Thì',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w900,
+                                          height: 1.25,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -433,11 +592,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Container(
                                   width: 36,
                                   height: 36,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF2563EB),
-                                    shape: BoxShape.circle,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.2),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
                                   ),
-                                  child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+                                  child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF111315), size: 19),
                                 ),
                               ],
                             )
@@ -468,38 +633,51 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
                               child: Row(
                                 children: [
-                                  const Text(
-                                    'Featured Venues',
-                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                  Text(
+                                    'Sân Thể Thao Nổi Bật',
+                                    style: TextStyle(
+                                      fontFamily: AppTheme.headingFont,
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.2,
+                                    ),
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 8),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF2A2E3D) : Colors.blue.shade50,
-                                      borderRadius: BorderRadius.circular(9999),
+                                      color: isDark ? const Color(0xFF2A2D37) : const Color(0xFFEBEBE7),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
                                       '${displayVenues.length}',
-                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: isDark ? Colors.white : const Color(0xFF111315),
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: 6),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: (hasLiveApi ? const Color(0xFF10B981) : Colors.amber).withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(9999),
-                                      border: Border.all(color: hasLiveApi ? const Color(0xFF10B981) : Colors.amber),
+                                      color: (hasLiveApi ? const Color(0xFF00A859) : const Color(0xFFD9532F)).withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: hasLiveApi ? const Color(0xFF00A859) : const Color(0xFFD9532F),
+                                        width: 1,
+                                      ),
                                     ),
                                     child: Text(
-                                      hasLiveApi ? 'LIVE API' : 'DEMO',
+                                      hasLiveApi ? 'LIVE API' : 'MÔ PHỎNG',
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w800,
-                                        color: hasLiveApi ? const Color(0xFF10B981) : Colors.amber.shade800,
+                                        color: hasLiveApi ? const Color(0xFF00A859) : const Color(0xFFD9532F),
                                       ),
                                     ),
                                   ),
@@ -509,20 +687,28 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           TextButton(
                             onPressed: () => context.read<VenueProvider>().refreshVenues(),
-                            child: const Text('Refresh', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold, fontSize: 12)),
+                            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6)),
+                            child: const Text(
+                              'Làm mới',
+                              style: TextStyle(
+                                color: Color(0xFF00A859),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       if (venueProvider.isLoading)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 24),
                           child: Center(
-                            child: CircularProgressIndicator(),
+                            child: CircularProgressIndicator(color: Color(0xFF00A859)),
                           ),
                         )
                       else
-                        ...displayVenues.map((venue) => _buildVenueCard(context, venue, isDark)),
+                        ...displayVenues.map((venue) => _buildVenueCard(context, venue, isDark, borderColor, cardBg)),
                     ],
                   );
                 },
@@ -533,73 +719,103 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Open Matches Nearby',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      'Kèo Giao Lưu Gần Bạn',
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: widget.onNavigateToMatches,
-                    child: const Text('Find More', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Xem thêm',
+                      style: TextStyle(
+                        color: Color(0xFF00A859),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF242834) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderColor, width: 1.2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
+                      blurRadius: 16,
                       offset: const Offset(0, 4),
-                    )
+                    ),
                   ],
                 ),
                 child: Row(
                   children: [
-                    const CircleAvatar(
-                      radius: 26,
-                      backgroundImage: NetworkImage(SportSpotMockData.coachMinh),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFF00A859), width: 2),
+                      ),
+                      child: const CircleAvatar(
+                        radius: 22,
+                        backgroundImage: NetworkImage(SportSpotMockData.coachMinh),
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Flexible(
+                              const Flexible(
                                 child: Text(
                                   'Coach Minh Le',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              SizedBox(width: 6),
-                              Text('Adv 4.0', style: TextStyle(fontSize: 10, color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.white10 : const Color(0xFFF1F3F5),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'Adv 4.0',
+                                  style: TextStyle(fontSize: 9, color: Color(0xFF00A859), fontWeight: FontWeight.w800),
+                                ),
+                              ),
                             ],
                           ),
-                          Text(
-                            'Badminton Doubles • 19:00 Tonight',
-                            style: TextStyle(fontSize: 11, color: Colors.grey),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Đôi nam nữ • 19:00 Tối nay',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
-                          Row(
+                          const SizedBox(height: 4),
+                          const Row(
                             children: [
-                              Icon(Icons.groups_rounded, size: 14, color: Color(0xFF10B981)),
-                              SizedBox(width: 4),
+                              Icon(Icons.groups_rounded, size: 15, color: Color(0xFF00A859)),
+                              SizedBox(width: 5),
                               Flexible(
                                 child: Text(
-                                  '3/4 Players joined',
-                                  style: TextStyle(fontSize: 10, color: Color(0xFF10B981), fontWeight: FontWeight.w600),
+                                  '3/4 Người đã tham gia',
+                                  style: TextStyle(fontSize: 11, color: Color(0xFF00A859), fontWeight: FontWeight.w700),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                 ),
@@ -609,15 +825,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: widget.onNavigateToMatches,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
+                        backgroundColor: const Color(0xFF111315),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       ),
-                      child: const Text('Join', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: const Text('Vào kèo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                     ),
                   ],
                 ),
@@ -629,189 +847,267 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildQuickAction(String title, IconData icon, Color color, VoidCallback onTap, bool isDark) {
+  Widget _buildQuickAction(
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+    bool isDark,
+    Color borderColor,
+    Color cardBg,
+  ) {
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(9999),
-        child: Container(
-          height: 38,
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF242834) : Colors.white,
-            borderRadius: BorderRadius.circular(9999),
-            border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: 42,
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 16, color: color),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildVenueCard(BuildContext context, SportSpotVenue venue, bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => VenueDetailScreen(venue: venue),
+  Widget _buildVenueCard(BuildContext context, SportSpotVenue venue, bool isDark, Color borderColor, Color cardBg) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF242834) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Cover image with modern top radius
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
+            child: Stack(
               children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                AspectRatio(
+                  aspectRatio: 16 / 9,
                   child: Image.network(
                     venue.image,
-                    height: 180,
-                    width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 180,
-                      color: const Color(0xFF1E212B),
-                      child: const Center(
-                        child: Icon(Icons.sports_tennis_rounded, color: Color(0xFF2563EB), size: 40),
+                    errorBuilder: (_, _, _) => Container(
+                      color: isDark ? const Color(0xFF2A2D37) : const Color(0xFFEBEBE7),
+                      child: Center(
+                        child: Icon(Icons.sports_tennis_rounded, color: isDark ? Colors.white54 : const Color(0xFF111315), size: 36),
                       ),
                     ),
                   ),
                 ),
+                // Modern top pill on image
                 Positioned(
                   top: 12,
                   left: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.75),
-                      borderRadius: BorderRadius.circular(9999),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text('${venue.rating}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                        Text(' (${venue.reviewCount})', style: const TextStyle(color: Colors.white70, fontSize: 10)),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.75),
-                      borderRadius: BorderRadius.circular(9999),
+                      color: Colors.black.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white24),
                     ),
                     child: Text(
-                      'From ${venue.priceFrom ~/ 1000}k/h',
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                      venue.distance,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(venue.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.near_me, size: 14, color: Color(0xFF2563EB)),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '${venue.address} • ${venue.distance}',
-                          style: const TextStyle(fontSize: 11, color: Colors.grey),
-                          overflow: TextOverflow.ellipsis,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top line: Name + Rating badge
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        venue.name,
+                        style: TextStyle(
+                          fontFamily: AppTheme.headingFont,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : const Color(0xFF111315),
+                          letterSpacing: -0.2,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF10B981),
-                                shape: BoxShape.circle,
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white10 : const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF00A859).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.star_rounded, size: 14, color: Color(0xFF00A859)),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${venue.rating}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF00A859),
+                            ),
+                          ),
+                          Text(
+                            ' (${venue.reviewCount})',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? Colors.white54 : const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Location line
+                Row(
+                  children: [
+                    Icon(Icons.location_on_outlined, size: 14, color: isDark ? Colors.white54 : const Color(0xFF6B7280)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '${venue.address} • ${venue.distance}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white60 : const Color(0xFF6B7280),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                // Structural line divider
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: borderColor,
+                ),
+                const SizedBox(height: 14),
+                // Bottom row: Slots available & Price + CTA
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF00A859),
+                                  shape: BoxShape.circle,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                '${venue.slotsAvailableToday} slots open today',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
-                                overflow: TextOverflow.ellipsis,
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '${venue.slotsAvailableToday} khung giờ trống hôm nay',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF00A859),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Từ ${venue.priceFrom ~/ 1000}k/giờ',
+                            style: TextStyle(
+                              fontFamily: AppTheme.headingFont,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: isDark ? Colors.white : const Color(0xFF111315),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => VenueDetailScreen(venue: venue),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
-                        ),
-                        child: const Text('Book Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => VenueDetailScreen(venue: venue),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF111315),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                    ],
-                  )
-                ],
-              ),
+                      child: const Text('Đặt Sân Ngay', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

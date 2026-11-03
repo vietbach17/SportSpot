@@ -161,7 +161,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppTheme.pastelBlue.withOpacity(0.5),
+                    color: AppTheme.pastelBlue.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppTheme.pastelBlue),
                   ),

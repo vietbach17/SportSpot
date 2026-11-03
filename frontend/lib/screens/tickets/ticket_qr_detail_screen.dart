@@ -4,6 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../providers/ticket_provider.dart';
+import '../../widgets/confirm_action_sheet.dart';
 import 'cancel_ticket_dialog.dart';
 
 class TicketQrDetailScreen extends StatefulWidget {
@@ -33,6 +34,27 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
   }
 
   Future<void> _simulateStaffScanCheckIn() async {
+    final confirmed = await SportSpotConfirmSheet.show(
+      context,
+      title: 'Xác nhận Quét QR Điểm danh',
+      message: 'Hành động này sẽ giải ngân (Settled) toàn bộ số tiền cọc Escrow cho chủ sân.',
+      confirmLabel: 'Xác nhận Điểm danh',
+      cancelLabel: 'Hủy',
+      icon: Icons.qr_code_scanner_rounded,
+      actionType: ConfirmActionType.success,
+      infoRows: [
+        ConfirmInfoRow(label: 'Mã vé', value: _currentTicket.bookingCode),
+        ConfirmInfoRow(label: 'Sân đấu', value: _currentTicket.venueName),
+        ConfirmInfoRow(
+          label: 'Tiền cọc giải ngân',
+          value: CancelTicketDialog.formatVnd(_currentTicket.depositAmount),
+          isBold: true,
+          valueColor: const Color(0xFF16A34A),
+        ),
+      ],
+    );
+    if (confirmed != true) return;
+
     setState(() => _isCheckingIn = true);
     try {
       final res = await widget.provider.verifyQrCheckIn(_currentTicket.qrPayload);
@@ -72,7 +94,7 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vé Điện Tử QR (Offline Pass)'),
+        title: const Text('Vé Điện Tử QR (Vé Ngoại Tuyến)'),
         actions: [
           IconButton(
             tooltip: 'Sao chép chuỗi QR Payload',
@@ -101,7 +123,7 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                     color: widget.isOfflineMode
                         ? const Color(0xFFFEF3C7)
                         : const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: widget.isOfflineMode
                           ? const Color(0xFFF59E0B)
@@ -122,8 +144,8 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                       Expanded(
                         child: Text(
                           widget.isOfflineMode
-                              ? 'OFFLINE MODE • Vé được đọc trực tiếp từ SQLite cục bộ (Không cần 4G/Wi-Fi)'
-                              : 'OFFLINE READY • Đã lưu bản sao vé vào SQLite trên thiết bị',
+                              ? 'CHẾ ĐỘ NGOẠI TUYẾN • Vé được đọc trực tiếp từ SQLite trên máy (Không cần mạng)'
+                              : 'SẴN SÀNG NGOẠI TUYẾN • Đã lưu bản sao vé vào SQLite trên thiết bị',
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
@@ -142,7 +164,7 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.08),
@@ -158,12 +180,8 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
                         decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppTheme.darkBlue, AppTheme.accentBlue],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                          color: Color(0xFF0F172A),
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,7 +197,7 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Text(
                                       '${_currentTicket.sportName} • ${_currentTicket.userRoleInMatch == 'JoinedPlayer' ? 'Vãng lai' : 'Đội trưởng'}',
@@ -237,7 +255,7 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: isSettled
                                       ? const Color(0xFF16A34A)
@@ -355,7 +373,7 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                 const SizedBox(height: 20),
 
                 // Nút Giả lập Lễ tân quét mã QR Check-in & Giải ngân Escrow
-                if (!isSettled && !isCancelled)
+                if (!isSettled && !isCancelled) ...[
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -363,6 +381,7 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                         backgroundColor: const Color(0xFF16A34A),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: _isCheckingIn ? null : _simulateStaffScanCheckIn,
                       icon: _isCheckingIn
@@ -376,10 +395,52 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                             )
                           : const Icon(Icons.qr_code_scanner_rounded),
                       label: const Text(
-                        'Giả lập Lễ tân Quét QR Check-in (Giải ngân Escrow)',
+                        'Giả lập Lễ tân Quét QR Điểm danh (Giải ngân Escrow)',
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFDC2626),
+                        side: const BorderSide(color: Color(0xFFDC2626), width: 1.2),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        final messenger = ScaffoldMessenger.of(context);
+                        showDialog(
+                          context: context,
+                          builder: (_) => CancelTicketDialog(
+                            ticket: _currentTicket,
+                            onConfirmCancel: () async {
+                              final cancelRes = await widget.provider.cancelTicket(_currentTicket);
+                              if (!mounted) return;
+                              setState(() {
+                                _currentTicket = _currentTicket.copyWith(status: 'Cancelled');
+                              });
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  backgroundColor: const Color(0xFF16A34A),
+                                  content: Text(
+                                    'Hủy vé thành công! Hoàn +${CancelTicketDialog.formatVnd(cancelRes.refundAmount)} vào Ví.',
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.cancel_outlined, size: 18),
+                      label: const Text(
+                        'Hủy Vé & Yêu Cầu Hoàn Tiền',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

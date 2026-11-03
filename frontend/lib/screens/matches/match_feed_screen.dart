@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../../core/theme/app_theme.dart';
+
 import '../../data/models/match_model.dart';
 import '../../data/repositories/match_repository.dart';
 import '../../data/sportspot_mock_data.dart';
 import '../../data/sportspot_models.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/match_ui.dart';
 import '../../widgets/recruitment_form.dart';
 import '../auth/phone_input_screen.dart';
@@ -19,6 +20,7 @@ class MatchFeedScreen extends StatefulWidget {
   const MatchFeedScreen({super.key, this.repository, this.staff = false});
 
   @override
+  // ignore: no_logic_in_create_state
   State<MatchFeedScreen> createState() {
     if (repository != null || staff) {
       return _Module4MatchFeedState();
@@ -32,9 +34,26 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
   String selectedLevel = 'all';
   List<SportSpotMatch> matches = List.from(SportSpotMockData.openMatches);
 
-  void _joinMatch(int index) {
+  void _joinMatch(int index) async {
+    final current = matches[index];
+    if (current.isJoined) {
+      final confirmed = await SportSpotConfirmSheet.show(
+        context,
+        title: 'Xác nhận Rời Trận Đấu',
+        message: 'Vị trí của bạn trong đội hình sẽ được mở lại cho người chơi khác.',
+        confirmLabel: 'Rời trận',
+        cancelLabel: 'Ở lại',
+        icon: Icons.exit_to_app_rounded,
+        actionType: ConfirmActionType.destructive,
+        infoRows: [
+          ConfirmInfoRow(label: 'Trận đấu', value: current.venueName),
+          ConfirmInfoRow(label: 'Thời gian', value: current.timeDisplay),
+        ],
+      );
+      if (confirmed != true) return;
+    }
+
     setState(() {
-      final current = matches[index];
       final isNowJoined = !current.isJoined;
       matches[index] = current.copyWith(
         isJoined: isNowJoined,
@@ -43,11 +62,12 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
       );
     });
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(matches[index].isJoined
-            ? '🎉 Match slot reserved! You are in squad.'
-            : 'Left the match.'),
+            ? '🎉 Đã giữ chỗ thành công! Bạn đã tham gia đội hình.'
+            : 'Đã rời khỏi trận đấu.'),
         backgroundColor: matches[index].isJoined ? const Color(0xFF10B981) : Colors.black87,
         duration: const Duration(seconds: 2),
       ),
@@ -88,23 +108,23 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Host a Match',
+                'Tạo Trận Đấu Mới',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 4),
               const Text(
-                'Create an open game slot and let nearby players auto-split court fees.',
+                'Mở kèo giao lưu và cùng người chơi xung quanh chia sẻ tiền sân tự động.',
                 style: TextStyle(fontSize: 13, color: Colors.grey),
               ),
               const SizedBox(height: 20),
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Match Title',
-                  hintText: 'e.g. Badminton Doubles Friendly',
+                  labelText: 'Tên trận đấu',
+                  hintText: 'VD: Giao lưu cầu lông đôi nam nữ',
                   filled: true,
                   fillColor: isDark ? const Color(0xFF242834) : Colors.grey.shade100,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -115,12 +135,12 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                   Expanded(
                     child: TextField(
                       decoration: InputDecoration(
-                        labelText: 'Slots Needed',
+                        labelText: 'Số người cần tìm',
                         hintText: '2',
                         filled: true,
                         fillColor: isDark ? const Color(0xFF242834) : Colors.grey.shade100,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -131,12 +151,12 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                   Expanded(
                     child: TextField(
                       decoration: InputDecoration(
-                        labelText: 'Split Fee (VND)',
+                        labelText: 'Chi phí chia sẻ (VND)',
                         hintText: '60,000',
                         filled: true,
                         fillColor: isDark ? const Color(0xFF242834) : Colors.grey.shade100,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -154,17 +174,17 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('⚡ Match created! Nearby players notified.'),
-                        backgroundColor: Color(0xFF2563EB),
+                        content: Text('⚡ Đã tạo trận đấu! Đã gửi thông báo đến các người chơi gần bạn.'),
+                        backgroundColor: Color(0xFF111315),
                       ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFF111315),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text('Publish Match', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  child: const Text('Đăng Kèo Trận Đấu', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -199,17 +219,17 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF242834) : Colors.white,
-                        borderRadius: BorderRadius.circular(9999),
-                        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                        color: isDark ? const Color(0xFF191A1E) : Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: isDark ? const Color(0xFF2E313A) : const Color(0xFFE4E4E0), width: 1),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.near_me_rounded, size: 14, color: Color(0xFF2563EB)),
+                          Icon(Icons.near_me_rounded, size: 14, color: Color(0xFF111315)),
                           SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              'Within 5 km • Cau Giay',
+                              'Bán kính 5 km • Cầu Giấy',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -222,12 +242,12 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                   ElevatedButton.icon(
                     onPressed: _showHostGameDialog,
                     icon: const Icon(Icons.add_circle_rounded, size: 16),
-                    label: const Text('Host Game', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    label: const Text('Tạo Kèo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
+                      backgroundColor: const Color(0xFF111315),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
                   ),
@@ -236,10 +256,10 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
               const SizedBox(height: 18),
 
               // Title Header
-              const Text('Open Matches', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+              const Text('Kèo Giao Lưu', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
               const SizedBox(height: 4),
               const Text(
-                'Join open player slots and auto-split court fees effortlessly.',
+                'Tham gia các đội hình mở và chia sẻ tiền sân tự động, minh bạch.',
                 style: TextStyle(fontSize: 13, color: Colors.grey),
               ),
               const SizedBox(height: 16),
@@ -249,10 +269,10 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildFilterChip('all', 'All Sports', Icons.grid_view_rounded),
-                    _buildFilterChip('badminton', 'Badminton', Icons.sports_tennis_rounded),
+                    _buildFilterChip('all', 'Tất cả môn', Icons.grid_view_rounded),
+                    _buildFilterChip('badminton', 'Cầu lông', Icons.sports_tennis_rounded),
                     _buildFilterChip('pickleball', 'Pickleball', Icons.sports_tennis),
-                    _buildFilterChip('football', 'Football', Icons.sports_soccer_rounded),
+                    _buildFilterChip('football', 'Bóng đá', Icons.sports_soccer_rounded),
                   ],
                 ),
               ),
@@ -267,7 +287,7 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                       children: [
                         Icon(Icons.sports_outlined, size: 48, color: Colors.grey.withAlpha(128)),
                         const SizedBox(height: 12),
-                        const Text('No matches found for this filter', style: TextStyle(color: Colors.grey)),
+                        const Text('Không tìm thấy trận đấu phù hợp', style: TextStyle(color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -284,9 +304,9 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 20),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF242834) : Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                        color: isDark ? const Color(0xFF191A1E) : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: isDark ? const Color(0xFF2E313A) : const Color(0xFFE4E4E0), width: 1),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withAlpha(isDark ? 76 : 13),
@@ -302,7 +322,7 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                           Stack(
                             children: [
                               ClipRRect(
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(9)),
                                 child: Image.network(
                                   match.image,
                                   height: 165,
@@ -318,7 +338,7 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                               Positioned.fill(
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(9)),
                                     gradient: LinearGradient(
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
@@ -337,7 +357,7 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFEF4444),
-                                    borderRadius: BorderRadius.circular(9999),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -345,7 +365,7 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                                       const Icon(Icons.group, color: Colors.white, size: 12),
                                       const SizedBox(width: 4),
                                       Text(
-                                        'Needs ${match.spotsNeeded} players',
+                                        'Cần thêm ${match.spotsNeeded} người',
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 10,
@@ -363,7 +383,7 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withAlpha(153),
-                                    borderRadius: BorderRadius.circular(9999),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     match.timeDisplay,
@@ -446,25 +466,25 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF2563EB).withAlpha(30),
+                                            color: const Color(0xFF111315).withAlpha(30),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
-                                            'Auto-split ${match.splitMultiplier}x',
+                                            'Tự động chia ${match.splitMultiplier}x',
                                             style: const TextStyle(
                                               fontSize: 10,
-                                              color: Color(0xFF2563EB),
+                                              color: Color(0xFF111315),
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          '${match.splitPrice ~/ 1000}k VND/person',
+                                          '${match.splitPrice ~/ 1000}k đ/người',
                                           style: const TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w900,
-                                            color: Color(0xFF2563EB),
+                                            color: Color(0xFF111315),
                                           ),
                                         ),
                                       ],
@@ -480,14 +500,14 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: match.isJoined
                                               ? const Color(0xFF10B981)
-                                              : const Color(0xFF2563EB),
+                                              : const Color(0xFF111315),
                                           foregroundColor: Colors.white,
                                           elevation: 0,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                           padding: const EdgeInsets.symmetric(vertical: 12),
                                         ),
                                         child: Text(
-                                          match.isJoined ? 'Joined! ✓' : 'Join Match',
+                                          match.isJoined ? 'Đã tham gia! ✓' : 'Tham Gia Kèo',
                                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                                         ),
                                       ),
@@ -503,7 +523,7 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
                                         onPressed: () {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
-                                              content: Text('💬 Squad Chat with ${match.hostName} & group'),
+                                              content: Text('💬 Trò chuyện nhóm cùng ${match.hostName} & đội hình'),
                                               duration: const Duration(seconds: 1),
                                             ),
                                           );
@@ -538,11 +558,11 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF2563EB)
+              ? const Color(0xFF111315)
               : (isDark ? const Color(0xFF242834) : Colors.white),
-          borderRadius: BorderRadius.circular(9999),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? const Color(0xFF2563EB) : (isDark ? Colors.white12 : Colors.black12),
+            color: isSelected ? const Color(0xFF111315) : (isDark ? Colors.white12 : Colors.black12),
           ),
         ),
         child: Row(
@@ -954,7 +974,7 @@ class _MatchCard extends StatelessWidget {
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(10),
         side: const BorderSide(color: MatchColors.line),
       ),
       clipBehavior: Clip.antiAlias,

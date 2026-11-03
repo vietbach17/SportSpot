@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../data/repositories/ticket_repository.dart';
 import '../../providers/ticket_provider.dart';
@@ -14,8 +15,8 @@ class MyTicketsScreen extends StatefulWidget {
 }
 
 class _MyTicketsScreenState extends State<MyTicketsScreen> {
-  bool isReminded = false;
   late final TicketProvider _provider;
+  int _selectedTabIndex = 0; // 0: Tất cả, 1: Sắp tới, 2: Đã xong, 3: Đã hủy
 
   @override
   void initState() {
@@ -50,488 +51,548 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     return '${buffer.toString()} đ';
   }
 
+  List<TicketModel> get _filteredTickets {
+    switch (_selectedTabIndex) {
+      case 1:
+        return _provider.upcomingTickets;
+      case 2:
+        return _provider.completedTickets;
+      case 3:
+        return _provider.cancelledTickets;
+      default:
+        return _provider.tickets;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tickets = _provider.tickets;
-    final activeTicket = tickets.isNotEmpty ? tickets.first : null;
+    final bgColor = isDark ? const Color(0xFF111216) : const Color(0xFFF7F8FA);
+    final cardColor = isDark ? const Color(0xFF191A20) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E313A) : const Color(0xFFE5E7EB);
+    final textColor = isDark ? const Color(0xFFF6F6F3) : const Color(0xFF111315);
+    final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+
+    final tickets = _filteredTickets;
     final reminders = _provider.upcomingReminders;
 
     return Scaffold(
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        backgroundColor: cardColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          'Vé Thi Đấu & Lịch Sân',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
+            color: textColor,
+            letterSpacing: -0.3,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh_rounded, color: textColor),
+            tooltip: 'Làm mới danh sách',
+            onPressed: () => _provider.loadTickets(),
+          ),
+        ],
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Escrow Wallet & Offline Control Bar
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF242834) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'VÍ HOÀN TIỀN',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _formatVnd(_provider.walletBalance),
-                              key: const Key('wallet_balance_text'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF10B981),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(width: 1, height: 32, color: Colors.grey.withOpacity(0.2)),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'ESCROW TẠM GIỮ',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _formatVnd(_provider.escrowHoldingTotal),
-                              key: const Key('escrow_holding_text'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF2563EB),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _provider.isOfflineMode ? Icons.cloud_off_rounded : Icons.cloud_done_rounded,
-                              size: 16,
-                              color: _provider.isOfflineMode ? Colors.orange : const Color(0xFF10B981),
-                            ),
-                            const SizedBox(width: 4),
-                            Switch(
-                              key: const Key('offline_mode_switch'),
-                              value: _provider.isOfflineMode,
-                              activeColor: const Color(0xFFD97706),
-                              onChanged: (val) => _provider.toggleOfflineMode(val),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    if (_provider.isFromSqliteOffline) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.offline_bolt_rounded, size: 14, color: Colors.orange),
-                            SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'Đang mở vé từ bộ nhớ SQLite Offline',
-                                style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+        child: RefreshIndicator(
+          onRefresh: () => _provider.loadTickets(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Escrow Wallet & Offline Control Bar
+                _buildWalletAndOfflineBar(cardColor, borderColor, textColor, mutedColor),
+                const SizedBox(height: 14),
 
-              // Pre-match 2h Reminder Banner
-              if (reminders.isNotEmpty)
-                Container(
-                  key: const Key('pre_match_reminder_banner'),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.amber.withOpacity(0.4)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.alarm_on_rounded, color: Colors.amber, size: 22),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Nhắc lịch: Trận đấu sắp diễn ra trong 2 giờ!',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.amber),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${reminders.first.venueName} • ${reminders.first.timeSlots.join(", ")}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              const Text('My Passes & Bookings', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 4),
-              const Text(
-                'Contactless gate entry passes and team split invoices.',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
-              ),
-              const SizedBox(height: 20),
-
-              // Active Digital Pass
-              Container(
-                key: Key('ticket_card_${activeTicket?.bookingId ?? 501}'),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF242834) : Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Pass Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2563EB).withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  activeTicket != null ? 'VERIFIED MATCH PASS (${activeTicket.escrowStatus.toUpperCase()})' : 'VERIFIED MATCH PASS',
-                                  style: const TextStyle(
-                                    color: Color(0xFF2563EB),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                activeTicket?.venueName ?? 'Cau Giay Pro Arena',
-                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                activeTicket != null
-                                    ? '${activeTicket.subVenueName} • ${activeTicket.sportName}'
-                                    : 'Court 1 • Premium Maple Wood',
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E212B) : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                          ),
-                          child: Text(
-                            activeTicket?.bookingCode ?? 'SP-7842',
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 28),
-
-                    // Countdown & PIN
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E212B) : const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.timer_rounded, size: 18, color: Colors.amber),
-                              SizedBox(width: 8),
-                              Text(
-                                'Starts in 2h 45m',
-                                style: TextStyle(
-                                  color: Colors.amber,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            activeTicket != null ? 'ID: #${activeTicket.bookingId}' : 'Gate PIN: 4829',
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF2563EB),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-
-                    // Contactless QR Box
-                    GestureDetector(
-                      onTap: () {
-                        if (activeTicket != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TicketQrDetailScreen(
-                                ticket: activeTicket,
-                                provider: _provider,
-                                isOfflineMode: _provider.isOfflineMode,
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      child: Container(
-                        width: 170,
-                        height: 170,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.grey.shade300, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.qr_code_2_rounded,
-                            size: 140,
-                            color: Color(0xFF181A22),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Hold near turnstile optical reader for entry',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 22),
-
-                    // Match Schedule detail
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E212B) : Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Column(
-                            children: [
-                              const Text('DATE', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 4),
-                              Text(activeTicket?.playDate ?? 'Today (Fri)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          const Text('•', style: TextStyle(color: Colors.grey)),
-                          Column(
-                            children: [
-                              const Text('HOURS', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 4),
-                              Text(activeTicket != null ? activeTicket.timeSlots.join(', ') : '18:30 - 20:30', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          const Text('•', style: TextStyle(color: Colors.grey)),
-                          const Column(
-                            children: [
-                              Text('DURATION', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-                              SizedBox(height: 4),
-                              Text('120 Mins', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Team Split Breakdown
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E212B) : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Column(
-                        children: [
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Team Split (3/4 Paid)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                              Text('60,000 VND / player', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
-                            ],
-                          ),
-                          const Divider(height: 18),
-                          _buildMemberRow('You (Nam Nguyen)', 'Paid ✓', const Color(0xFF10B981)),
-                          const SizedBox(height: 6),
-                          _buildMemberRow('Minh Trí', 'Paid ✓', const Color(0xFF10B981)),
-                          const SizedBox(height: 6),
-                          _buildMemberRow('Hoàng Nam', 'Paid ✓', const Color(0xFF10B981)),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Minh Tuan', style: TextStyle(fontSize: 12)),
-                              Row(
-                                children: [
-                                  Text(
-                                    isReminded ? 'Reminded 🔔' : 'Pending ⏳',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isReminded ? Colors.amber : Colors.orange,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  if (!isReminded) ...[
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() => isReminded = true);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Payment reminder sent to Minh Tuan!')),
-                                        );
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF2563EB),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: const Text('Remind', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Directions & Help row
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Opening Navigation to 180 Xuân Thủy, Cầu Giấy...')),
-                        );
-                      },
-                      icon: const Icon(Icons.directions_rounded, size: 16),
-                      label: const Text('Get Directions', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Calling Arena Reception (+84 24 3833 ...) ')),
-                        );
-                      },
-                      icon: const Icon(Icons.phone_in_talk_rounded, size: 16),
-                      label: const Text('Contact Arena', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
-                  ),
+                // 2. Pre-match 2h Reminder Banner
+                if (reminders.isNotEmpty) ...[
+                  _buildPreMatchReminderBanner(reminders.first),
+                  const SizedBox(height: 14),
                 ],
-              ),
-            ],
+
+                // 3. Tab Filter Pills
+                _buildFilterTabs(cardColor, borderColor, textColor, mutedColor),
+                const SizedBox(height: 16),
+
+                // 4. Ticket List
+                if (_provider.isLoading && _provider.tickets.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 48),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (tickets.isEmpty)
+                  _buildEmptyState(cardColor, borderColor, textColor, mutedColor)
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: tickets.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
+                    itemBuilder: (context, index) {
+                      final ticket = tickets[index];
+                      return _buildTicketCard(
+                        ticket: ticket,
+                        cardColor: cardColor,
+                        borderColor: borderColor,
+                        textColor: textColor,
+                        mutedColor: mutedColor,
+                      );
+                    },
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildMemberRow(String name, String status, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(name, style: const TextStyle(fontSize: 12)),
-        Text(status, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.bold)),
-      ],
+  Widget _buildWalletAndOfflineBar(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color mutedColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'VÍ HOÀN TIỀN',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: mutedColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatVnd(_provider.walletBalance),
+                      key: const Key('wallet_balance_text'),
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF16A34A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(width: 1, height: 32, color: borderColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ESCROW TẠM GIỮ',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: mutedColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatVnd(_provider.escrowHoldingTotal),
+                      key: const Key('escrow_holding_text'),
+                      style: TextStyle(
+                        fontFamily: AppTheme.headingFont,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF111315),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _provider.isOfflineMode ? Icons.cloud_off_rounded : Icons.cloud_done_rounded,
+                    size: 16,
+                    color: _provider.isOfflineMode ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+                  ),
+                  const SizedBox(width: 4),
+                  Switch(
+                    key: const Key('offline_mode_switch'),
+                    value: _provider.isOfflineMode,
+                    activeThumbColor: const Color(0xFFD97706),
+                    onChanged: (val) => _provider.toggleOfflineMode(val),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (_provider.isFromSqliteOffline) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.offline_bolt_rounded, size: 14, color: Color(0xFFD97706)),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Đang mở vé từ bộ nhớ SQLite Offline',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF92400E),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreMatchReminderBanner(TicketModel ticket) {
+    return Container(
+      key: const Key('pre_match_reminder_banner'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF3C7),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFDE68A),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.alarm_on_rounded, size: 18, color: Color(0xFFB45309)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'NHẮC LỊCH ĐẤU • SẮP DIỄN RA (< 2.5 GIỜ)',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFFB45309),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${ticket.venueName} • ${ticket.timeSlots.join(', ')}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF78350F),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterTabs(Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
+    final tabs = [
+      'Tất cả (${_provider.tickets.length})',
+      'Sắp tới (${_provider.upcomingTickets.length})',
+      'Đã đấu (${_provider.completedTickets.length})',
+      'Đã hủy (${_provider.cancelledTickets.length})',
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: List.generate(tabs.length, (index) {
+          final isSelected = _selectedTabIndex == index;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              showCheckmark: false,
+              label: Text(tabs[index]),
+              selected: isSelected,
+              selectedColor: const Color(0xFF111315),
+              backgroundColor: cardColor,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : textColor,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                fontSize: 12,
+              ),
+              side: BorderSide(
+                color: isSelected ? const Color(0xFF111315) : borderColor,
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              onSelected: (val) {
+                if (val) setState(() => _selectedTabIndex = index);
+              },
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildTicketCard({
+    required TicketModel ticket,
+    required Color cardColor,
+    required Color borderColor,
+    required Color textColor,
+    required Color mutedColor,
+  }) {
+    final isCheckedIn = ticket.isCheckedIn || ticket.status == 'Completed';
+    final isCancelled = ticket.status == 'Cancelled';
+
+    Color statusBg = const Color(0xFFEDF3FF);
+    Color statusFg = const Color(0xFF111315);
+    String statusText = 'KÝ QUỸ TẠM GIỮ';
+
+    if (isCheckedIn) {
+      statusBg = const Color(0xFFDCFCE7);
+      statusFg = const Color(0xFF16A34A);
+      statusText = 'ĐÃ VÀO SÂN (QUYẾT TOÁN)';
+    } else if (isCancelled) {
+      statusBg = const Color(0xFFFEE2E2);
+      statusFg = const Color(0xFFDC2626);
+      statusText = 'ĐÃ HỦY (HOÀN TIỀN)';
+    }
+
+    return Container(
+      key: Key('ticket_card_${ticket.bookingId}'),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TicketQrDetailScreen(
+                  ticket: ticket,
+                  provider: _provider,
+                  isOfflineMode: _provider.isOfflineMode,
+                ),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row: Sport badge + Escrow status
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${ticket.sportName.toUpperCase()} • ${ticket.userRoleInMatch == 'JoinedPlayer' ? 'VÃNG LAI' : 'ĐỘI TRƯỞNG'}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        statusText,
+                        style: TextStyle(
+                          color: statusFg,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Venue & Subvenue
+                Text(
+                  ticket.venueName,
+                  style: TextStyle(
+                    fontFamily: AppTheme.headingFont,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: textColor,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${ticket.subVenueName} • ${ticket.address}',
+                  style: TextStyle(fontSize: 12.5, color: mutedColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Divider(height: 1, color: borderColor),
+                const SizedBox(height: 12),
+
+                // Date & Time metadata row
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today_rounded, size: 14, color: mutedColor),
+                    const SizedBox(width: 5),
+                    Text(
+                      ticket.playDate,
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: textColor),
+                    ),
+                    const SizedBox(width: 14),
+                    Icon(Icons.access_time_rounded, size: 14, color: mutedColor),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        ticket.timeSlots.join(', '),
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: textColor),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Bottom row: Booking code + View QR Pass CTA
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      ticket.bookingCode,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        letterSpacing: 0.8,
+                        color: Color(0xFF111315),
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.qr_code_2_rounded, size: 18, color: Color(0xFF2563EB)),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Mở Vé QR',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF111315),
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF2563EB)),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.sports_tennis_rounded, size: 36, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Chưa có vé nào trong mục này',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Đặt sân và nhận vé điện tử kèm mã QR điểm danh tự động.',
+            style: TextStyle(fontSize: 12.5, color: mutedColor),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }

@@ -166,7 +166,7 @@ public class VenueService : IVenueService
             ? await _unitOfWork.Venues.GetBookedSlotIdsAsync(subVenueId, playDate)
             : new List<int>();
 
-        var now = DateTime.Now;
+        var now = MatchRules.VietnamNow;
         var isToday = playDate == DateOnly.FromDateTime(now);
 
         var slotStatuses = allSlots.Select(slot =>

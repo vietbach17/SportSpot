@@ -2,10 +2,13 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 class ApiConstants {
+  static const String _envApiUrl = String.fromEnvironment('API_URL');
   // Tự động nhận diện IP: 10.0.2.2 cho Android Emulator, localhost cho Windows/Web
   static String get baseUrl {
+    if (_envApiUrl.isNotEmpty) return _envApiUrl;
     if (kIsWeb) {
-      return 'http://localhost:5000';
+      final host = Uri.base.host.isNotEmpty ? Uri.base.host : 'localhost';
+      return 'http://$host:5000';
     }
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:5000';
