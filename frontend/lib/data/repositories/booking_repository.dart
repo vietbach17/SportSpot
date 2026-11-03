@@ -2,11 +2,13 @@ import 'dart:math';
 import 'package:intl/intl.dart';
 import '../../core/network/api_client.dart';
 import '../models/booking_model.dart';
+import '../models/ticket_model.dart';
 
 abstract class IBookingRepository {
   Future<VenueDetailModel> getVenueDetail(int venueId);
   Future<List<VenueSlotModel>> getSlots(int venueId, int subVenueId, DateTime date);
   Future<BookingResultModel> createBooking(BookingRequestModel request);
+  Future<CancelRefundResultModel> cancelBooking(int bookingId, {int? userId});
 }
 
 class RemoteBookingRepository implements IBookingRepository {
@@ -33,6 +35,13 @@ class RemoteBookingRepository implements IBookingRepository {
   Future<BookingResultModel> createBooking(BookingRequestModel request) async {
     final response = await _api.post('/api/bookings', request.toJson());
     return BookingResultModel.fromJson(response as Map<String, dynamic>);
+  }
+
+  @override
+  Future<CancelRefundResultModel> cancelBooking(int bookingId, {int? userId}) async {
+    final query = userId != null ? '?userId=$userId' : '';
+    final response = await _api.post('/api/bookings/$bookingId/cancel$query', {});
+    return CancelRefundResultModel.fromJson(response as Map<String, dynamic>);
   }
 }
 
@@ -160,6 +169,21 @@ class MockBookingRepository implements IBookingRepository {
       status: 'Upcoming',
       qrPayload: 'SPORTSPOT|$code|1|Host|MOCK_MD5_HASH',
       isCheckedIn: false,
+    );
+  }
+
+  @override
+  Future<CancelRefundResultModel> cancelBooking(int bookingId, {int? userId}) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return CancelRefundResultModel(
+      bookingId: bookingId,
+      bookingCode: 'SP-MOCK',
+      hoursBeforeMatch: 5.0,
+      refundPercentage: 100,
+      refundAmount: 150000,
+      penaltyAmount: 0,
+      newWalletBalance: 500000,
+      policyApplied: 'Hủy trước >= 4 tiếng: Hoàn 100% tiền cọc về Ví',
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:sportspot/data/models/booking_model.dart';
+import 'package:sportspot/data/models/ticket_model.dart';
 import 'package:sportspot/data/repositories/booking_repository.dart';
 import 'package:sportspot/providers/booking_provider.dart';
 import 'package:sportspot/screens/booking/booking_checkout_screen.dart';
@@ -77,6 +78,20 @@ class ImmediateBookingRepository implements IBookingRepository {
       status: 'Confirmed',
       qrPayload: 'SPORTSPOT-BK-TEST-1234',
       isCheckedIn: false,
+    );
+  }
+
+  @override
+  Future<CancelRefundResultModel> cancelBooking(int bookingId, {int? userId}) async {
+    return CancelRefundResultModel(
+      bookingId: bookingId,
+      bookingCode: 'BK-TEST-1234',
+      hoursBeforeMatch: 5.0,
+      refundPercentage: 100,
+      refundAmount: 90000,
+      penaltyAmount: 0,
+      newWalletBalance: 500000,
+      policyApplied: 'Hủy trước >= 4 tiếng: Hoàn 100% tiền cọc về Ví',
     );
   }
 }

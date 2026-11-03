@@ -1,6 +1,9 @@
+import '../../data/models/ticket_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/constants/api_constants.dart';
+import '../../core/network/api_client.dart';
 import '../../providers/ticket_provider.dart';
 import '../../widgets/confirm_action_sheet.dart';
 import '../tickets/cancel_ticket_dialog.dart';
@@ -11,6 +14,10 @@ class PaymentCheckoutScreen extends StatefulWidget {
   final int? initialSubVenueId;
   final String? initialPlayDate;
   final List<int>? initialSlotIds;
+  final String? existingBookingCode;
+  final int? existingBookingId;
+  final int? existingAmount;
+  final String? existingVenueName;
 
   const PaymentCheckoutScreen({
     super.key,
@@ -18,6 +25,10 @@ class PaymentCheckoutScreen extends StatefulWidget {
     this.initialSubVenueId,
     this.initialPlayDate,
     this.initialSlotIds,
+    this.existingBookingCode,
+    this.existingBookingId,
+    this.existingAmount,
+    this.existingVenueName,
   });
 
   @override
@@ -670,13 +681,33 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
     if (confirmed != true) return;
 
     setState(() => _isSubmitting = true);
-    final ticket = await widget.ticketProvider.createSandboxBookingAndPay(
-      subVenueId: _selectedSubVenueId,
-      playDate: playDate,
-      slotIds: slotIds,
-      depositPercent: _depositPercent,
-      paymentGateway: _selectedGateway,
-    );
+    TicketModel? ticket;
+    if (widget.existingBookingCode != null) {
+      try {
+        final client = ApiClient();
+        final intent = await client.post(ApiConstants.createPaymentIntent, {
+          'bookingId': widget.existingBookingId ?? 1,
+          'amount': widget.existingAmount ?? amountToPay,
+          'paymentGateway': _selectedGateway,
+        });
+        final txnCode = (intent as Map)['transactionCode']?.toString() ?? '';
+        if (txnCode.isNotEmpty) {
+          await client.post(ApiConstants.paymentWebhook, {
+            'transactionCode': txnCode,
+            'isSuccess': true,
+          });
+        }
+      } catch (_) {}
+      ticket = await widget.ticketProvider.mockInstantPayByCode(widget.existingBookingCode!);
+    } else {
+      ticket = await widget.ticketProvider.createSandboxBookingAndPay(
+        subVenueId: _selectedSubVenueId,
+        playDate: playDate,
+        slotIds: slotIds,
+        depositPercent: _depositPercent,
+        paymentGateway: _selectedGateway,
+      );
+    }
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
@@ -706,7 +737,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => TicketQrDetailScreen(
-          ticket: ticket,
+          ticket: ticket!,
           provider: widget.ticketProvider,
           isOfflineMode: widget.ticketProvider.isFromSqliteOffline,
         ),

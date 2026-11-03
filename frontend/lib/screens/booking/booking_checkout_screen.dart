@@ -10,6 +10,7 @@ import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/match_ui.dart';
 import '../../widgets/recruitment_form.dart';
 import '../main/main_screen.dart';
+import '../payment/payment_checkout_screen.dart';
 
 class BookingCheckoutScreen extends StatefulWidget {
   const BookingCheckoutScreen({super.key});
@@ -375,13 +376,45 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF16A34A),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () {
+                      final bookingProvider = context.read<BookingProvider>();
+                      final subId = bookingProvider.selectedSubVenue?.id;
+                      final dateStr = DateFormat('yyyy-MM-dd').format(bookingProvider.selectedDate);
+                      final slots = bookingProvider.selectedSlots.map((s) => s.slotId).toList();
+                      bookingProvider.resetBookingState();
+                      Navigator.of(dialogContext).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PaymentCheckoutScreen(
+                            ticketProvider: context.read<TicketProvider>(),
+                            initialSubVenueId: subId,
+                            initialPlayDate: dateStr,
+                            initialSlotIds: slots,
+                            existingBookingCode: result.bookingCode,
+                            existingBookingId: result.bookingId,
+                            existingAmount: result.depositAmount,
+                            existingVenueName: result.venueName,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.payment_rounded, size: 18),
+                    label: const Text('Thanh Toán Cọc Escrow (VNPay / MoMo)'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
                     onPressed: () {
                       final bookingProvider = context.read<BookingProvider>();
                       bookingProvider.resetBookingState();
-                      try {
-                        context.read<TicketProvider>().loadTickets();
-                      } catch (_) {}
+                      context.read<TicketProvider>().loadTickets();
                       Navigator.of(dialogContext).pop();
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(

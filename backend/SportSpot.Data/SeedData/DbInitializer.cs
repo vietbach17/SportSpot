@@ -139,6 +139,92 @@ public static class DbInitializer
         }
 
         SeedSubVenuesAndServices(context);
+        SeedReviews(context);
+        SeedNotificationsAndFavorites(context);
+    }
+
+    private static void SeedNotificationsAndFavorites(SportSpotDbContext context)
+    {
+        var user = context.Users.FirstOrDefault();
+        var venue = context.Venues.FirstOrDefault();
+        if (user != null)
+        {
+            if (!context.Notifications.Any(n => n.UserId == user.Id))
+            {
+                context.Notifications.AddRange(
+                    new Notification
+                    {
+                        UserId = user.Id,
+                        Title = "Nhắc lịch thi đấu sắp diễn ra",
+                        Message = "Trận Cầu lông tại CLB Kỳ Hòa sẽ diễn ra lúc 18:00 hôm nay. Vui lòng có mặt trước 15 phút!",
+                        Type = "Reminder",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow.AddHours(-1)
+                    },
+                    new Notification
+                    {
+                        UserId = user.Id,
+                        Title = "Xác nhận cọc Escrow thành công",
+                        Message = "Tiền cọc của đơn đặt sân SP-782194 đang được SportSpot giữ an toàn ở trạng thái Holding.",
+                        Type = "Booking",
+                        IsRead = true,
+                        CreatedAt = DateTime.UtcNow.AddHours(-3)
+                    },
+                    new Notification
+                    {
+                        UserId = user.Id,
+                        Title = "Có kèo ghép mới gần bạn",
+                        Message = "CLB Cầu Lông Kỳ Hòa vừa có 1 kèo mới trình độ Trung bình đang cần tìm thêm 1 người.",
+                        Type = "Match",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-1)
+                    }
+                );
+            }
+
+            if (venue != null && !context.FavoriteVenues.Any(f => f.UserId == user.Id && f.VenueId == venue.Id))
+            {
+                context.FavoriteVenues.Add(new FavoriteVenue
+                {
+                    UserId = user.Id,
+                    VenueId = venue.Id,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            context.SaveChanges();
+        }
+    }
+
+    private static void SeedReviews(SportSpotDbContext context)
+    {
+        if (!context.Reviews.Any())
+        {
+            var firstVenue = context.Venues.FirstOrDefault();
+            var firstUser = context.Users.FirstOrDefault();
+            if (firstVenue != null && firstUser != null)
+            {
+                context.Reviews.AddRange(
+                    new Review
+                    {
+                        VenueId = firstVenue.Id,
+                        UserId = firstUser.Id,
+                        Rating = 5,
+                        Comment = "Sân thảm tiêu chuẩn BWF cực êm, hệ thống đèn chống chói rất tốt. Nhân viên thân thiện!",
+                        CreatedAt = DateTime.UtcNow.AddDays(-2)
+                    },
+                    new Review
+                    {
+                        VenueId = firstVenue.Id,
+                        UserId = firstUser.Id,
+                        Rating = 5,
+                        Comment = "Cụm sân sạch sẽ, chỗ để xe ô tô rộng rãi. Đặt cọc qua app check-in QR rất nhanh gọn.",
+                        CreatedAt = DateTime.UtcNow.AddDays(-1)
+                    }
+                );
+                context.SaveChanges();
+            }
+        }
     }
 
     private static void SeedSubVenuesAndServices(SportSpotDbContext context)

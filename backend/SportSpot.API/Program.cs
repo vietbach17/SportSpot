@@ -61,6 +61,10 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IOwnerService, OwnerService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IFcmPushService, FcmPushService>();
 
 // 4. Cấu hình JWT Bearer Authentication (Ưu tiên đọc từ .env)
 var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 

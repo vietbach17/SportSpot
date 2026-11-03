@@ -192,13 +192,16 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isVerifying ? null : _verifyQrPayload,
-                    icon: const Icon(Icons.verified_rounded),
-                    label: Text(
-                      _isVerifying ? 'Đang kiểm tra chữ ký SHA-256...' : 'Xác thực QR & Check-in Nhận Sân',
+                AppPressable(
+                  onTap: _isVerifying ? null : _verifyQrPayload,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isVerifying ? null : _verifyQrPayload,
+                      icon: const Icon(Icons.verified_rounded),
+                      label: Text(
+                        _isVerifying ? 'Đang kiểm tra chữ ký SHA-256...' : 'Xác thực QR & Check-in Nhận Sân',
+                      ),
                     ),
                   ),
                 ),

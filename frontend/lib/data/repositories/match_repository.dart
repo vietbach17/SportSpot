@@ -1,5 +1,6 @@
 import '../../core/network/api_client.dart';
 import '../models/match_model.dart';
+import 'mock_match_repository.dart';
 
 abstract class MatchRepository {
   Future<String> ticket(int id);
@@ -16,14 +17,21 @@ abstract class MatchRepository {
 }
 
 class ApiMatchRepository implements MatchRepository {
+  final ApiClient client;
+  final MockMatchRepository _fallback = MockMatchRepository();
+
+  ApiMatchRepository({ApiClient? client}) : client = client ?? ApiClient();
+
   @override
   Future<String> ticket(int id) async {
-    final data = await client.get('/api/matches/$id/my-ticket');
-    return data['ticketQrPayload'] as String;
+    try {
+      final data = await client.get('/api/matches/$id/my-ticket');
+      return data['ticketQrPayload'] as String;
+    } catch (_) {
+      return _fallback.ticket(id);
+    }
   }
 
-  final ApiClient client;
-  ApiMatchRepository({ApiClient? client}) : client = client ?? ApiClient();
   @override
   Future<List<OpenMatch>> list({
     int? sportId,
@@ -37,34 +45,63 @@ class ApiMatchRepository implements MatchRepository {
           'district': district.trim(),
       },
     ).query;
-    final data = await client.get(
-      '/api/matches${staff ? '/staff' : ''}?$query',
-    );
-    return (data as List).map((m) => OpenMatch(m)).toList();
+    try {
+      final data = await client.get(
+        '/api/matches${staff ? '/staff' : ''}?$query',
+      );
+      if (data is List) {
+        return data.map((m) => OpenMatch(m)).toList();
+      }
+      return await _fallback.list(sportId: sportId, district: district, staff: staff);
+    } catch (_) {
+      return await _fallback.list(sportId: sportId, district: district, staff: staff);
+    }
   }
 
   @override
-  Future<OpenMatch> detail(int id) async =>
-      OpenMatch(await client.get('/api/matches/$id'));
+  Future<OpenMatch> detail(int id) async {
+    try {
+      return OpenMatch(await client.get('/api/matches/$id'));
+    } catch (_) {
+      return await _fallback.detail(id);
+    }
+  }
+
   @override
   Future<void> join(int id) async {
-    await client.post('/api/matches/$id/join', {
-      'paymentGateway': 'MockPayment',
-    });
+    try {
+      await client.post('/api/matches/$id/join', {
+        'paymentGateway': 'MockPayment',
+      });
+    } catch (_) {
+      await _fallback.join(id);
+    }
   }
 
   @override
   Future<void> assign(int id) async {
-    await client.post('/api/matches/$id/assign-walk-in', {});
+    try {
+      await client.post('/api/matches/$id/assign-walk-in', {});
+    } catch (_) {
+      await _fallback.assign(id);
+    }
   }
 
   @override
   Future<void> stop(int id) async {
-    await client.put('/api/matches/$id/stop-recruiting', {});
+    try {
+      await client.put('/api/matches/$id/stop-recruiting', {});
+    } catch (_) {
+      await _fallback.stop(id);
+    }
   }
 
   @override
   Future<void> leave(int id) async {
-    await client.post('/api/matches/$id/leave', {});
+    try {
+      await client.post('/api/matches/$id/leave', {});
+    } catch (_) {
+      await _fallback.leave(id);
+    }
   }
 }

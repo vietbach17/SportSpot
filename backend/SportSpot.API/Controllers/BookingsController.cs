@@ -39,9 +39,11 @@ public class BookingsController : ControllerBase
     }
 
     [HttpPost("{id}/cancel")]
-    public async Task<ActionResult<ApiResponse<CancelRefundResultDto>>> CancelBooking(int id, [FromQuery] int userId)
+    public async Task<ActionResult<ApiResponse<CancelRefundResultDto>>> CancelBooking(int id, [FromQuery] int? userId)
     {
-        var result = await _bookingService.CancelBookingAsync(id, userId);
+        var authUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : 0;
+        var targetUserId = authUserId > 0 ? authUserId : (userId.HasValue && userId.Value > 0 ? userId.Value : 1);
+        var result = await _bookingService.CancelBookingAsync(id, targetUserId);
         return StatusCode(result.StatusCode, result);
     }
 }

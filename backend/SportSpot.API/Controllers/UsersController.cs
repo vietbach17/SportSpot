@@ -12,10 +12,14 @@ namespace SportSpot.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IFcmPushService _fcmPushService;
 
-    public UsersController(IUserService userService)
+    public UsersController(
+        IUserService userService,
+        IFcmPushService fcmPushService)
     {
         _userService = userService;
+        _fcmPushService = fcmPushService;
     }
 
     [HttpGet("me")]
@@ -30,6 +34,16 @@ public class UsersController : ControllerBase
     {
         var result = await _userService.UpdateProfileAsync(GetCurrentUserId(), request);
         return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("fcm-token")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<bool>>> SaveFcmToken([FromBody] SaveFcmTokenRequest request)
+    {
+        var uid = request.UserId ?? GetCurrentUserId();
+        if (uid <= 0) uid = 1;
+        var success = await _fcmPushService.SaveFcmTokenAsync(uid, request.FcmToken, request.DeviceType);
+        return Ok(ApiResponse<bool>.Ok(success, "Lưu FCM Token thành công"));
     }
 
     private int GetCurrentUserId()

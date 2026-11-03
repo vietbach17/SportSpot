@@ -141,18 +141,21 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
                 const SizedBox(height: 36),
 
                 // Nút Tiếp tục
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _onSendOtp,
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                        : const Text('Gửi mã xác thực OTP'),
+                AppPressable(
+                  onTap: isLoading ? null : _onSendOtp,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _onSendOtp,
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Text('Gửi mã xác thực OTP'),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
