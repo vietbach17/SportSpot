@@ -171,6 +171,15 @@ extension VenueItemModelToSportSpotVenue on VenueItemModel {
       image: (imageUrl != null && imageUrl!.startsWith('http'))
           ? imageUrl!
           : 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800',
+      images: galleryImages.isNotEmpty
+          ? galleryImages
+          : [
+              (imageUrl != null && imageUrl!.startsWith('http'))
+                  ? imageUrl!
+                  : 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800',
+              'https://images.unsplash.com/photo-1613918108466-292b78a8ef95?w=800',
+              'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800',
+            ],
       disciplines: [sportName],
       amenities: const [
         VenueAmenity(label: 'Bãi xe', icon: 'local_parking'),
