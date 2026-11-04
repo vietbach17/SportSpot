@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/confirm_action_sheet.dart';
+import '../../data/services/floating_notification_service.dart';
 import '../notifications/notifications_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
@@ -311,7 +312,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Nhận thông báo nhắc nhở 2 tiếng trước giờ vào sân',
                       style: TextStyle(fontSize: 11, color: mutedColor),
                     ),
-                    activeColor: const Color(0xFF16A34A),
+                    activeThumbColor: const Color(0xFF16A34A),
+                  ),
+                  Divider(height: 1, color: borderColor, indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.send_to_mobile_rounded, color: Color(0xFFF59E0B), size: 20),
+                    ),
+                    title: Text(
+                      'Thử nghiệm bắn thông báo (F09)',
+                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: textColor),
+                    ),
+                    subtitle: Text(
+                      'Bắn thử banner nhắc nhở lịch thi đấu trước giờ ra sân 2 tiếng',
+                      style: TextStyle(fontSize: 11, color: mutedColor),
+                    ),
+                    trailing: const Icon(Icons.play_circle_fill_rounded, color: Color(0xFFF59E0B), size: 24),
+                    onTap: () {
+                      FloatingNotificationService.show(
+                        title: '🔔 [SportSpot] Nhắc Lịch Thi Đấu!',
+                        message: 'Trận Pickleball tại CLB D-Sports Thủ Đức sẽ bắt đầu sau 2 tiếng nữa (10:00 - 11:00).',
+                        type: 'Reminder',
+                      );
+                    },
                   ),
                   Divider(height: 1, color: borderColor, indent: 16, endIndent: 16),
                   ListTile(

@@ -569,26 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: (hasLiveApi ? const Color(0xFF00A859) : const Color(0xFFD9532F)).withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: hasLiveApi ? const Color(0xFF00A859) : const Color(0xFFD9532F),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      hasLiveApi ? 'LIVE API' : 'MÔ PHỎNG',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w800,
-                                        color: hasLiveApi ? const Color(0xFF00A859) : const Color(0xFFD9532F),
-                                      ),
-                                    ),
-                                  ),
+
                                 ],
                               ),
                             ),

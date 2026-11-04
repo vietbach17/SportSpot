@@ -23,6 +23,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
   OwnerDashboardModel? _dashboardData;
   bool _isLoading = true;
   String? _errorMessage;
+  int _selectedDayIndex = 6;
 
   @override
   void initState() {
@@ -405,57 +406,348 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
     Color textColor,
     Color mutedColor,
   ) {
+    if (daily.isEmpty) return const SizedBox.shrink();
+
     final maxRevenue = daily.isNotEmpty
         ? daily.map((d) => d.revenue).reduce((a, b) => a > b ? a : b)
         : 1;
     final maxVal = maxRevenue > 0 ? maxRevenue : 1;
 
+    final selectedIndex = (_selectedDayIndex >= 0 && _selectedDayIndex < daily.length)
+        ? _selectedDayIndex
+        : (daily.length - 1);
+    final selectedDay = daily[selectedIndex];
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: daily.map((d) {
-          final heightRatio = (d.revenue / maxVal).clamp(0.08, 1.0);
-          final barHeight = 85.0 * heightRatio;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                d.revenue >= 1000000 ? '${(d.revenue / 1000000).toStringAsFixed(1)}M' : '${(d.revenue / 1000).round()}k',
-                style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)),
+                'Chạm vào cột ngày để xem chi tiết',
+                style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: mutedColor),
               ),
-              const SizedBox(height: 4),
               Container(
-                width: 24,
-                height: barHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
+                  color: const Color(0xFF00A859).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                d.dayOfWeek,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor),
-              ),
-              Text(
-                d.date,
-                style: TextStyle(fontSize: 9.5, color: mutedColor),
+                child: Text(
+                  'Đang chọn: ${selectedDay.dayOfWeek} (${selectedDay.date})',
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00A859)),
+                ),
               ),
             ],
-          );
-        }).toList(),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(daily.length, (idx) {
+              final d = daily[idx];
+              final isSelected = idx == selectedIndex;
+              final heightRatio = (d.revenue / maxVal).clamp(0.12, 1.0);
+              final barHeight = 75.0 * heightRatio;
+
+              return InkWell(
+                onTap: () {
+                  setState(() {
+                    _selectedDayIndex = idx;
+                  });
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF00A859).withValues(alpha: 0.12)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    border: isSelected
+                        ? Border.all(color: const Color(0xFF00A859), width: 1.2)
+                        : null,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        d.revenue >= 1000000
+                            ? '${(d.revenue / 1000000).toStringAsFixed(1)}M'
+                            : (d.revenue > 0 ? '${(d.revenue / 1000).round()}k' : '0k'),
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: isSelected ? const Color(0xFF00A859) : const Color(0xFF2563EB),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        width: isSelected ? 26 : 22,
+                        height: barHeight,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isSelected
+                                ? [const Color(0xFF00E676), const Color(0xFF00A859)]
+                                : [const Color(0xFF3B82F6), const Color(0xFF1D4ED8)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF00A859).withValues(alpha: 0.35),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        d.dayOfWeek,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                          color: isSelected ? const Color(0xFF00A859) : textColor,
+                        ),
+                      ),
+                      Text(
+                        d.date,
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                          color: isSelected ? textColor : mutedColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 14),
+          // Interactive detail card for the selected day
+          InkWell(
+            onTap: () => _showDayDetailSheet(context, selectedDay),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00A859).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF00A859).withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00A859).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.analytics_rounded, color: Color(0xFF00A859), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${selectedDay.dayOfWeek} (${selectedDay.date})',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
+                            ),
+                            Text(
+                              _formatCurrency(selectedDay.revenue),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF00A859)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          selectedDay.revenue > 0
+                              ? '${selectedDay.bookingCount} lượt đặt sân · Đã giải ngân thành công'
+                              : 'Chưa có đơn đặt sân trong ngày này (Chạm để xem chi tiết)',
+                          style: TextStyle(fontSize: 11.5, color: mutedColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Color(0xFF00A859)),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  void _showDayDetailSheet(BuildContext context, DailyRevenueModel day) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF191A20) : Colors.white;
+    final textC = isDark ? Colors.white : const Color(0xFF111315);
+    final mutedC = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final borderC = isDark ? const Color(0xFF2E313A) : const Color(0xFFE5E7EB);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: mutedC.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00A859).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.calendar_today_rounded, color: Color(0xFF00A859), size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Báo Cáo: ${day.dayOfWeek} (${day.date})',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: textC),
+                          ),
+                          Text(
+                            'Chi tiết doanh số và đơn đặt trong ngày',
+                            style: TextStyle(fontSize: 12, color: mutedC),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () => Navigator.pop(sheetCtx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF22242D) : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: borderC),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Tổng doanh thu thực nhận:', style: TextStyle(fontSize: 13, color: mutedC)),
+                        Text(
+                          _formatCurrency(day.revenue),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF00A859)),
+                        ),
+                      ],
+                    ),
+                    Divider(height: 20, color: borderC),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Số lượt đặt sân:', style: TextStyle(fontSize: 13, color: mutedC)),
+                        Text(
+                          '${day.bookingCount} đơn',
+                          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: textC),
+                        ),
+                      ],
+                    ),
+                    Divider(height: 20, color: borderC),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Trạng thái cọc Escrow:', style: TextStyle(fontSize: 13, color: mutedC)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: day.revenue > 0
+                                ? const Color(0xFF16A34A).withValues(alpha: 0.12)
+                                : const Color(0xFF6B7280).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            day.revenue > 0 ? 'Đã giải ngân' : 'Không có giao dịch',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: day.revenue > 0 ? const Color(0xFF16A34A) : mutedC,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(sheetCtx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00A859),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Đóng', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -4,11 +4,13 @@ import '../core/theme/app_theme.dart';
 class FloatingBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
+  final List<Map<String, dynamic>>? customItems;
 
   const FloatingBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.customItems,
   });
 
   @override
@@ -18,7 +20,7 @@ class FloatingBottomNavBar extends StatelessWidget {
     final bgColor = isDark ? const Color(0xFF181A20) : Colors.white;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    final items = [
+    final defaultItems = [
       {
         'icon': Icons.sports_tennis_rounded,
         'activeIcon': Icons.sports_tennis_rounded,
@@ -40,6 +42,8 @@ class FloatingBottomNavBar extends StatelessWidget {
         'label': 'Tài khoản',
       },
     ];
+
+    final items = customItems ?? defaultItems;
 
     return Align(
       alignment: Alignment.bottomCenter,

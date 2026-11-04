@@ -18,7 +18,7 @@ class UserModel {
     this.walletBalance = 0,
     this.avatarUrl,
     this.isFindMatchEnabled = false,
-    this.favoriteSports = 'Cầu lông,Bóng đá mini',
+    this.favoriteSports = 'Cầu lông,Pickleball,Bóng đá mini',
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -31,7 +31,7 @@ class UserModel {
       walletBalance: json['walletBalance'] ?? 0,
       avatarUrl: json['avatarUrl'],
       isFindMatchEnabled: json['isFindMatchEnabled'] ?? false,
-      favoriteSports: json['favoriteSports'] ?? 'Cầu lông,Bóng đá mini',
+      favoriteSports: json['favoriteSports'] ?? 'Cầu lông,Pickleball,Bóng đá mini',
     );
   }
 

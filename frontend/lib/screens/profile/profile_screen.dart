@@ -11,6 +11,7 @@ import '../booking/court_slots_screen.dart';
 import '../owner/owner_dashboard_screen.dart';
 import '../payment/wallet_history_screen.dart';
 import '../settings/settings_screen.dart';
+import '../admin/admin_hub_screen.dart';
 import '../tickets/cancel_ticket_dialog.dart';
 import '../tickets/qr_scanner_screen.dart';
 import '../venues/venue_detail_screen.dart';
@@ -287,6 +288,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final ticketProvider = context.watch<TicketProvider>();
     final user = auth.currentUser;
     final isGuest = auth.isGuest || user == null;
+    final userRole = user?.role ?? '';
+    final canAccessStaff = !isGuest && (userRole == 'VenueStaff' || userRole == 'Owner' || userRole == 'Admin');
+    final canAccessOwner = !isGuest && (userRole == 'Owner' || userRole == 'Admin');
+    final canAccessAdmin = !isGuest && (userRole == 'Admin');
 
     VenueProvider? venueProvider;
     try {
@@ -305,6 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ? (ticketProvider.tickets.isNotEmpty ? ticketProvider.tickets.fold<int>(0, (sum, t) => sum + (t.timeSlots.length.clamp(1, 4))) : 3)
         : ticketProvider.tickets.fold<int>(0, (sum, t) => sum + (t.timeSlots.length.clamp(1, 4)));
     final walletDisplay = CancelTicketDialog.formatVnd(ticketProvider.walletBalance);
+    final isPlayer = !isGuest && (user.role == 'Player' || user.role == 'Customer');
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -461,7 +467,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(fontSize: 12, color: mutedColor, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 12),
-                    if (isGuest)
+                    if (isGuest) ...[
                       SizedBox(
                         height: 38,
                         child: ElevatedButton.icon(
@@ -479,25 +485,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           ),
                         ),
-                      )
-                    else
+                      ),
+
+                    ] else
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00A859).withValues(alpha: 0.12),
+                              color: (user.role == 'Admin' ? const Color(0xFF8B5CF6) : (user.role == 'Owner' ? const Color(0xFF16A34A) : (user.role == 'VenueStaff' ? const Color(0xFF2563EB) : const Color(0xFF00A859)))).withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFF00A859).withValues(alpha: 0.3)),
+                              border: Border.all(color: (user.role == 'Admin' ? const Color(0xFF8B5CF6) : (user.role == 'Owner' ? const Color(0xFF16A34A) : (user.role == 'VenueStaff' ? const Color(0xFF2563EB) : const Color(0xFF00A859)))).withValues(alpha: 0.3)),
                             ),
                             child: Text(
                               user.role == 'VenueStaff'
                                   ? '🛠️ Lễ Tân / Quản Lý Sân'
-                                  : (user.role == 'Admin' ? '👑 Quản Trị Viên' : '⚡ Hội viên SportSpot Pro'),
-                              style: const TextStyle(
+                                  : (user.role == 'Admin' ? '👑 Quản Trị Viên' : (user.role == 'Owner' ? '🏟️ Chủ Cụm Sân' : '⚡ Hội viên SportSpot Pro')),
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: Color(0xFF00A859),
+                                color: (user.role == 'Admin' ? const Color(0xFF8B5CF6) : (user.role == 'Owner' ? const Color(0xFF16A34A) : (user.role == 'VenueStaff' ? const Color(0xFF2563EB) : const Color(0xFF00A859)))),
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -520,17 +527,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 14),
 
-              // Match Stats Row
-              Row(
-                children: [
-                  _buildStatCard(matchCount.toString(), 'Trận đấu', const Color(0xFF111315), cardColor, borderColor, isDark),
-                  const SizedBox(width: 10),
-                  _buildStatCard('${hoursCount}h', 'Giờ ra sân', const Color(0xFF00A859), cardColor, borderColor, isDark),
-                  const SizedBox(width: 10),
-                  _buildStatCard(walletDisplay, 'Ví cọc/hoàn', const Color(0xFFF59E0B), cardColor, borderColor, isDark),
-                ],
-              ),
-              const SizedBox(height: 14),
+              // Match Stats Row (Chỉ hiển thị cho người chơi)
+              if (isPlayer) ...[
+                Row(
+                  children: [
+                    _buildStatCard(matchCount.toString(), 'Trận đấu', const Color(0xFF111315), cardColor, borderColor, isDark),
+                    const SizedBox(width: 10),
+                    _buildStatCard('${hoursCount}h', 'Giờ ra sân', const Color(0xFF00A859), cardColor, borderColor, isDark),
+                    const SizedBox(width: 10),
+                    _buildStatCard(walletDisplay, 'Ví cọc/hoàn', const Color(0xFFF59E0B), cardColor, borderColor, isDark),
+                  ],
+                ),
+                const SizedBox(height: 14),
+              ],
 
               // Wallet Card
               Container(
@@ -616,11 +625,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 14),
 
               // ==========================================
-              // DANH SÁCH SÂN YÊU THÍCH CỦA TÔI
+              // DANH SÁCH SÂN YÊU THÍCH CỦA TÔI (Chỉ hiển thị cho người chơi)
               // ==========================================
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
+              if (isPlayer) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: cardColor,
                   borderRadius: BorderRadius.circular(18),
@@ -832,90 +842,139 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
+                const SizedBox(height: 16),
+              ],
 
-              // Staff Ticket QR Scanner (Dành cho Lễ tân / Quản lý)
-              Container(
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: borderColor, width: 1.2),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  child: ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+              // Staff Ticket QR Scanner (Chỉ hiện cho VenueStaff, Owner hoặc Admin)
+              if (canAccessStaff) ...[
+                Container(
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor, width: 1.2),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF2563EB)),
                       ),
-                      child: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF2563EB)),
-                    ),
-                    title: Text(
-                      'Soát Vé QR (Dành Cho Lễ Tân / Quản Lý Sân)',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
-                    ),
-                    subtitle: Text(
-                      'Quét mã QR của người chơi để điểm danh & giải ngân cọc Escrow',
-                      style: TextStyle(fontSize: 11, color: mutedColor),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => QrScannerScreen(
-                            provider: context.read<TicketProvider>(),
+                      title: Text(
+                        'Soát Vé QR (Dành Cho Lễ Tân / Quản Lý Sân)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
+                      ),
+                      subtitle: Text(
+                        'Quét mã QR của người chơi để điểm danh & giải ngân cọc Escrow',
+                        style: TextStyle(fontSize: 11, color: mutedColor),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => QrScannerScreen(
+                              provider: context.read<TicketProvider>(),
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
 
-              // Owner Dashboard Access
-              Container(
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: borderColor, width: 1.2),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  child: ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF16A34A).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.dashboard_customize_rounded, color: Color(0xFF16A34A)),
-                    ),
-                    title: Text(
-                      'Bảng Điều Khiển Chủ Sân (Owner Dashboard)',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
-                    ),
-                    subtitle: Text(
-                      'Thống kê doanh thu, cọc Escrow & quản lý bảo trì sân con',
-                      style: TextStyle(fontSize: 11, color: mutedColor),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const OwnerDashboardScreen(),
+              // Owner Dashboard Access (Chỉ hiện cho Owner hoặc Admin)
+              if (canAccessOwner) ...[
+                Container(
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor, width: 1.2),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      );
-                    },
+                        child: const Icon(Icons.dashboard_customize_rounded, color: Color(0xFF16A34A)),
+                      ),
+                      title: Text(
+                        'Bảng Điều Khiển Chủ Sân (Owner Dashboard)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
+                      ),
+                      subtitle: Text(
+                        'Thống kê doanh thu, cọc Escrow & quản lý bảo trì sân con',
+                        style: TextStyle(fontSize: 11, color: mutedColor),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const OwnerDashboardScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
+
+              // System Admin Hub Card (Chỉ hiện duy nhất cho Super Admin)
+              if (canAccessAdmin) ...[
+                Container(
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor, width: 1.2),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF8B5CF6)),
+                      ),
+                      title: Text(
+                        'Quản Trị Hệ Thống (System Admin Hub)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
+                      ),
+                      subtitle: Text(
+                        'Phê duyệt cụm sân, quản lý tài khoản & đối soát sàn',
+                        style: TextStyle(fontSize: 11, color: mutedColor),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminHubScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
 
               // Cài Đặt Hệ Thống Card (Mới: Đáp ứng yêu cầu thứ 3 của người dùng)
               Container(
@@ -956,8 +1015,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Skill Ratings Breakdown (Chỉ hiển thị cho Hội viên, ẩn đối với khách vãng lai)
-              if (!isGuest) ...[
+              // Skill Ratings Breakdown (Chỉ hiển thị cho người chơi, ẩn với Admin, Owner, Staff, Guest)
+              if (isPlayer) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
@@ -976,16 +1035,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Bộ Môn & Đánh Giá Kỹ Năng',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Bộ Môn & Đánh Giá Kỹ Năng',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => _showSportsSetupDialog(context, auth),
+                            borderRadius: BorderRadius.circular(6),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.tune_rounded, size: 14, color: Color(0xFF00A859)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Tùy chỉnh',
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF00A859)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 14),
-                      _buildSkillTile('Cầu lông', 'Nâng cao 4.0 • Xác thực bởi Host', 0.85, const Color(0xFF00A859), isDark, textColor, mutedColor),
-                      const SizedBox(height: 12),
-                      _buildSkillTile('Pickleball', 'Trung cấp 3.5 • DUPR Rating', 0.70, const Color(0xFF00C853), isDark, textColor, mutedColor),
-                      const SizedBox(height: 12),
-                      _buildSkillTile('Bóng đá mini', 'Hạng B+ • Tốc độ & Thể lực', 0.78, const Color(0xFFF59E0B), isDark, textColor, mutedColor),
+                      ..._buildDynamicSkills(user.favoriteSports, isDark, textColor, mutedColor),
                     ],
                   ),
                 ),
@@ -1037,6 +1118,184 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  List<Widget> _buildDynamicSkills(String? favoriteSports, bool isDark, Color textColor, Color mutedColor) {
+    final sportsList = (favoriteSports == null || favoriteSports.trim().isEmpty)
+        ? ['Cầu lông', 'Pickleball', 'Bóng đá mini']
+        : favoriteSports.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    final widgets = <Widget>[];
+
+    for (int i = 0; i < sportsList.length; i++) {
+      final sport = sportsList[i];
+      String title = sport;
+      String subtitle = 'Phong trào 3.5 • Tự đánh giá';
+      double progress = 0.70;
+      Color color = const Color(0xFF00A859);
+
+      if (sport.toLowerCase().contains('cầu lông')) {
+        title = 'Cầu lông';
+        subtitle = 'Nâng cao 4.0 • Xác thực bởi Host';
+        progress = 0.85;
+        color = const Color(0xFF00A859);
+      } else if (sport.toLowerCase().contains('pickleball')) {
+        title = 'Pickleball';
+        subtitle = 'Trung cấp 3.5 • DUPR Rating';
+        progress = 0.70;
+        color = const Color(0xFF00C853);
+      } else if (sport.toLowerCase().contains('bóng đá')) {
+        title = 'Bóng đá mini';
+        subtitle = 'Hạng B+ • Tốc độ & Thể lực';
+        progress = 0.78;
+        color = const Color(0xFFF59E0B);
+      } else if (sport.toLowerCase().contains('bóng rổ')) {
+        title = 'Bóng rổ';
+        subtitle = 'Cơ bản 3.0 • Thể lực tốt';
+        progress = 0.60;
+        color = const Color(0xFFEA580C);
+      } else if (sport.toLowerCase().contains('tennis')) {
+        title = 'Tennis';
+        subtitle = 'Trung cấp 3.5 • ITF Rating';
+        progress = 0.72;
+        color = const Color(0xFF2563EB);
+      }
+
+      widgets.add(_buildSkillTile(title, subtitle, progress, color, isDark, textColor, mutedColor));
+      if (i < sportsList.length - 1) {
+        widgets.add(const SizedBox(height: 12));
+      }
+    }
+
+    return widgets;
+  }
+
+  void _showSportsSetupDialog(BuildContext context, AuthProvider auth) {
+    final availableSports = ['Cầu lông', 'Pickleball', 'Bóng đá mini', 'Bóng rổ', 'Tennis'];
+    final currentSports = (auth.currentUser?.favoriteSports ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    List<String> selectedSports = List.from(currentSports);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            final cardColor = isDark ? const Color(0xFF191A20) : Colors.white;
+            final textColor = isDark ? Colors.white : const Color(0xFF111315);
+            final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+
+            return Container(
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: mutedColor.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Thiết Lập Bộ Môn & Kỹ Năng',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: textColor),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        onPressed: () => Navigator.pop(sheetCtx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Chọn các bộ môn bạn tham gia thi đấu để hệ thống gợi ý kèo phù hợp và hiển thị chỉ số:',
+                    style: TextStyle(fontSize: 12, color: mutedColor),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: availableSports.map((sport) {
+                      final isSelected = selectedSports.contains(sport);
+                      return FilterChip(
+                        selected: isSelected,
+                        label: Text(sport),
+                        selectedColor: const Color(0xFF00A859).withValues(alpha: 0.2),
+                        checkmarkColor: const Color(0xFF00A859),
+                        labelStyle: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          color: isSelected ? const Color(0xFF00A859) : textColor,
+                        ),
+                        side: BorderSide(
+                          color: isSelected ? const Color(0xFF00A859) : mutedColor.withValues(alpha: 0.3),
+                          width: isSelected ? 1.5 : 1.0,
+                        ),
+                        onSelected: (selected) {
+                          setSheetState(() {
+                            if (selected) {
+                              selectedSports.add(sport);
+                            } else {
+                              selectedSports.remove(sport);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00A859),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () async {
+                        final sportsString = selectedSports.join(',');
+                        await auth.updateProfile(favoriteSports: sportsString);
+                        if (ctx.mounted) {
+                          Navigator.pop(sheetCtx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Đã cập nhật danh sách bộ môn & chỉ số kỹ năng thành công!'),
+                              backgroundColor: Color(0xFF00A859),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Lưu Thiết Lập Kỹ Năng', style: TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
