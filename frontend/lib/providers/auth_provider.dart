@@ -376,6 +376,33 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Chuyển đổi vai trò Demo phục vụ kiểm thử phân quyền RBAC (Role-Based Access Control)
+  void setDemoRole(String role) {
+    if (role == 'Guest') {
+      _isGuest = true;
+      _currentUser = null;
+    } else {
+      _isGuest = false;
+      String name = 'Bach (Người Chơi)';
+      if (role == 'VenueStaff') name = 'Trần Văn Tân (Lễ Tân Sân)';
+      if (role == 'Owner') name = 'Nguyễn Văn Hùng (Chủ Sân)';
+      if (role == 'Admin') name = 'Pham Viet Bach (Admin)';
+
+      _currentUser = UserModel(
+        userId: _currentUser?.userId ?? 1,
+        fullName: name,
+        phoneNumber: _currentUser?.phoneNumber ?? '0981234765',
+        email: _currentUser?.email ?? 'vietbach171205@gmail.com',
+        role: role,
+        walletBalance: _currentUser?.walletBalance ?? 320000,
+        avatarUrl: _currentUser?.avatarUrl,
+        isFindMatchEnabled: _currentUser?.isFindMatchEnabled ?? true,
+        favoriteSports: _currentUser?.favoriteSports ?? 'Cầu lông,Pickleball',
+      );
+    }
+    notifyListeners();
+  }
+
   /// Đăng xuất
   Future<void> logout() async {
     _isLoading = true;
