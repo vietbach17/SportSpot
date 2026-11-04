@@ -11,6 +11,7 @@ import '../booking/court_slots_screen.dart';
 import '../owner/owner_dashboard_screen.dart';
 import '../payment/wallet_history_screen.dart';
 import '../settings/settings_screen.dart';
+import '../admin/admin_hub_screen.dart';
 import '../tickets/cancel_ticket_dialog.dart';
 import '../tickets/qr_scanner_screen.dart';
 import '../venues/venue_detail_screen.dart';
@@ -909,6 +910,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => const OwnerDashboardScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // System Admin Hub Card
+              Container(
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderColor, width: 1.2),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  child: ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF8B5CF6)),
+                    ),
+                    title: Text(
+                      'Quản Trị Hệ Thống (System Admin Hub)',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
+                    ),
+                    subtitle: Text(
+                      'Phê duyệt cụm sân, quản lý tài khoản & đối soát sàn',
+                      style: TextStyle(fontSize: 11, color: mutedColor),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AdminHubScreen(),
                         ),
                       );
                     },

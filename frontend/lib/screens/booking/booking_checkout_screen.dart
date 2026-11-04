@@ -248,10 +248,14 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Sân đặt:', style: TextStyle(fontSize: 12.5, color: mutedC)),
-                            Text(
-                              '${provider.venueDetail?.name ?? "Sân đấu"} - ${provider.selectedSubVenue?.name ?? ""}',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textC),
+                            Text('Sân đặt: ', style: TextStyle(fontSize: 12.5, color: mutedC)),
+                            Expanded(
+                              child: Text(
+                                '${provider.venueDetail?.name ?? "Sân đấu"} - ${provider.selectedSubVenue?.name ?? ""}',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textC),
+                                textAlign: TextAlign.end,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
@@ -259,10 +263,14 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Khung giờ:', style: TextStyle(fontSize: 12.5, color: mutedC)),
-                            Text(
-                              '${provider.selectedSlots.map((s) => '${s.startTime}-${s.endTime}').join(', ')} (${DateFormat("dd/MM/yyyy").format(provider.selectedDate)})',
-                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: textC),
+                            Text('Khung giờ: ', style: TextStyle(fontSize: 12.5, color: mutedC)),
+                            Expanded(
+                              child: Text(
+                                '${provider.selectedSlots.map((s) => '${s.startTime}-${s.endTime}').join(', ')} (${DateFormat("dd/MM/yyyy").format(provider.selectedDate)})',
+                                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: textC),
+                                textAlign: TextAlign.end,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
