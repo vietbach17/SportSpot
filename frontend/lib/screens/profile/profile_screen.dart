@@ -811,9 +811,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // ==========================================
               // DANH SÁCH SÂN YÊU THÍCH CỦA TÔI
               // ==========================================
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
+              if (!isGuest) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: cardColor,
                   borderRadius: BorderRadius.circular(18),
@@ -1025,6 +1026,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
+                const SizedBox(height: 16),
+              ],
 
               // Staff Ticket QR Scanner (Chỉ hiện cho VenueStaff, Owner hoặc Admin)
               if (canAccessStaff) ...[
@@ -1216,16 +1219,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Bộ Môn & Đánh Giá Kỹ Năng',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Bộ Môn & Đánh Giá Kỹ Năng',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => _showSportsSetupDialog(context, auth),
+                            borderRadius: BorderRadius.circular(6),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.tune_rounded, size: 14, color: Color(0xFF00A859)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Tùy chỉnh',
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF00A859)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 14),
-                      _buildSkillTile('Cầu lông', 'Nâng cao 4.0 • Xác thực bởi Host', 0.85, const Color(0xFF00A859), isDark, textColor, mutedColor),
-                      const SizedBox(height: 12),
-                      _buildSkillTile('Pickleball', 'Trung cấp 3.5 • DUPR Rating', 0.70, const Color(0xFF00C853), isDark, textColor, mutedColor),
-                      const SizedBox(height: 12),
-                      _buildSkillTile('Bóng đá mini', 'Hạng B+ • Tốc độ & Thể lực', 0.78, const Color(0xFFF59E0B), isDark, textColor, mutedColor),
+                      ..._buildDynamicSkills(user.favoriteSports, isDark, textColor, mutedColor),
                     ],
                   ),
                 ),
@@ -1277,6 +1302,184 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  List<Widget> _buildDynamicSkills(String? favoriteSports, bool isDark, Color textColor, Color mutedColor) {
+    final sportsList = (favoriteSports == null || favoriteSports.trim().isEmpty)
+        ? ['Cầu lông', 'Pickleball', 'Bóng đá mini']
+        : favoriteSports.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    final widgets = <Widget>[];
+
+    for (int i = 0; i < sportsList.length; i++) {
+      final sport = sportsList[i];
+      String title = sport;
+      String subtitle = 'Phong trào 3.5 • Tự đánh giá';
+      double progress = 0.70;
+      Color color = const Color(0xFF00A859);
+
+      if (sport.toLowerCase().contains('cầu lông')) {
+        title = 'Cầu lông';
+        subtitle = 'Nâng cao 4.0 • Xác thực bởi Host';
+        progress = 0.85;
+        color = const Color(0xFF00A859);
+      } else if (sport.toLowerCase().contains('pickleball')) {
+        title = 'Pickleball';
+        subtitle = 'Trung cấp 3.5 • DUPR Rating';
+        progress = 0.70;
+        color = const Color(0xFF00C853);
+      } else if (sport.toLowerCase().contains('bóng đá')) {
+        title = 'Bóng đá mini';
+        subtitle = 'Hạng B+ • Tốc độ & Thể lực';
+        progress = 0.78;
+        color = const Color(0xFFF59E0B);
+      } else if (sport.toLowerCase().contains('bóng rổ')) {
+        title = 'Bóng rổ';
+        subtitle = 'Cơ bản 3.0 • Thể lực tốt';
+        progress = 0.60;
+        color = const Color(0xFFEA580C);
+      } else if (sport.toLowerCase().contains('tennis')) {
+        title = 'Tennis';
+        subtitle = 'Trung cấp 3.5 • ITF Rating';
+        progress = 0.72;
+        color = const Color(0xFF2563EB);
+      }
+
+      widgets.add(_buildSkillTile(title, subtitle, progress, color, isDark, textColor, mutedColor));
+      if (i < sportsList.length - 1) {
+        widgets.add(const SizedBox(height: 12));
+      }
+    }
+
+    return widgets;
+  }
+
+  void _showSportsSetupDialog(BuildContext context, AuthProvider auth) {
+    final availableSports = ['Cầu lông', 'Pickleball', 'Bóng đá mini', 'Bóng rổ', 'Tennis'];
+    final currentSports = (auth.currentUser?.favoriteSports ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    List<String> selectedSports = List.from(currentSports);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            final cardColor = isDark ? const Color(0xFF191A20) : Colors.white;
+            final textColor = isDark ? Colors.white : const Color(0xFF111315);
+            final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+
+            return Container(
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: mutedColor.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Thiết Lập Bộ Môn & Kỹ Năng',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: textColor),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        onPressed: () => Navigator.pop(sheetCtx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Chọn các bộ môn bạn tham gia thi đấu để hệ thống gợi ý kèo phù hợp và hiển thị chỉ số:',
+                    style: TextStyle(fontSize: 12, color: mutedColor),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: availableSports.map((sport) {
+                      final isSelected = selectedSports.contains(sport);
+                      return FilterChip(
+                        selected: isSelected,
+                        label: Text(sport),
+                        selectedColor: const Color(0xFF00A859).withValues(alpha: 0.2),
+                        checkmarkColor: const Color(0xFF00A859),
+                        labelStyle: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          color: isSelected ? const Color(0xFF00A859) : textColor,
+                        ),
+                        side: BorderSide(
+                          color: isSelected ? const Color(0xFF00A859) : mutedColor.withValues(alpha: 0.3),
+                          width: isSelected ? 1.5 : 1.0,
+                        ),
+                        onSelected: (selected) {
+                          setSheetState(() {
+                            if (selected) {
+                              selectedSports.add(sport);
+                            } else {
+                              selectedSports.remove(sport);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00A859),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () async {
+                        final sportsString = selectedSports.join(',');
+                        await auth.updateProfile(favoriteSports: sportsString);
+                        if (ctx.mounted) {
+                          Navigator.pop(sheetCtx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Đã cập nhật danh sách bộ môn & chỉ số kỹ năng thành công!'),
+                              backgroundColor: Color(0xFF00A859),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Lưu Thiết Lập Kỹ Năng', style: TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
