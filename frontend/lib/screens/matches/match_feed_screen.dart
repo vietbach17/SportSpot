@@ -1855,7 +1855,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   bool busy = false;
   bool _hasGuestJoined = false;
   String? _guestTicketQr;
-  int _guestWalletBalance = 60000;
+  int _guestWalletBalance = 320000;
 
   @override
   void initState() {
@@ -1870,10 +1870,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     if (mounted) {
       setState(() {
         _guestWalletBalance = balance;
-        if (ticketData != null) {
-          _hasGuestJoined = true;
-          _guestTicketQr = ticketData['qr_payload'] as String?;
-        }
+        _hasGuestJoined = ticketData != null;
+        _guestTicketQr = ticketData != null ? (ticketData['qr_payload'] as String?) : null;
       });
     }
   }
@@ -2424,6 +2422,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
         try {
           await widget.repository.leave(m.id);
         } catch (_) {}
+        await DatabaseHelper().removeGuestJoinedMatch(m.id);
 
         final newBalance = await DatabaseHelper().getGuestWalletBalance();
         if (mounted) {
