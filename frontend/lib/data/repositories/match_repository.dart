@@ -19,7 +19,7 @@ abstract class MatchRepository {
 
 class ApiMatchRepository implements MatchRepository {
   final ApiClient client;
-  final MockMatchRepository _fallback = MockMatchRepository();
+  final MockMatchRepository _fallback = MockMatchRepository(includeExtraDevMatches: true);
 
   ApiMatchRepository({ApiClient? client}) : client = client ?? ApiClient();
 
@@ -50,7 +50,7 @@ class ApiMatchRepository implements MatchRepository {
       final data = await client.get(
         '/api/matches${staff ? '/staff' : ''}?$query',
       );
-      if (data is List) {
+      if (data is List && data.isNotEmpty) {
         return data.map((m) => OpenMatch(m)).toList();
       }
       return await _fallback.list(sportId: sportId, district: district, staff: staff);

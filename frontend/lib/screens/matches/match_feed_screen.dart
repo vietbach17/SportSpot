@@ -8,12 +8,13 @@ import '../../data/repositories/match_repository.dart';
 import '../../data/sportspot_mock_data.dart';
 import '../../data/sportspot_models.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/ticket_provider.dart';
 import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/match_ui.dart';
 import '../../widgets/stacked_avatars.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../../widgets/recruitment_form.dart';
-import '../auth/phone_input_screen.dart';
+import '../auth/login_screen.dart';
 import '../../data/services/database_helper.dart';
 import 'match_checkout_screen.dart';
 import 'match_discussion_sheet.dart';
@@ -628,7 +629,7 @@ class _Module4MatchFeedState extends State<MatchFeedScreen> {
     if (!auth.isAuthenticated) {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const PhoneInputScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
       if (!mounted || !auth.isAuthenticated) return;
     }
@@ -1864,7 +1865,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     if (!auth.isAuthenticated) {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const PhoneInputScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
       if (!mounted || !auth.isAuthenticated) return;
     }
@@ -2180,6 +2181,12 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     required String phone,
     required bool useWallet,
   }) async {
+    TicketProvider? ticketProvider;
+    try {
+      ticketProvider = Provider.of<TicketProvider>(context, listen: false);
+    } catch (_) {
+      ticketProvider = null;
+    }
     setState(() => busy = true);
     try {
       if (useWallet) {
@@ -2197,7 +2204,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
         'address': match.address,
         'play_date': match.date.toString(),
         'time_slots': match.slots.join(', '),
-        'user_role_in_match': 'Khách vãng lai ($name)',
+        'user_role_in_match': 'Khách ghép',
         'total_price': match.cost,
         'deposit_amount': match.cost,
         'status': 'Upcoming',
@@ -2213,6 +2220,27 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
         guestName: name,
         guestPhone: phone,
       );
+
+      try {
+        ticketProvider?.addConfirmedBookingTicket(
+          bookingId: match.id + 1000,
+          bookingCode: bookingCode,
+          venueName: match.venue,
+          subVenueName: match.court,
+          sportName: match.sport,
+          address: match.address,
+          playDate: match.date.toString().split(' ').first,
+          timeSlots: match.slots,
+          courtPrice: match.cost,
+          servicesPrice: 0,
+          totalPrice: match.cost,
+          depositAmount: match.cost,
+          remainingBalance: 0,
+          qrPayload: qrPayload,
+          paymentGateway: useWallet ? 'GuestWallet' : 'MockPayment',
+          userRoleInMatch: 'Khách ghép',
+        );
+      } catch (_) {}
 
       try {
         await widget.repository.guestJoin(

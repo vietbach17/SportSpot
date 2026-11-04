@@ -5,6 +5,8 @@ import '../../widgets/boarding_pass_ticket.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../providers/ticket_provider.dart';
+import '../../providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 import '../../widgets/confirm_action_sheet.dart';
 import 'cancel_ticket_dialog.dart';
 import 'ticket_share_helper.dart';
@@ -201,14 +203,23 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
                                       color: Colors.white.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: Text(
-                                      '${_currentTicket.sportName} • ${_currentTicket.userRoleInMatch == 'JoinedPlayer' ? 'Vãng lai' : 'Đội trưởng'}',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                    child: Builder(
+                                      builder: (ctx) {
+                                        bool isGuestUser = true;
+                                        try {
+                                          isGuestUser = ctx.watch<AuthProvider>().isGuest;
+                                        } catch (_) {}
+                                        final isHost = !isGuestUser && (_currentTicket.userRoleInMatch.toLowerCase() == 'host' || _currentTicket.userRoleInMatch.toLowerCase() == 'đội trưởng');
+                                        return Text(
+                                          '${_currentTicket.sportName} • ${isHost ? 'Đội trưởng' : 'Khách ghép'}',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ),
                                 ),

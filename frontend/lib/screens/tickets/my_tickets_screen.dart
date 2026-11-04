@@ -3,6 +3,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../data/repositories/ticket_repository.dart';
 import '../../providers/ticket_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/boarding_pass_ticket.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import 'qr_scanner_screen.dart';
@@ -526,14 +527,23 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                         color: const Color(0xFF0F172A),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(
-                        '${ticket.sportName.toUpperCase()} • ${ticket.userRoleInMatch == 'JoinedPlayer' ? 'VÃNG LAI' : 'ĐỘI TRƯỞNG'}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.1,
-                        ),
+                      child: Builder(
+                        builder: (ctx) {
+                          bool isGuestUser = true;
+                          try {
+                            isGuestUser = ctx.watch<AuthProvider>().isGuest;
+                          } catch (_) {}
+                          final isHost = !isGuestUser && (ticket.userRoleInMatch.toLowerCase() == 'host' || ticket.userRoleInMatch.toLowerCase() == 'đội trưởng');
+                          return Text(
+                            '${ticket.sportName.toUpperCase()} • ${isHost ? 'ĐỘI TRƯỞNG' : 'KHÁCH GHÉP'}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.1,
+                            ),
+                          );
+                        },
                       ),
                     ),
                     Container(

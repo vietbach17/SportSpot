@@ -56,6 +56,15 @@ public class TopUpWalletRequest
     public string PaymentGateway { get; set; } = "VNPay";
 }
 
+public class WithdrawWalletRequest
+{
+    public int UserId { get; set; }
+    public string BankName { get; set; } = string.Empty;
+    public string AccountNumber { get; set; } = string.Empty;
+    public string AccountHolder { get; set; } = string.Empty;
+    public int Amount { get; set; }
+}
+
 public class WalletAndHistoryDto
 {
     public int WalletBalance { get; set; }

@@ -9,4 +9,5 @@ public interface IPaymentService
     Task<ApiResponse<BookingResponseDto>> MockInstantPayAsync(string bookingCode);
     Task<ApiResponse<WalletAndHistoryDto>> GetUserTransactionsAsync(int userId);
     Task<ApiResponse<WalletAndHistoryDto>> TopUpWalletAsync(TopUpWalletRequest request);
+    Task<ApiResponse<WalletAndHistoryDto>> WithdrawWalletAsync(WithdrawWalletRequest request);
 }

@@ -266,15 +266,41 @@ class ApiTicketRepository implements TicketRepository {
     required String accountHolder,
     required int amount,
   }) async {
-    final res = await _fallbackMock.requestBankWithdrawal(
-      bankName: bankName,
-      accountNumber: accountNumber,
-      accountHolder: accountHolder,
-      amount: amount,
-    );
     try {
-      await _dbHelper.setGuestWalletBalance(res['remainingBalance'] as int);
-    } catch (_) {}
-    return res;
+      final data = await _client.post('/api/payments/withdraw', {
+        'bankName': bankName,
+        'accountNumber': accountNumber,
+        'accountHolder': accountHolder,
+        'amount': amount,
+      });
+      final map = Map<String, dynamic>.from(data as Map);
+      final remaining = (map['walletBalance'] as num?)?.toInt() ?? 0;
+      _fallbackMock.setWalletBalance(remaining);
+      final code = 'WD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+      try {
+        await _dbHelper.setGuestWalletBalance(remaining);
+      } catch (_) {}
+      return {
+        'withdrawalCode': code,
+        'amount': amount,
+        'bankName': bankName,
+        'accountNumber': accountNumber,
+        'accountHolder': accountHolder,
+        'status': 'Processing',
+        'remainingBalance': remaining,
+        'message': 'Yêu cầu rút tiền $code đã được tiếp nhận và xử lý trong 24h.',
+      };
+    } catch (_) {
+      final res = await _fallbackMock.requestBankWithdrawal(
+        bankName: bankName,
+        accountNumber: accountNumber,
+        accountHolder: accountHolder,
+        amount: amount,
+      );
+      try {
+        await _dbHelper.setGuestWalletBalance(res['remainingBalance'] as int);
+      } catch (_) {}
+      return res;
+    }
   }
 }

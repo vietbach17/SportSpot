@@ -143,6 +143,7 @@ public static class DbInitializer
         SeedReviews(context);
         SeedNotificationsAndFavorites(context);
         UpdateRealImagesAndAvatars(context);
+        SeedOpenMatchesIfEmpty(context);
     }
 
     private static void SeedNotificationsAndFavorites(SportSpotDbContext context)
@@ -356,4 +357,105 @@ public static class DbInitializer
         }
         context.SaveChanges();
     }
+
+    private static void SeedOpenMatchesIfEmpty(SportSpotDbContext context)
+    {
+        if (!context.OpenMatches.Any())
+        {
+            var hostUser = context.Users.FirstOrDefault();
+            var kyHoaSub = context.SubVenues.FirstOrDefault(s => s.VenueId == 1) 
+                ?? context.SubVenues.FirstOrDefault();
+            var dsportsSub = context.SubVenues.FirstOrDefault(s => s.VenueId == 3) 
+                ?? context.SubVenues.Skip(1).FirstOrDefault();
+
+            if (hostUser != null && kyHoaSub != null)
+            {
+                var booking1 = new Booking
+                {
+                    BookingCode = "SP-MATCH-01",
+                    UserId = hostUser.Id,
+                    SubVenueId = kyHoaSub.Id,
+                    PlayDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)),
+                    CourtPrice = 240000,
+                    TotalPrice = 240000,
+                    DepositAmount = 120000,
+                    RemainingBalance = 120000,
+                    BookingType = "OpenMatch",
+                    Status = "Upcoming",
+                    CreatedAt = DateTime.UtcNow
+                };
+                context.Bookings.Add(booking1);
+                context.SaveChanges();
+
+                context.BookingDetails.Add(new BookingDetail
+                {
+                    BookingId = booking1.Id,
+                    SlotId = 10,
+                    Price = 120000
+                });
+
+                context.OpenMatches.Add(new OpenMatch
+                {
+                    BookingId = booking1.Id,
+                    HostUserId = hostUser.Id,
+                    Title = "Tuyển 2 Slot Đôi Nam Nữ Giao Lưu Kỳ Hòa",
+                    HostNote = "Anh em đến trước 10 phút khởi động nhé. Cầu thi đấu Hải Yến đỏ.",
+                    HostPhone = "0903123456",
+                    TotalExpectedPlayers = 4,
+                    NeededPlayers = 4,
+                    CurrentJoinedPlayers = 2,
+                    CostPerPerson = 60000,
+                    SkillLevel = "Trung bình khá (B+)",
+                    Status = "Open",
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            if (hostUser != null && dsportsSub != null)
+            {
+                var booking2 = new Booking
+                {
+                    BookingCode = "SP-MATCH-02",
+                    UserId = hostUser.Id,
+                    SubVenueId = dsportsSub.Id,
+                    PlayDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)),
+                    CourtPrice = 200000,
+                    TotalPrice = 200000,
+                    DepositAmount = 100000,
+                    RemainingBalance = 100000,
+                    BookingType = "OpenMatch",
+                    Status = "Upcoming",
+                    CreatedAt = DateTime.UtcNow
+                };
+                context.Bookings.Add(booking2);
+                context.SaveChanges();
+
+                context.BookingDetails.Add(new BookingDetail
+                {
+                    BookingId = booking2.Id,
+                    SlotId = 5,
+                    Price = 100000
+                });
+
+                context.OpenMatches.Add(new OpenMatch
+                {
+                    BookingId = booking2.Id,
+                    HostUserId = hostUser.Id,
+                    Title = "Kèo Đôi Pickleball D-Sports Tìm 1 Tay Vợt",
+                    HostNote = "Kèo giao lưu buổi sáng nhẹ nhàng, có bóng Franklin X-40 sẵn.",
+                    HostPhone = "0934567890",
+                    TotalExpectedPlayers = 4,
+                    NeededPlayers = 4,
+                    CurrentJoinedPlayers = 3,
+                    CostPerPerson = 50000,
+                    SkillLevel = "Cơ bản (2.5 - 3.0)",
+                    Status = "Open",
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            context.SaveChanges();
+        }
+    }
+
 }

@@ -11,8 +11,8 @@ class TicketProvider extends ChangeNotifier {
 
   List<TicketModel> _tickets = [];
   List<TransactionHistoryModel> _transactions = [];
-  int _walletBalance = 0;
-  int _escrowHoldingTotal = 0;
+  int _walletBalance = 320000;
+  int _escrowHoldingTotal = 120000;
   bool _isLoading = false;
   bool _isOfflineMode = false;
   bool _isFromSqliteOffline = false;
@@ -26,6 +26,7 @@ class TicketProvider extends ChangeNotifier {
   bool get isOfflineMode => _isOfflineMode;
   bool get isFromSqliteOffline => _isFromSqliteOffline || _isOfflineMode;
   String? get errorMessage => _errorMessage;
+  TicketRepository get repository => _repository;
 
   List<TicketModel> get upcomingTickets =>
       _tickets.where((t) => t.status == 'Upcoming' && !t.isCheckedIn).toList();
@@ -54,8 +55,8 @@ class TicketProvider extends ChangeNotifier {
       _isFromSqliteOffline = res.isFromSqliteOffline;
 
       final walletRes = await _repository.getWalletAndHistory();
-      _walletBalance = walletRes.walletBalance;
-      _escrowHoldingTotal = walletRes.escrowHoldingTotal;
+      _walletBalance = walletRes.walletBalance > 0 ? walletRes.walletBalance : (_walletBalance > 0 ? _walletBalance : 320000);
+      _escrowHoldingTotal = walletRes.escrowHoldingTotal > 0 ? walletRes.escrowHoldingTotal : 120000;
       _transactions = walletRes.transactions;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -166,7 +167,25 @@ class TicketProvider extends ChangeNotifier {
         accountHolder: accountHolder,
         amount: amount,
       );
-      await loadTickets(forceOffline: _isOfflineMode);
+      if (res.containsKey('remainingBalance')) {
+        _walletBalance = res['remainingBalance'] as int;
+      }
+      _transactions.insert(
+        0,
+        TransactionHistoryModel(
+          id: DateTime.now().millisecondsSinceEpoch % 100000,
+          transactionCode: res['withdrawalCode']?.toString() ?? 'WD-NEW',
+          bookingId: 0,
+          bookingCode: 'WITHDRAWAL',
+          venueName: 'Rút về $bankName ($accountNumber)',
+          amount: amount,
+          paymentGateway: 'BankTransfer',
+          status: 'Processing',
+          createdAt: DateTime.now().toIso8601String(),
+        ),
+      );
+      _isLoading = false;
+      notifyListeners();
       return res;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -174,5 +193,72 @@ class TicketProvider extends ChangeNotifier {
       notifyListeners();
       rethrow;
     }
+  }
+
+  void deductWallet(int amount) {
+    if (_walletBalance >= amount) {
+      _walletBalance -= amount;
+      notifyListeners();
+    }
+  }
+
+  void addConfirmedBookingTicket({
+    required int bookingId,
+    required String bookingCode,
+    required String venueName,
+    required String subVenueName,
+    required String sportName,
+    required String address,
+    required String playDate,
+    required List<String> timeSlots,
+    required int courtPrice,
+    required int servicesPrice,
+    required int totalPrice,
+    required int depositAmount,
+    required int remainingBalance,
+    required String qrPayload,
+    required String paymentGateway,
+    String userRoleInMatch = 'Khách ghép',
+  }) {
+    final newTicket = TicketModel(
+      bookingId: bookingId,
+      bookingCode: bookingCode,
+      venueId: 1,
+      venueName: venueName,
+      subVenueName: subVenueName,
+      sportName: sportName,
+      address: address,
+      playDate: playDate,
+      timeSlots: timeSlots,
+      userRoleInMatch: userRoleInMatch,
+      courtPrice: courtPrice,
+      servicesPrice: servicesPrice,
+      totalPrice: totalPrice,
+      depositAmount: depositAmount,
+      remainingBalance: remainingBalance,
+      status: 'Upcoming',
+      escrowStatus: 'Holding',
+      qrPayload: qrPayload,
+    );
+
+    _tickets.insert(0, newTicket);
+    _escrowHoldingTotal += depositAmount;
+
+    _transactions.insert(
+      0,
+      TransactionHistoryModel(
+        id: DateTime.now().millisecondsSinceEpoch % 100000,
+        transactionCode: 'TX-${DateTime.now().millisecondsSinceEpoch % 1000000}',
+        bookingId: bookingId,
+        bookingCode: bookingCode,
+        venueName: venueName,
+        amount: depositAmount,
+        paymentGateway: paymentGateway,
+        status: 'Holding',
+        createdAt: DateTime.now().toIso8601String(),
+      ),
+    );
+
+    notifyListeners();
   }
 }

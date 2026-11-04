@@ -36,7 +36,7 @@ class FloatingBottomNavBar extends StatelessWidget {
       {
         'icon': Icons.account_circle_outlined,
         'activeIcon': Icons.account_circle_rounded,
-        'label': 'Cá nhân',
+        'label': 'Tài khoản',
       },
     ];
 

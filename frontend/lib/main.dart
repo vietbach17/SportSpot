@@ -6,6 +6,7 @@ import 'data/services/floating_notification_service.dart';
 import 'data/services/token_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/booking_provider.dart';
+import 'providers/theme_provider.dart';
 import 'providers/ticket_provider.dart';
 import 'providers/venue_provider.dart';
 import 'screens/main/main_screen.dart';
@@ -24,6 +25,9 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(
+          create: (_) => ThemeProvider(),
+        ),
         ChangeNotifierProvider(
           create: (_) => AuthProvider()..initializeAuth(),
         ),
@@ -52,11 +56,15 @@ class SportSpotApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+
     return MaterialApp(
       title: 'SportSpot',
       debugShowCheckedModeBanner: false,
       navigatorKey: FloatingNotificationService.navigatorKey,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeProvider.themeMode,
       builder: (context, child) => ResponsivePhoneFrame(child: child ?? const SizedBox.shrink()),
       home: hasSeenOnboarding ? const MainScreen() : const OnboardingScreen(),
     );

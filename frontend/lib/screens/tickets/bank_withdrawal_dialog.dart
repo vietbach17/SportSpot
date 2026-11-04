@@ -306,12 +306,13 @@ class _BankWithdrawalDialogState extends State<BankWithdrawalDialog> {
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   value: _selectedBank,
+                  isExpanded: true,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.account_balance, size: 20),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  items: _banks.map((b) => DropdownMenuItem(value: b, child: Text(b, style: const TextStyle(fontSize: 13)))).toList(),
+                  items: _banks.map((b) => DropdownMenuItem(value: b, child: Text(b, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)))).toList(),
                   onChanged: (val) {
                     if (val != null) setState(() => _selectedBank = val);
                   },

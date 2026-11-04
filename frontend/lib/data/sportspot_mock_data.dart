@@ -2,7 +2,7 @@ import 'sportspot_models.dart';
 
 class SportSpotMockData {
   static const String logo =
-      'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80';
+      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&q=80';
   static const String userNam =
       'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80';
   static const String heroBanner =
@@ -12,7 +12,7 @@ class SportSpotMockData {
   static const String cauGiayDetailHero =
       'https://images.unsplash.com/photo-1613918108466-292b78a8ef95?w=1200&q=80';
   static const String onboardingAthlete =
-      'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=1200&q=85';
+      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&q=85';
   static const String coachMinh =
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80';
 

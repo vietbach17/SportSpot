@@ -17,9 +17,13 @@ class ApiConstants {
   }
 
   // Endpoints Auth
+  static const String login = '/api/auth/login';
+  static const String registerEmailOtp = '/api/auth/register-otp';
+  static const String registerVerify = '/api/auth/register-verify';
+  static const String changePasswordOtp = '/api/auth/change-password-otp';
+  static const String changePassword = '/api/auth/change-password';
   static const String sendOtp = '/api/auth/send-otp';
   static const String verifyOtp = '/api/auth/verify-otp';
-  static const String login = '/api/auth/login';
 
   // Endpoints Users
   static const String userMe = '/api/users/me';

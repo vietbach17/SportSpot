@@ -8,7 +8,9 @@ class MockTicketRepository implements TicketRepository {
 
   final List<TicketModel> _tickets = [];
   final List<TransactionHistoryModel> _transactions = [];
-  int _walletBalance = 120000;
+  int _walletBalance = 320000;
+
+  void setWalletBalance(int balance) => _walletBalance = balance;
 
   MockTicketRepository() {
     _seedInitialData();
@@ -134,7 +136,7 @@ class MockTicketRepository implements TicketRepository {
         address: 'Số 72 Trần Thái Tông, Dịch Vọng Hậu, Cầu Giấy',
         playDate: date2,
         timeSlots: ['$slot2Start-$slot2End'],
-        userRoleInMatch: 'Host',
+        userRoleInMatch: 'JoinedPlayer',
         courtPrice: 600000,
         servicesPrice: 0,
         totalPrice: 600000,
@@ -142,7 +144,7 @@ class MockTicketRepository implements TicketRepository {
         remainingBalance: 300000,
         status: 'Upcoming',
         escrowStatus: 'Holding',
-        qrPayload: buildSignedQrPayload('SP-391045', 1, 'Host'),
+        qrPayload: buildSignedQrPayload('SP-391045', 1, 'JoinedPlayer'),
         isCheckedIn: false,
       ),
       TicketModel(

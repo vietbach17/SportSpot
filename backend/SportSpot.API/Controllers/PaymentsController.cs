@@ -79,6 +79,22 @@ public class PaymentsController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    
+    /// <summary>
+    /// POST /api/payments/withdraw: Rút tiền từ ví về tài khoản ngân hàng.
+    /// </summary>
+    [HttpPost("withdraw")]
+    public async Task<ActionResult<ApiResponse<WalletAndHistoryDto>>> WithdrawWallet([FromBody] WithdrawWalletRequest request)
+    {
+        if (request.UserId <= 0)
+        {
+            request.UserId = GetCurrentUserId();
+            if (request.UserId <= 0) request.UserId = 1;
+        }
+        var result = await _paymentService.WithdrawWalletAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
     private int GetCurrentUserId()
     {
         var claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

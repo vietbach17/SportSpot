@@ -256,4 +256,38 @@ public class PaymentService : IPaymentService
 
         return await GetUserTransactionsAsync(request.UserId);
     }
+
+    public async Task<ApiResponse<WalletAndHistoryDto>> WithdrawWalletAsync(WithdrawWalletRequest request)
+    {
+        if (request.UserId <= 0) return ApiResponse<WalletAndHistoryDto>.Fail("Vui lòng đăng nhập", 401);
+        if (request.Amount <= 0) return ApiResponse<WalletAndHistoryDto>.Fail("Số tiền rút phải lớn hơn 0", 400);
+
+        var user = await _unitOfWork.Users.GetByIdAsync(request.UserId);
+        if (user == null) return ApiResponse<WalletAndHistoryDto>.Fail("Không tìm thấy người dùng", 404);
+
+        if (user.WalletBalance < request.Amount)
+        {
+            return ApiResponse<WalletAndHistoryDto>.Fail($"Số tiền rút ({request.Amount:N0} đ) vượt quá số dư ví hiện có ({user.WalletBalance:N0} đ)", 400);
+        }
+
+        user.WalletBalance -= request.Amount;
+
+        var allBookings = await _unitOfWork.Bookings.GetAllAsync();
+        var dummyBookingId = allBookings.FirstOrDefault()?.Id ?? 1;
+
+        var tx = new Transaction
+        {
+            TransactionCode = $"WD-{DateTime.UtcNow:yyyyMMddHHmmss}-{Random.Shared.Next(100, 999)}",
+            BookingId = dummyBookingId,
+            UserId = request.UserId,
+            Amount = request.Amount,
+            PaymentGateway = $"BankTransfer: {request.BankName} - {request.AccountNumber}",
+            Status = "Settled",
+            CreatedAt = DateTime.UtcNow
+        };
+        await _unitOfWork.Transactions.AddAsync(tx);
+        await _unitOfWork.SaveChangesAsync();
+
+        return await GetUserTransactionsAsync(request.UserId);
+    }
 }
