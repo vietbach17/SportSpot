@@ -72,12 +72,14 @@ public class NotificationsController : ControllerBase
     [HttpPost("test-push")]
     public async Task<ActionResult<ApiResponse<object>>> TestPush([FromBody] TestPushRequest? request)
     {
-        var title = !string.IsNullOrWhiteSpace(request?.Title) 
-            ? request.Title 
+        var rawTitle = request?.Title?.Trim();
+        var title = !string.IsNullOrWhiteSpace(rawTitle) && rawTitle != "string" 
+            ? rawTitle 
             : "🔥 Kèo mới tại SportSpot!";
             
-        var body = !string.IsNullOrWhiteSpace(request?.Body) 
-            ? request.Body 
+        var rawBody = request?.Body?.Trim();
+        var body = !string.IsNullOrWhiteSpace(rawBody) && rawBody != "string" 
+            ? rawBody 
             : "CLB Cầu lông Kỳ Hòa vừa có 1 suất trống lúc 19:00. Đặt ngay!";
 
         var uid = request?.UserId ?? GetCurrentUserId();
@@ -90,18 +92,26 @@ public class NotificationsController : ControllerBase
             { "timestamp", DateTime.UtcNow.ToString("o") }
         };
 
-        var topic = !string.IsNullOrWhiteSpace(request?.Topic) ? request.Topic : "sportspot_all";
+        var rawTopic = request?.Topic?.Trim();
+        var topic = !string.IsNullOrWhiteSpace(rawTopic) && rawTopic != "string" 
+            ? rawTopic 
+            : "sportspot_all";
 
-        if (!string.IsNullOrWhiteSpace(request?.FcmToken))
+        var rawToken = request?.FcmToken?.Trim();
+        bool hasSpecificToken = !string.IsNullOrWhiteSpace(rawToken) && rawToken != "string" && rawToken.Length >= 25;
+
+        var tasks = new List<Task<bool>>();
+
+        if (hasSpecificToken)
         {
-            await _fcmPushService.SendPushAsync(request.FcmToken, title, body, data);
+            tasks.Add(_fcmPushService.SendPushAsync(rawToken!, title, body, data));
         }
-        else
-        {
-            var userPushTask = _fcmPushService.SendToUserAsync(uid, title, body, "Reminder", data);
-            var topicPushTask = _fcmPushService.SendToTopicAsync(topic, title, body, data);
-            await Task.WhenAll(userPushTask, topicPushTask);
-        }
+
+        // Luôn luôn gửi tới user trong DB và broadcast tới topic để chắc chắn notification nổ trên thiết bị
+        tasks.Add(_fcmPushService.SendToUserAsync(uid, title, body, "Reminder", data));
+        tasks.Add(_fcmPushService.SendToTopicAsync(topic, title, body, data));
+
+        await Task.WhenAll(tasks);
 
         return Ok(ApiResponse<object>.Ok(new
         {
@@ -110,7 +120,7 @@ public class NotificationsController : ControllerBase
             Body = body,
             TargetUserId = uid,
             BroadcastTopic = topic,
-            SpecificFcmToken = request?.FcmToken,
+            SpecificFcmToken = hasSpecificToken ? rawToken : null,
             DispatchedAt = DateTime.UtcNow
         }, "Bắn thông báo thử nghiệm thành công! Kiểm tra thông báo trên máy / Android Emulator ngay."));
     }

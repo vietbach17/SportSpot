@@ -116,13 +116,14 @@ public class FcmPushService : IFcmPushService
     {
         if (string.IsNullOrWhiteSpace(fcmToken)) return false;
 
-        if (fcmToken.StartsWith("fcm_dev_") || fcmToken.Contains("mock"))
+        var trimmedToken = fcmToken.Trim();
+        if (trimmedToken.StartsWith("fcm_dev_") || trimmedToken.Contains("mock") || trimmedToken == "string" || trimmedToken.Length < 25)
         {
-            _logger.LogInformation("[FCM Dev Mock] Simulated push to dev mock token {Token}: '{Title}' - '{Body}'", fcmToken, title, body);
+            _logger.LogInformation("[FCM Dev Mock] Simulated push to dev/placeholder token {Token}: '{Title}' - '{Body}'", trimmedToken, title, body);
             return true;
         }
 
-        var message = BuildHighPriorityMessage(fcmToken, title, body, data);
+        var message = BuildHighPriorityMessage(trimmedToken, title, body, data);
         var app = GetOrInitializeFirebaseApp();
 
         if (app == null)
