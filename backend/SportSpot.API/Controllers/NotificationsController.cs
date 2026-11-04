@@ -65,6 +65,56 @@ public class NotificationsController : ControllerBase
         return Ok(ApiResponse<bool>.Ok(success, "Gửi thông báo thành công"));
     }
 
+    /// <summary>
+    /// Bắn thông báo đẩy thử nghiệm (Test Push) trực tiếp từ Swagger mà không cần cấu hình token phức tạp.
+    /// Tự động gửi tới User theo Id và broadcast tới toàn bộ thiết bị đang lắng nghe Topic 'sportspot_all'.
+    /// </summary>
+    [HttpPost("test-push")]
+    public async Task<ActionResult<ApiResponse<object>>> TestPush([FromBody] TestPushRequest? request)
+    {
+        var title = !string.IsNullOrWhiteSpace(request?.Title) 
+            ? request.Title 
+            : "🔥 Kèo mới tại SportSpot!";
+            
+        var body = !string.IsNullOrWhiteSpace(request?.Body) 
+            ? request.Body 
+            : "CLB Cầu lông Kỳ Hòa vừa có 1 suất trống lúc 19:00. Đặt ngay!";
+
+        var uid = request?.UserId ?? GetCurrentUserId();
+        if (uid <= 0) uid = 1;
+
+        var data = new Dictionary<string, string>
+        {
+            { "click_action", "FLUTTER_NOTIFICATION_CLICK" },
+            { "type", "Reminder" },
+            { "timestamp", DateTime.UtcNow.ToString("o") }
+        };
+
+        var topic = !string.IsNullOrWhiteSpace(request?.Topic) ? request.Topic : "sportspot_all";
+
+        if (!string.IsNullOrWhiteSpace(request?.FcmToken))
+        {
+            await _fcmPushService.SendPushAsync(request.FcmToken, title, body, data);
+        }
+        else
+        {
+            var userPushTask = _fcmPushService.SendToUserAsync(uid, title, body, "Reminder", data);
+            var topicPushTask = _fcmPushService.SendToTopicAsync(topic, title, body, data);
+            await Task.WhenAll(userPushTask, topicPushTask);
+        }
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            Success = true,
+            Title = title,
+            Body = body,
+            TargetUserId = uid,
+            BroadcastTopic = topic,
+            SpecificFcmToken = request?.FcmToken,
+            DispatchedAt = DateTime.UtcNow
+        }, "Bắn thông báo thử nghiệm thành công! Kiểm tra thông báo trên máy / Android Emulator ngay."));
+    }
+
     private int GetCurrentUserId()
     {
         var claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

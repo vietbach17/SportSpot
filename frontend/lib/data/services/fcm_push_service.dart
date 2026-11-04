@@ -1,12 +1,47 @@
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/notification_model.dart';
 import '../repositories/notification_repository.dart';
 import 'floating_notification_service.dart';
 
+/// Handler nhận tin ngầm khi ứng dụng ở Background hoặc bị Tắt hoàn toàn (Terminated).
+/// Bắt buộc là hàm top-level và gắn annotation @pragma('vm:entry-point') để VM không loại bỏ khi compile AOT.
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+  } catch (_) {}
+  debugPrint('[FCM Background Handler] Nhận push khi tắt app: id=${message.messageId}, title=${message.notification?.title}, body=${message.notification?.body}, data=${message.data}');
+}
+
+/// Kênh thông báo Android Notification Channel ưu tiên cao (High Importance)
+const AndroidNotificationChannel sportspotHighImportanceChannel = AndroidNotificationChannel(
+  'sportspot_high_importance_channel',
+  'SportSpot High Priority Notifications',
+  description: 'Kênh thông báo ưu tiên cao nhận tin nhắn nhắc lịch đặt sân, kèo đấu khi tắt app hoặc chạy nền.',
+  importance: Importance.max,
+  playSound: true,
+  enableVibration: true,
+);
+
+const AndroidNotificationDetails sportspotNotificationDetails = AndroidNotificationDetails(
+  'sportspot_high_importance_channel',
+  'SportSpot High Priority Notifications',
+  channelDescription: 'Kênh thông báo ưu tiên cao nhận tin nhắn nhắc lịch đặt sân, kèo đấu khi tắt app hoặc chạy nền.',
+  importance: Importance.max,
+  priority: Priority.high,
+  playSound: true,
+  enableVibration: true,
+  icon: '@mipmap/ic_launcher',
+);
+
 /// Dịch vụ quản lý Push Notification (Firebase Cloud Messaging - FCM)
-/// Sẵn sàng khung gắn google-services.json và fallback an toàn khi chạy offline/test/dev.
+/// Hỗ trợ đầy đủ: Background handler khi tắt app, High-importance channel, và Safe Fallback.
 class FcmPushService {
   static final FcmPushService _instance = FcmPushService._internal();
   static FcmPushService get instance => _instance;
@@ -14,6 +49,7 @@ class FcmPushService {
   FcmPushService._internal();
 
   final INotificationRepository _notificationRepo = ApiNotificationRepository();
+  final FlutterLocalNotificationsPlugin _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
   final _messageStreamController = StreamController<NotificationModel>.broadcast();
 
   String? _fcmToken;
@@ -23,63 +59,187 @@ class FcmPushService {
   Stream<NotificationModel> get onMessage => _messageStreamController.stream;
   String? get fcmToken => _fcmToken;
 
-  /// Khởi tạo Push Service: Đăng ký token với backend và lắng nghe thông báo mới
+  /// Khởi tạo Push Service: Cài đặt kênh thông báo, kết nối FCM Native và fallback an toàn
   Future<void> initialize({int? userId}) async {
     try {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        _fcmToken = prefs.getString('fcm_device_token');
-        if (_fcmToken == null || _fcmToken!.isEmpty) {
-          final randomSuffix = DateTime.now().millisecondsSinceEpoch.toString();
-          _fcmToken = 'fcm_dev_sportspot_$randomSuffix';
-          await prefs.setString('fcm_device_token', _fcmToken!);
-        }
-      } catch (_) {
-        // Fallback in-memory token for headless tests or missing native shared_preferences plugins
-        _fcmToken ??= 'fcm_dev_sportspot_mock_test_token';
+      // 1. Cài đặt Android Notification Channel & Local Notifications
+      await _setupNotificationChannel();
+
+      // 2. Kích hoạt Firebase Native Hook & Background Handler
+      await _setupNativeFirebase();
+
+      // 3. Fallback token cho môi trường dev/test hoặc khi chưa có google-services native
+      if (_fcmToken == null || _fcmToken!.isEmpty) {
+        await _setupFallbackToken();
       }
 
       debugPrint('[FcmPushService] Device token ready: $_fcmToken');
 
-      // 2. Gửi FCM Token lên Backend SportSpot để nhận push
-      await _notificationRepo.saveFcmToken(
-        _fcmToken!,
-        userId: userId,
-        deviceType: defaultTargetPlatform.name.toLowerCase(),
-      );
+      // 4. Gửi FCM Token lên Backend SportSpot để nhận push
+      if (_fcmToken != null && _fcmToken!.isNotEmpty) {
+        await _notificationRepo.saveFcmToken(
+          _fcmToken!,
+          userId: userId,
+          deviceType: defaultTargetPlatform.name.toLowerCase(),
+        );
+      }
 
-      // 3. Khởi tạo Firebase Native Hook (sẽ chạy nếu dự án gắn google-services.json)
-      _setupNativeFirebaseHook();
-
-      // 4. Lắng nghe và tự động hiển thị Floating Banner khi có thông báo
+      // 5. Lắng nghe và tự động hiển thị Floating Banner / In-App Notification
       startPeriodicSync(userId: userId);
     } catch (e) {
       debugPrint('[FcmPushService] Error during initialization: $e');
     }
   }
 
-  /// Hook tích hợp Firebase Messaging native khi đã bổ sung google-services.json & package
-  void _setupNativeFirebaseHook() {
-    /* 
-      --- HƯỚNG DẪN KÍCH HOẠT GOOGLE-SERVICES.JSON NATIVE ---
-      1. Tải file google-services.json từ Firebase Console đặt vào: frontend/android/app/google-services.json
-      2. Thêm plugin trong android/settings.gradle & android/app/build.gradle
-      3. Thêm dependency firebase_core & firebase_messaging vào pubspec.yaml
-      4. Bỏ comment khối code sau:
-      
+  /// Khởi tạo Android Notification Channel ưu tiên cao
+  Future<void> _setupNotificationChannel() async {
+    try {
+      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const darwinInit = DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      );
+      const initSettings = InitializationSettings(android: androidInit, iOS: darwinInit, macOS: darwinInit);
+
+      await _localNotificationsPlugin.initialize(
+        settings: initSettings,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          debugPrint('[FcmPushService] Notification action tapped: ${response.payload}');
+        },
+      );
+
+      await _localNotificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(sportspotHighImportanceChannel);
+    } catch (e) {
+      debugPrint('[FcmPushService] Local notification channel setup skipped: $e');
+    }
+  }
+
+  /// Hook tích hợp Firebase Messaging native với background handler
+  Future<void> _setupNativeFirebase() async {
+    try {
+      await Firebase.initializeApp();
+
+      final messaging = FirebaseMessaging.instance;
+
+      // Yêu cầu quyền thông báo (bắt buộc cho Android 13+ và iOS)
+      final settings = await messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+      debugPrint('[FcmPushService] FCM Permission status: ${settings.authorizationStatus}');
+
+      // Bật hiển thị heads-up banner khi app đang ở foreground
+      await messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      // Đăng ký Background Handler nhận push khi tắt app
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+      // Lấy Device Token từ FCM native
+      final token = await messaging.getToken();
+      if (token != null && token.isNotEmpty) {
+        _fcmToken = token;
+        debugPrint('================================================================');
+        debugPrint('[FCM] ACTIVE DEVICE TOKEN: $_fcmToken');
+        debugPrint('================================================================');
+      }
+
+      // Đăng ký nhận thông báo toàn hệ thống qua Topic sportspot_all
+      try {
+        await messaging.subscribeToTopic('sportspot_all');
+        debugPrint('[FcmPushService] Subscribed to topic: sportspot_all');
+      } catch (e) {
+        debugPrint('[FcmPushService] Topic subscription error: $e');
+      }
+
+      // Lắng nghe khi token FCM thay đổi
+      messaging.onTokenRefresh.listen((newToken) {
+        _fcmToken = newToken;
+        debugPrint('[FCM] Token refreshed: $_fcmToken');
+        _notificationRepo.saveFcmToken(
+          newToken,
+          deviceType: defaultTargetPlatform.name.toLowerCase(),
+        );
+      });
+
+      // Lắng nghe thông báo khi ứng dụng đang mở (Foreground)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint('[FCM Foreground] Nhận tin nhắn khi app đang mở: ${message.notification?.title} - ${message.notification?.body}');
+        final title = message.notification?.title ?? message.data['title'] ?? 'SportSpot';
+        final body = message.notification?.body ?? message.data['message'] ?? message.data['body'] ?? '';
+
         final notification = NotificationModel(
-          id: DateTime.now().millisecondsSinceEpoch,
-          title: message.notification?.title ?? 'SportSpot',
-          message: message.notification?.body ?? '',
+          id: message.messageId.hashCode != 0 ? message.messageId.hashCode : DateTime.now().millisecondsSinceEpoch,
+          title: title,
+          message: body,
           type: message.data['type'] ?? 'Reminder',
           isRead: false,
           createdAt: DateTime.now(),
         );
         handleIncomingNotification(notification);
+
+        // Đồng thời bắn native heads-up notification qua channel ưu tiên cao với mốc thời gian hiện tại
+        _localNotificationsPlugin.show(
+          id: notification.id,
+          title: notification.title,
+          body: notification.message,
+          notificationDetails: NotificationDetails(
+            android: AndroidNotificationDetails(
+              'sportspot_high_importance_channel',
+              'SportSpot High Priority Notifications',
+              channelDescription: 'Kênh thông báo ưu tiên cao nhận tin nhắn nhắc lịch đặt sân, kèo đấu khi tắt app hoặc chạy nền.',
+              importance: Importance.max,
+              priority: Priority.high,
+              playSound: true,
+              enableVibration: true,
+              icon: '@mipmap/ic_launcher',
+              showWhen: true,
+              when: DateTime.now().millisecondsSinceEpoch,
+            ),
+          ),
+          payload: message.data.toString(),
+        );
       });
-    */
-    debugPrint('[FcmPushService] Native FCM hook configured and awaiting google-services.json config.');
+
+      // Lắng nghe khi người dùng bấm vào thông báo từ background
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint('[FcmPushService] App opened from background notification: ${message.notification?.title}');
+      });
+
+      // Kiểm tra xem ứng dụng có được mở từ trạng thái Tắt hoàn toàn (Terminated) qua push hay không
+      final initialMessage = await messaging.getInitialMessage();
+      if (initialMessage != null) {
+        debugPrint('[FcmPushService] App launched from terminated state via notification: ${initialMessage.notification?.title}');
+      }
+    } catch (e) {
+      debugPrint('[FcmPushService] Native FCM hook awaiting native google-services configuration: $e');
+    }
+  }
+
+  /// Cấu hình fallback token an toàn cho môi trường test/dev
+  Future<void> _setupFallbackToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _fcmToken = prefs.getString('fcm_device_token');
+      if (_fcmToken == null || _fcmToken!.isEmpty) {
+        final randomSuffix = DateTime.now().millisecondsSinceEpoch.toString();
+        _fcmToken = 'fcm_dev_sportspot_$randomSuffix';
+        await prefs.setString('fcm_device_token', _fcmToken!);
+      }
+    } catch (_) {
+      _fcmToken ??= 'fcm_dev_sportspot_mock_test_token';
+    }
   }
 
   /// Xử lý khi có thông báo đẩy đến: bắn vào stream và hiện Floating Top Banner

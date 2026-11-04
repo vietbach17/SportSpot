@@ -47,5 +47,9 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+firebase-service-account.json
+*firebase-adminsdk*.json
+**/google-services.json
+google-services.json
 
 graphify-out/
