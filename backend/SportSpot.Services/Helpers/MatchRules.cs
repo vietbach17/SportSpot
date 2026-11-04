@@ -12,10 +12,14 @@ public static class MatchRules
     public static DateTime VietnamNow => DateTime.UtcNow.AddHours(7);
     public static bool IsUpcoming(Booking booking)
     {
-        var first = booking.BookingDetails.Select(d => d.TimeSlot?.StartTime)
+        if (booking.Status != "Upcoming" || booking.IsCheckedIn) return false;
+        var first = booking.BookingDetails?.Select(d => d.TimeSlot?.StartTime)
             .Where(t => t != null).OrderBy(t => t).FirstOrDefault();
-        return booking.Status == "Upcoming" && !booking.IsCheckedIn &&
-            TimeOnly.TryParse(first, out var time) &&
+        if (string.IsNullOrEmpty(first))
+        {
+            return booking.PlayDate >= DateOnly.FromDateTime(VietnamNow);
+        }
+        return TimeOnly.TryParse(first, out var time) &&
             booking.PlayDate.ToDateTime(time) > VietnamNow;
     }
 }

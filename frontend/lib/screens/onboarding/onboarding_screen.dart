@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/token_service.dart';
 import '../../providers/auth_provider.dart';
-import '../auth/phone_input_screen.dart';
+import '../auth/login_screen.dart';
 import '../main/main_screen.dart';
 import '../../data/sportspot_mock_data.dart';
 import '../../widgets/brand_header.dart';
@@ -33,7 +33,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (!mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const PhoneInputScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
   }
 

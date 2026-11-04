@@ -8,7 +8,9 @@ class MockTicketRepository implements TicketRepository {
 
   final List<TicketModel> _tickets = [];
   final List<TransactionHistoryModel> _transactions = [];
-  int _walletBalance = 120000;
+  int _walletBalance = 320000;
+
+  void setWalletBalance(int balance) => _walletBalance = balance;
 
   MockTicketRepository() {
     _seedInitialData();
@@ -134,7 +136,7 @@ class MockTicketRepository implements TicketRepository {
         address: 'Số 72 Trần Thái Tông, Dịch Vọng Hậu, Cầu Giấy',
         playDate: date2,
         timeSlots: ['$slot2Start-$slot2End'],
-        userRoleInMatch: 'Host',
+        userRoleInMatch: 'JoinedPlayer',
         courtPrice: 600000,
         servicesPrice: 0,
         totalPrice: 600000,
@@ -142,7 +144,7 @@ class MockTicketRepository implements TicketRepository {
         remainingBalance: 300000,
         status: 'Upcoming',
         escrowStatus: 'Holding',
-        qrPayload: buildSignedQrPayload('SP-391045', 1, 'Host'),
+        qrPayload: buildSignedQrPayload('SP-391045', 1, 'JoinedPlayer'),
         isCheckedIn: false,
       ),
       TicketModel(
@@ -399,5 +401,41 @@ class MockTicketRepository implements TicketRepository {
       escrowHoldingTotal: holding,
       transactions: List.unmodifiable(_transactions),
     );
+  }
+
+  @override
+  Future<Map<String, dynamic>> requestBankWithdrawal({
+    required String bankName,
+    required String accountNumber,
+    required String accountHolder,
+    required int amount,
+  }) async {
+    if (amount <= 0 || amount > _walletBalance) {
+      throw Exception('Số tiền rút không hợp lệ hoặc vượt quá số dư ví hiện có');
+    }
+    _walletBalance -= amount;
+    final code = 'WD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    final txn = TransactionHistoryModel(
+      id: _transactions.length + 1,
+      transactionCode: code,
+      bookingId: 0,
+      bookingCode: 'WITHDRAWAL',
+      venueName: 'Rút về $bankName ($accountNumber - $accountHolder)',
+      amount: amount,
+      paymentGateway: 'BankTransfer',
+      status: 'Processing',
+      createdAt: DateTime.now().toIso8601String(),
+    );
+    _transactions.insert(0, txn);
+    return {
+      'withdrawalCode': code,
+      'amount': amount,
+      'bankName': bankName,
+      'accountNumber': accountNumber,
+      'accountHolder': accountHolder,
+      'status': 'Processing',
+      'remainingBalance': _walletBalance,
+      'message': 'Yêu cầu rút tiền $code đã được tiếp nhận và xử lý trong 24h.',
+    };
   }
 }

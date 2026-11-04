@@ -53,6 +53,7 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISportService, SportService>();
@@ -159,6 +160,20 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("==================================================");
             logger.LogInformation(">>> [Database] Đang kết nối PostgreSQL & tự động chạy Migration...");
             db.Database.Migrate();
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""DateOfBirth"" date;
+                    ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""AvatarUrl"" character varying(255);
+                    ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""FavoriteSports"" character varying(255);
+                    ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""FcmToken"" character varying(500);
+                    ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""IsFindMatchEnabled"" boolean DEFAULT FALSE;
+                ");
+            }
+            catch (Exception alterEx)
+            {
+                logger.LogWarning(">>> [Database] Cột người dùng: {Msg}", alterEx.Message);
+            }
             logger.LogInformation(">>> [Database] Khởi tạo schema PostgreSQL thành công!");
             logger.LogInformation("==================================================");
         }

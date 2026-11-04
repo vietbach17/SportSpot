@@ -39,6 +39,12 @@ abstract class TicketRepository {
   Future<Map<String, dynamic>> verifyQrCheckIn(String qrPayload);
   Future<CancelRefundResultModel> cancelTicket(TicketModel ticket);
   Future<WalletSummaryResult> getWalletAndHistory();
+  Future<Map<String, dynamic>> requestBankWithdrawal({
+    required String bankName,
+    required String accountNumber,
+    required String accountHolder,
+    required int amount,
+  });
 }
 
 class ApiTicketRepository implements TicketRepository {
@@ -250,6 +256,51 @@ class ApiTicketRepository implements TicketRepository {
       );
     } catch (_) {
       return _fallbackMock.getWalletAndHistory();
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> requestBankWithdrawal({
+    required String bankName,
+    required String accountNumber,
+    required String accountHolder,
+    required int amount,
+  }) async {
+    try {
+      final data = await _client.post('/api/payments/withdraw', {
+        'bankName': bankName,
+        'accountNumber': accountNumber,
+        'accountHolder': accountHolder,
+        'amount': amount,
+      });
+      final map = Map<String, dynamic>.from(data as Map);
+      final remaining = (map['walletBalance'] as num?)?.toInt() ?? 0;
+      _fallbackMock.setWalletBalance(remaining);
+      final code = 'WD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+      try {
+        await _dbHelper.setGuestWalletBalance(remaining);
+      } catch (_) {}
+      return {
+        'withdrawalCode': code,
+        'amount': amount,
+        'bankName': bankName,
+        'accountNumber': accountNumber,
+        'accountHolder': accountHolder,
+        'status': 'Processing',
+        'remainingBalance': remaining,
+        'message': 'Yêu cầu rút tiền $code đã được tiếp nhận và xử lý trong 24h.',
+      };
+    } catch (_) {
+      final res = await _fallbackMock.requestBankWithdrawal(
+        bankName: bankName,
+        accountNumber: accountNumber,
+        accountHolder: accountHolder,
+        amount: amount,
+      );
+      try {
+        await _dbHelper.setGuestWalletBalance(res['remainingBalance'] as int);
+      } catch (_) {}
+      return res;
     }
   }
 }

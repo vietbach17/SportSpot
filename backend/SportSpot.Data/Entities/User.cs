@@ -46,6 +46,8 @@ public class User
     [MaxLength(500)]
     public string? FcmToken { get; set; }
 
+    public DateOnly? DateOfBirth { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

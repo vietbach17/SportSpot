@@ -3,14 +3,16 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../data/repositories/ticket_repository.dart';
 import '../../providers/ticket_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/boarding_pass_ticket.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import 'qr_scanner_screen.dart';
 import 'package:provider/provider.dart';
 import 'ticket_qr_detail_screen.dart';
+import 'escrow_wallet_sheet.dart';
+import 'bank_withdrawal_dialog.dart';
 import 'cancel_ticket_dialog.dart';
-import '../../widgets/brand_header.dart';
-import '../../widgets/bounce_interaction.dart';
+import 'ticket_share_helper.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   final Object? repository;
@@ -209,59 +211,67 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'VÍ HOÀN TIỀN',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: mutedColor,
-                        letterSpacing: 0.1,
+                child: InkWell(
+                  onTap: () => EscrowWalletSheet.show(context, _provider),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'VÍ HOÀN TIỀN',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: mutedColor,
+                          letterSpacing: 0.1,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatVnd(_provider.walletBalance),
-                      key: const Key('wallet_balance_text'),
-                      style: TextStyle(
-                        fontFamily: AppTheme.headingFont,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF16A34A),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatVnd(_provider.walletBalance),
+                        key: const Key('wallet_balance_text'),
+                        style: TextStyle(
+                          fontFamily: AppTheme.headingFont,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF16A34A),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               Container(width: 1, height: 32, color: borderColor),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ESCROW TẠM GIỮ',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: mutedColor,
-                        letterSpacing: 0.1,
+                child: InkWell(
+                  onTap: () => EscrowWalletSheet.show(context, _provider),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ESCROW TẠM GIỮ',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: mutedColor,
+                          letterSpacing: 0.1,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatVnd(_provider.escrowHoldingTotal),
-                      key: const Key('escrow_holding_text'),
-                      style: TextStyle(
-                        fontFamily: AppTheme.headingFont,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF111315),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatVnd(_provider.escrowHoldingTotal),
+                        key: const Key('escrow_holding_text'),
+                        style: TextStyle(
+                          fontFamily: AppTheme.headingFont,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF111315),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               Row(
@@ -280,6 +290,36 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     onChanged: (val) => _provider.toggleOfflineMode(val),
                   ),
                 ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    side: BorderSide(color: borderColor),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.history_edu_rounded, size: 14),
+                  label: const Text('Sao Kê Escrow & Ví', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  onPressed: () => EscrowWalletSheet.show(context, _provider),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    side: BorderSide(color: borderColor),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.account_balance_rounded, size: 14, color: Color(0xFF16A34A)),
+                  label: const Text('Rút Tiền Về NH', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                  onPressed: () => BankWithdrawalDialog.show(context, _provider),
+                ),
               ),
             ],
           ),
@@ -484,14 +524,23 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                         color: const Color(0xFF0F172A),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(
-                        '${ticket.sportName.toUpperCase()} • ${ticket.userRoleInMatch == 'JoinedPlayer' ? 'VÃNG LAI' : 'ĐỘI TRƯỞNG'}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.1,
-                        ),
+                      child: Builder(
+                        builder: (ctx) {
+                          bool isGuestUser = true;
+                          try {
+                            isGuestUser = ctx.watch<AuthProvider>().isGuest;
+                          } catch (_) {}
+                          final isHost = !isGuestUser && (ticket.userRoleInMatch.toLowerCase() == 'host' || ticket.userRoleInMatch.toLowerCase() == 'đội trưởng');
+                          return Text(
+                            '${ticket.sportName.toUpperCase()} • ${isHost ? 'ĐỘI TRƯỞNG' : 'KHÁCH GHÉP'}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.1,
+                            ),
+                          );
+                        },
                       ),
                     ),
                     Container(
@@ -577,6 +626,27 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        InkWell(
+                          onTap: () {
+                            TicketShareHelper.shareTicket(
+                              context,
+                              bookingCode: ticket.bookingCode,
+                              venueName: ticket.venueName,
+                              subVenueName: ticket.subVenueName,
+                              sportName: ticket.sportName,
+                              playDate: ticket.playDate,
+                              timeSlots: ticket.timeSlots,
+                              status: ticket.status,
+                              escrowStatus: ticket.escrowStatus,
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                            child: Icon(Icons.share_outlined, size: 16, color: Color(0xFF2563EB)),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
                         if (!isCancelled && !isCheckedIn) ...[
                           InkWell(
                             onTap: () {

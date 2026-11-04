@@ -11,6 +11,7 @@ abstract class MatchRepository {
   });
   Future<OpenMatch> detail(int id);
   Future<void> join(int id);
+  Future<void> guestJoin(int id, {String name, String phone, String gateway});
   Future<void> assign(int id);
   Future<void> stop(int id);
   Future<void> leave(int id);
@@ -18,7 +19,7 @@ abstract class MatchRepository {
 
 class ApiMatchRepository implements MatchRepository {
   final ApiClient client;
-  final MockMatchRepository _fallback = MockMatchRepository();
+  final MockMatchRepository _fallback = MockMatchRepository(includeExtraDevMatches: true);
 
   ApiMatchRepository({ApiClient? client}) : client = client ?? ApiClient();
 
@@ -49,7 +50,7 @@ class ApiMatchRepository implements MatchRepository {
       final data = await client.get(
         '/api/matches${staff ? '/staff' : ''}?$query',
       );
-      if (data is List) {
+      if (data is List && data.isNotEmpty) {
         return data.map((m) => OpenMatch(m)).toList();
       }
       return await _fallback.list(sportId: sportId, district: district, staff: staff);
@@ -76,6 +77,15 @@ class ApiMatchRepository implements MatchRepository {
     } catch (_) {
       await _fallback.join(id);
     }
+  }
+
+  @override
+  Future<void> guestJoin(int id, {String name = 'Khách vãng lai', String phone = '', String gateway = 'GuestWallet'}) async {
+    await client.post('/api/matches/$id/guest-join', {
+      'guestName': name,
+      'phoneNumber': phone,
+      'paymentGateway': gateway,
+    });
   }
 
   @override

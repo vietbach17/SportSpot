@@ -6,6 +6,7 @@ import 'package:sportspot/providers/auth_provider.dart';
 import 'package:sportspot/providers/booking_provider.dart';
 import 'package:sportspot/providers/venue_provider.dart';
 import 'package:sportspot/providers/ticket_provider.dart';
+import 'package:sportspot/providers/theme_provider.dart';
 import 'test_http_client.dart';
 
 void main() {
@@ -17,6 +18,7 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
           ChangeNotifierProvider(create: (_) => AuthProvider()),
           ChangeNotifierProvider(create: (_) => BookingProvider()),
           ChangeNotifierProvider(create: (_) => VenueProvider()),

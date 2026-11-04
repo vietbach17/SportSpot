@@ -1,3 +1,5 @@
+import '../../providers/auth_provider.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -6,12 +8,11 @@ import '../../core/network/api_client.dart';
 import '../../data/models/booking_model.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/ticket_provider.dart';
-import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/match_ui.dart';
 import '../../widgets/brand_header.dart';
 import '../../widgets/recruitment_form.dart';
 import '../main/main_screen.dart';
-import '../payment/payment_checkout_screen.dart';
+import 'booking_detail_screen.dart';
 
 class BookingCheckoutScreen extends StatefulWidget {
   const BookingCheckoutScreen({super.key});
@@ -112,58 +113,457 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
     );
   }
 
-  Future<void> _handleConfirmBooking(BookingProvider provider) async {
-    final confirmed = await SportSpotConfirmSheet.show(
-      context,
-      title: 'Xác nhận Đặt Sân & Đặt Cọc',
-      message: 'Vui lòng kiểm tra lại thông tin sân đấu và số tiền cọc trước khi hoàn tất.',
-      confirmLabel: 'Xác nhận Đặt Sân',
-      cancelLabel: 'Xem lại',
-      icon: Icons.sports_tennis_rounded,
-      actionType: ConfirmActionType.success,
-      infoRows: [
-        ConfirmInfoRow(
-          label: 'Sân đấu',
-          value: provider.venueDetail?.name ?? 'Sân Thể Thao',
-        ),
-        ConfirmInfoRow(
-          label: 'Mức đặt cọc',
-          value: '${provider.depositPercentage}%',
-        ),
-        ConfirmInfoRow(
-          label: 'Số tiền cọc',
-          value: currencyFormat.format(provider.depositAmount),
-          isBold: true,
-          valueColor: const Color(0xFF00A859),
+  Widget _buildCopyablePaymentRow(String label, String value, VoidCallback? onCopy, bool isDark, Color valColor, Color labelColor, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 12.5, color: labelColor)),
+        Row(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+                color: valColor,
+              ),
+            ),
+            if (onCopy != null) ...[
+              const SizedBox(width: 4),
+              InkWell(
+                onTap: onCopy,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(Icons.copy_rounded, size: 14, color: labelColor),
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );
-    if (confirmed != true) return;
+  }
 
-    setState(() => _isSubmitting = true);
+  Future<void> _handleConfirmBooking(BookingProvider provider) async {
+    final ticketProvider = context.read<TicketProvider>();
+    final auth = context.read<AuthProvider>();
+    final isGuest = auth.isGuest || auth.currentUser == null;
+    final int userWallet = isGuest ? 0 : ticketProvider.walletBalance;
+    final int deposit = provider.depositAmount;
+    final bool canPayWallet = userWallet >= deposit;
 
-    try {
-      final result = await provider.submitBooking();
-      if (mounted) {
-        _showSuccessDialog(result);
-      }
-    } on ApiException catch (e) {
-      if (mounted) {
-        if (e.statusCode == 409) {
-          _showConflictDialog(e.message);
-        } else {
-          _showErrorSnackBar(e.message);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar(e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
-    }
+    int selectedMethod = canPayWallet ? 0 : 1; // 0: Ví SportSpot, 1: VietQR Chuyển khoản
+    bool isPaying = false;
+
+    final randomSuffix = (DateTime.now().millisecondsSinceEpoch % 10000).toString().padLeft(4, '0');
+    final transferCode = 'SPORTCOC${provider.selectedSubVenue?.id ?? 1}$randomSuffix';
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final sheetBg = isDark ? const Color(0xFF1A1C22) : Colors.white;
+          final textC = isDark ? const Color(0xFFF6F6F3) : const Color(0xFF111315);
+          final mutedC = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+          final borderC = isDark ? const Color(0xFF2E313A) : const Color(0xFFE5E7EB);
+
+          return Container(
+            decoration: BoxDecoration(
+              color: sheetBg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.only(
+              top: 20,
+              left: 20,
+              right: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.shield_rounded, color: Color(0xFF16A34A), size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Thanh Toán Cọc Escrow',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: textC,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Khoản cọc được SportSpot tạm giữ bảo vệ đến khi check-in',
+                              style: TextStyle(fontSize: 12, color: mutedC),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Booking Mini Summary
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF22242B) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderC),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Sân đặt:', style: TextStyle(fontSize: 12.5, color: mutedC)),
+                            Text(
+                              '${provider.venueDetail?.name ?? "Sân đấu"} - ${provider.selectedSubVenue?.name ?? ""}',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textC),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Khung giờ:', style: TextStyle(fontSize: 12.5, color: mutedC)),
+                            Text(
+                              '${provider.selectedSlots.map((s) => '${s.startTime}-${s.endTime}').join(', ')} (${DateFormat("dd/MM/yyyy").format(provider.selectedDate)})',
+                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: textC),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 18),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Tiền cọc cần thanh toán (30%):',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textC),
+                            ),
+                            Text(
+                              currencyFormat.format(deposit),
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF16A34A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Còn lại thanh toán tại sân:', style: TextStyle(fontSize: 12, color: mutedC)),
+                            Text(
+                              currencyFormat.format(provider.remainingBalance),
+                              style: TextStyle(fontSize: 12, color: mutedC, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  Text(
+                    'CHỌN PHƯƠNG THỨC THANH TOÁN',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: mutedC, letterSpacing: 0.5),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Option 1: Quét mã QR VietQR / Chuyển khoản (MoMo, Banking)
+                  GestureDetector(
+                    onTap: () => setModalState(() => selectedMethod = 1),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: selectedMethod == 1
+                            ? const Color(0xFF16A34A).withValues(alpha: 0.08)
+                            : (isDark ? const Color(0xFF22242B) : Colors.white),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: selectedMethod == 1 ? const Color(0xFF16A34A) : borderC,
+                          width: selectedMethod == 1 ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Radio<int>(
+                            value: 1,
+                            groupValue: selectedMethod,
+                            activeColor: const Color(0xFF16A34A),
+                            onChanged: (v) => setModalState(() => selectedMethod = v!),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00A859).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF00A859), size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text('Quét mã QR VietQR / MoMo / VNPay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textC)),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF16A34A),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text('Khuyên dùng', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text('Chuyển khoản liên ngân hàng miễn phí, đối soát tức thì', style: TextStyle(fontSize: 11.5, color: mutedC)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Option 0: Ví điện tử SportSpot
+                  GestureDetector(
+                    onTap: canPayWallet ? () => setModalState(() => selectedMethod = 0) : null,
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: selectedMethod == 0
+                            ? const Color(0xFF16A34A).withValues(alpha: 0.08)
+                            : (isDark ? const Color(0xFF22242B) : Colors.white),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: selectedMethod == 0 ? const Color(0xFF16A34A) : borderC,
+                          width: selectedMethod == 0 ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Radio<int>(
+                            value: 0,
+                            groupValue: selectedMethod,
+                            activeColor: const Color(0xFF16A34A),
+                            onChanged: canPayWallet ? (v) => setModalState(() => selectedMethod = v!) : null,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFFF59E0B), size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Ví điện tử SportSpot (${currencyFormat.format(userWallet)})',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13.5,
+                                    color: canPayWallet ? textC : mutedC,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  canPayWallet
+                                      ? 'Trừ trực tiếp số dư ví và sinh vé ngay lập tức'
+                                      : 'Số dư không đủ để cọc (cần thêm ${currencyFormat.format(deposit - userWallet)})',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: canPayWallet ? mutedC : Colors.redAccent,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // If Option 1 (VietQR) selected -> Show QR Code Box
+                  if (selectedMethod == 1) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF22242B) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: borderC),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'QUÉT MÃ ĐỂ THANH TOÁN TIỀN CỌC',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF16A34A), letterSpacing: 0.5),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: borderC),
+                              boxShadow: [
+                                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                              ],
+                            ),
+                            child: QrImageView(
+                              data: '00020101021238540010A00000072701240006970422011003394570960208QRIBFTTA5303704540${deposit.toString().length}' + deposit.toString() + '5802VN62${transferCode.length + 4}080${transferCode.length}' + transferCode + '6304',
+                              version: QrVersions.auto,
+                              size: 160,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          _buildCopyablePaymentRow('Ngân hàng', 'MBBank (Quân Đội)', null, isDark, textC, mutedC),
+                          const SizedBox(height: 8),
+                          _buildCopyablePaymentRow('Số tài khoản', '0339457096', () {
+                            Clipboard.setData(const ClipboardData(text: '0339457096'));
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã sao chép số tài khoản!')));
+                          }, isDark, textC, mutedC),
+                          const SizedBox(height: 8),
+                          _buildCopyablePaymentRow('Chủ tài khoản', 'PHẠM VIỆT BÁCH', null, isDark, textC, mutedC),
+                          const SizedBox(height: 8),
+                          _buildCopyablePaymentRow('Số tiền cọc', currencyFormat.format(deposit), null, isDark, const Color(0xFF16A34A), mutedC, isBold: true),
+                          const SizedBox(height: 8),
+                          _buildCopyablePaymentRow('Nội dung CK', transferCode, () {
+                            Clipboard.setData(ClipboardData(text: transferCode));
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã sao chép nội dung chuyển khoản!')));
+                          }, isDark, const Color(0xFF2563EB), mutedC, isBold: true),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                  ],
+
+                  // Action Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF16A34A),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      onPressed: isPaying
+                          ? null
+                          : () async {
+                              final isGuestUser = Provider.of<AuthProvider>(context, listen: false).isGuest;
+                              setModalState(() => isPaying = true);
+                              try {
+                                final result = await provider.submitBooking();
+                                if (selectedMethod == 0) {
+                                  ticketProvider.deductWallet(deposit);
+                                }
+                                ticketProvider.addConfirmedBookingTicket(
+                                  bookingId: result.bookingId,
+                                  bookingCode: result.bookingCode,
+                                  venueName: result.venueName,
+                                  subVenueName: result.subVenueName,
+                                  sportName: provider.venueDetail?.sportName ?? 'Thể thao',
+                                  address: provider.venueDetail?.address ?? 'TP. Hồ Chí Minh',
+                                  playDate: result.playDate,
+                                  timeSlots: result.timeSlots,
+                                  courtPrice: result.totalPrice - result.depositAmount,
+                                  servicesPrice: 0,
+                                  totalPrice: result.totalPrice,
+                                  depositAmount: result.depositAmount,
+                                  remainingBalance: result.remainingBalance,
+                                  qrPayload: result.qrPayload,
+                                  paymentGateway: selectedMethod == 0 ? 'SportSpotWallet' : 'VietQR_MBBank',
+                                  userRoleInMatch: isGuestUser ? 'Khách ghép' : 'Đội trưởng',
+                                );
+                                if (mounted) {
+                                  Navigator.pop(modalCtx);
+                                  _showSuccessDialog(result);
+                                }
+                              } on ApiException catch (e) {
+                                setModalState(() => isPaying = false);
+                                if (mounted) {
+                                  Navigator.pop(modalCtx);
+                                  if (e.statusCode == 409) {
+                                    _showConflictDialog(e.message);
+                                  } else {
+                                    _showErrorSnackBar(e.message);
+                                  }
+                                }
+                              } catch (e) {
+                                setModalState(() => isPaying = false);
+                                if (mounted) {
+                                  _showErrorSnackBar('Lỗi đặt sân: $e');
+                                }
+                              }
+                            },
+                      icon: isPaying
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Icon(selectedMethod == 0 ? Icons.payment_rounded : Icons.check_circle_outline_rounded, size: 20),
+                      label: Text(
+                        isPaying
+                            ? 'Đang xác thực giao dịch Escrow...'
+                            : (selectedMethod == 0
+                                ? 'Thanh Toán Cọc Qua Ví (-${currencyFormat.format(deposit)})'
+                                : 'Tôi Đã Chuyển Khoản Xong (Xác Nhận Đặt Sân)'),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _showConflictDialog(String message) {
@@ -374,44 +774,81 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                SizedBox(
+                const SizedBox(height: 18),
+                Container(
                   width: double.infinity,
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF16A34A),
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: () {
-                      final bookingProvider = context.read<BookingProvider>();
-                      final subId = bookingProvider.selectedSubVenue?.id;
-                      final dateStr = DateFormat('yyyy-MM-dd').format(bookingProvider.selectedDate);
-                      final slots = bookingProvider.selectedSlots.map((s) => s.slotId).toList();
-                      bookingProvider.resetBookingState();
-                      Navigator.of(dialogContext).pop();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => PaymentCheckoutScreen(
-                            ticketProvider: context.read<TicketProvider>(),
-                            initialSubVenueId: subId,
-                            initialPlayDate: dateStr,
-                            initialSlotIds: slots,
-                            existingBookingCode: result.bookingCode,
-                            existingBookingId: result.bookingId,
-                            existingAmount: result.depositAmount,
-                            existingVenueName: result.venueName,
-                          ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEDFDF5),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF16A34A).withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.check_circle_rounded, size: 18, color: Color(0xFF16A34A)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Đã cọc thành công: ${currencyFormat.format(result.depositAmount)}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF16A34A),
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.payment_rounded, size: 18),
-                    label: const Text('Thanh Toán Cọc Escrow (VNPay / MoMo)'),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton(
+                  child: OutlinedButton.icon(
+                    key: const Key('view_booking_detail_button'),
+                    icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                    label: const Text('Xem Chi Tiết Đơn Đặt Sân'),
+                    onPressed: () {
+                      final bookingProvider = context.read<BookingProvider>();
+                      final List<Map<String, dynamic>> serviceDetails = [];
+                      final allServices = bookingProvider.venueDetail?.services ?? [];
+                      bookingProvider.selectedServices.forEach((serviceId, qty) {
+                        if (qty > 0) {
+                          final svc = allServices.firstWhere(
+                            (s) => s.id == serviceId,
+                            orElse: () => VenueServiceModel(
+                              id: serviceId,
+                              name: 'Dịch vụ phụ kiện',
+                              type: 'Service',
+                              price: 0,
+                              stockQuantity: 0,
+                            ),
+                          );
+                          serviceDetails.add({
+                            'name': svc.name,
+                            'quantity': qty,
+                            'price': svc.price * qty,
+                          });
+                        }
+                      });
+                      bookingProvider.resetBookingState();
+                      Navigator.of(dialogContext).pop();
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) => BookingDetailScreen(
+                            booking: result,
+                            serviceDetails: serviceDetails,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    key: const Key('view_my_tickets_button'),
+                    icon: const Icon(Icons.confirmation_number_rounded, size: 18),
+                    label: const Text('Xem Vé Của Tôi (Mã QR Check-in)'),
                     onPressed: () {
                       final bookingProvider = context.read<BookingProvider>();
                       bookingProvider.resetBookingState();
@@ -424,7 +861,6 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                         (route) => false,
                       );
                     },
-                    child: const Text('Xem Vé Của Tôi'),
                   ),
                 ),
                 const SizedBox(height: 8),

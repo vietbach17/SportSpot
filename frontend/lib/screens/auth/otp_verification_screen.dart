@@ -8,12 +8,20 @@ import '../../widgets/brand_header.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
+  final String? email;
   final String? fullName;
+  final String? password;
+  final DateTime? dateOfBirth;
+  final bool isEmailOtp;
 
   const OtpVerificationScreen({
     super.key,
     required this.phoneNumber,
+    this.email,
     this.fullName,
+    this.password,
+    this.dateOfBirth,
+    this.isEmailOtp = false,
   });
 
   @override
@@ -30,7 +38,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void initState() {
     super.initState();
     _startTimer();
-    // Tự động focus vào ô nhập
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -60,18 +67,31 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (otp.length != 6) return;
 
     final auth = context.read<AuthProvider>();
-    final success = await auth.verifyOtp(
-      widget.phoneNumber,
-      otp,
-      fullName: widget.fullName,
-    );
+    bool success = false;
+
+    if (widget.isEmailOtp && widget.email != null) {
+      success = await auth.registerWithEmailOtp(
+        email: widget.email!,
+        otpCode: otp,
+        fullName: widget.fullName ?? 'Thành viên SportSpot',
+        phoneNumber: widget.phoneNumber,
+        password: widget.password ?? '',
+        dateOfBirth: widget.dateOfBirth,
+      );
+    } else {
+      success = await auth.verifyOtp(
+        widget.phoneNumber,
+        otp,
+        fullName: widget.fullName,
+      );
+    }
 
     if (!mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Đăng nhập thành công!'),
+          content: Text('Xác thực tài khoản thành công! Chào mừng bạn gia nhập SportSpot.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -87,7 +107,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(auth.errorMessage ?? 'Mã OTP không hợp lệ'),
+          content: Text(auth.errorMessage ?? 'Mã OTP không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -96,30 +116,50 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   void _onResendOtp() async {
     final auth = context.read<AuthProvider>();
-    final debugOtp = await auth.sendOtp(widget.phoneNumber);
+    bool success = false;
+
+    if (widget.isEmailOtp && widget.email != null) {
+      success = await auth.sendRegisterEmailOtp(
+        email: widget.email!,
+        fullName: widget.fullName ?? 'Thành viên SportSpot',
+      );
+    } else {
+      final res = await auth.sendOtp(widget.phoneNumber);
+      success = res != null;
+    }
 
     if (!mounted) return;
 
-    _startTimer();
-    _pinController.clear();
-    setState(() {});
+    if (success) {
+      _startTimer();
+      _pinController.clear();
+      setState(() {});
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Mã OTP mới: ${debugOtp ?? "123456"}'),
-        backgroundColor: AppTheme.accentBlue,
-      ),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(widget.isEmailOtp
+              ? 'Mã OTP mới đã được gửi tới email ${widget.email}. Vui lòng kiểm tra hộp thư!'
+              : 'Mã OTP mới đã được gửi!'),
+          backgroundColor: AppTheme.turfGreen,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Không thể gửi lại mã OTP.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  // Component 6 ô số thuần Flutter Native: 100% không bị lỗi LookupBoundary hay No Material
-  Widget _buildOtpBoxes() {
+  Widget _buildOtpBoxes(bool isDark) {
     return GestureDetector(
       onTap: () => _focusNode.requestFocus(),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // TextField ẩn để nhận input mượt mà từ bàn phím và paste
+          // TextField ẩn để nhận input mượt mà
           Opacity(
             opacity: 0,
             child: TextField(
@@ -136,7 +176,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               },
             ),
           ),
-          // 6 Ô hiển thị số với hiệu ứng active tinh tế
+          // 6 Ô hiển thị số
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(6, (index) {
@@ -149,18 +189,20 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 width: 46,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: hasValue ? AppTheme.pastelBlue.withValues(alpha: 0.3) : Colors.white,
+                  color: isDark
+                      ? (hasValue ? const Color(0xFF1E293B) : const Color(0xFF181A20))
+                      : (hasValue ? const Color(0xFFDCFCE7).withValues(alpha: 0.3) : Colors.white),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isFocused
-                        ? AppTheme.accentBlue
-                        : (hasValue ? AppTheme.accentBlue : const Color(0xFFCBD5E1)),
+                        ? AppTheme.turfGreen
+                        : (hasValue ? AppTheme.turfGreen : (isDark ? Colors.white24 : const Color(0xFFCBD5E1))),
                     width: isFocused ? 2 : 1.2,
                   ),
                   boxShadow: isFocused
                       ? [
                           BoxShadow(
-                            color: AppTheme.accentBlue.withValues(alpha: 0.2),
+                            color: AppTheme.turfGreen.withValues(alpha: 0.25),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
@@ -170,10 +212,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 alignment: Alignment.center,
                 child: Text(
                   char,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.textDark,
+                    color: isDark ? Colors.white : AppTheme.textDark,
                   ),
                 ),
               );
@@ -186,14 +228,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isLoading = context.watch<AuthProvider>().isLoading;
 
     final minutes = (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
     final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
 
     return Scaffold(
-      appBar: const SportSpotUnifiedHeader(
-        screenName: 'Xác Thực OTP',
+      appBar: AppBar(
+        title: Text(widget.isEmailOtp ? 'Xác thực Email' : 'Xác thực mã OTP'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -202,36 +245,65 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Nhập mã gồm 6 chữ số',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.textDark,
+                  color: isDark ? Colors.white : AppTheme.textDark,
                 ),
               ),
               const SizedBox(height: 8),
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  style: TextStyle(fontFamily: AppTheme.bodyFont, fontSize: 14, color: AppTheme.textGray),
+                  style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : AppTheme.textGray),
                   children: [
-                    const TextSpan(text: 'Mã xác thực đã được gửi đến số điện thoại\n'),
                     TextSpan(
-                      text: widget.phoneNumber,
+                      text: widget.isEmailOtp
+                          ? 'Mã xác thực đã được gửi đến hộp thư Email:\n'
+                          : 'Mã xác thực đã được gửi đến số điện thoại:\n',
+                    ),
+                    TextSpan(
+                      text: widget.isEmailOtp ? (widget.email ?? '') : widget.phoneNumber,
                       style: TextStyle(
-                        fontFamily: AppTheme.headingFont,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: isDark ? Colors.white : AppTheme.textDark,
+                        fontSize: 15,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 36),
+              if (widget.isEmailOtp) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 18, color: AppTheme.turfGreen),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Vui lòng kiểm tra Hộp thư đến (Inbox) hoặc Thư rác (Spam) trong email của bạn.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.white70 : AppTheme.textDark,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 32),
 
               // 6 Ô OTP thuần Native Flutter
-              _buildOtpBoxes(),
+              _buildOtpBoxes(isDark),
 
               const SizedBox(height: 32),
 
@@ -239,13 +311,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.timer_outlined, size: 18, color: AppTheme.textGray),
+                  Icon(Icons.timer_outlined, size: 18, color: isDark ? Colors.white54 : AppTheme.textGray),
                   const SizedBox(width: 6),
                   Text(
                     'Mã có hiệu lực trong: $minutes:$seconds',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppTheme.textGray,
+                      color: isDark ? Colors.white54 : AppTheme.textGray,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -257,9 +329,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               TextButton(
                 onPressed: _secondsRemaining == 0 && !isLoading ? _onResendOtp : null,
                 child: Text(
-                  'Gửi lại mã OTP',
+                  'Gửi lại mã OTP qua Email',
                   style: TextStyle(
-                    color: _secondsRemaining == 0 ? AppTheme.accentBlue : Colors.grey,
+                    color: _secondsRemaining == 0 ? AppTheme.turfGreen : Colors.grey,
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                   ),

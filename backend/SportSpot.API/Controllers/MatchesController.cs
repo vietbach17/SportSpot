@@ -46,6 +46,14 @@ public class MatchesController(IMatchService matches, IWebHostEnvironment enviro
         return StatusCode(result.StatusCode, result);
     }
 
+
+    [HttpPost("{id:int}/guest-join")]
+    public async Task<IActionResult> GuestJoin(int id, GuestJoinMatchRequest request)
+    {
+        var result = await matches.GuestJoinMatchAsync(id, request);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [Authorize, HttpPost("{id:int}/join")]
     public async Task<IActionResult> Join(int id, JoinMatchRequest request)
     {

@@ -13,4 +13,5 @@ public interface IMatchService
     Task<ApiResponse<object>> AssignWalkInAtDeskAsync(int matchId, int staffId);
     Task<ApiResponse<object>> StopRecruitingAsync(int matchId, int hostUserId);
     Task<ApiResponse<object>> LeaveMatchAsync(int matchId, int userId);
+    Task<ApiResponse<object>> GuestJoinMatchAsync(int matchId, GuestJoinMatchRequest request);
 }

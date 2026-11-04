@@ -15,6 +15,7 @@ public static class SqliteModule4Upgrade
             using var transaction = db.Database.BeginTransaction();
             AddColumn(db, "Users", "StaffVenueId", "INTEGER NULL REFERENCES Venues(Id)");
             AddColumn(db, "Users", "FcmToken", "TEXT NULL");
+            AddColumn(db, "Users", "DateOfBirth", "TEXT NULL");
             AddColumn(db, "OpenMatches", "Revision", "INTEGER NOT NULL DEFAULT 0");
             AddColumn(db, "OpenMatches", "SkillLevel", "TEXT NOT NULL DEFAULT 'Cơ bản'");
             AddColumn(db, "OpenMatches", "Title", "TEXT NULL");
