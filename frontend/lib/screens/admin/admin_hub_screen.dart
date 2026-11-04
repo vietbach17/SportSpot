@@ -3,7 +3,8 @@ import '../../widgets/brand_header.dart';
 import '../../widgets/bounce_interaction.dart';
 
 class AdminHubScreen extends StatefulWidget {
-  const AdminHubScreen({super.key});
+  final int initialTabIndex;
+  const AdminHubScreen({super.key, this.initialTabIndex = 0});
 
   @override
   State<AdminHubScreen> createState() => _AdminHubScreenState();
@@ -94,7 +95,8 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    final tabIdx = (widget.initialTabIndex >= 0 && widget.initialTabIndex < 3) ? widget.initialTabIndex : 0;
+    _tabController = TabController(length: 3, vsync: this, initialIndex: tabIdx);
   }
 
   @override
