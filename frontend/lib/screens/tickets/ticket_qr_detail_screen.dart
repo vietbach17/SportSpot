@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../widgets/confirm_action_sheet.dart';
 import 'cancel_ticket_dialog.dart';
 import 'ticket_share_helper.dart';
+import '../../widgets/brand_header.dart';
 
 class TicketQrDetailScreen extends StatefulWidget {
   final TicketModel ticket;

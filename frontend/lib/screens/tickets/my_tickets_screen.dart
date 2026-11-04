@@ -13,6 +13,8 @@ import 'escrow_wallet_sheet.dart';
 import 'bank_withdrawal_dialog.dart';
 import 'cancel_ticket_dialog.dart';
 import 'ticket_share_helper.dart';
+import '../../widgets/brand_header.dart';
+import '../../widgets/bounce_interaction.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   final Object? repository;

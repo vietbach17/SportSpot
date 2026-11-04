@@ -14,6 +14,7 @@ import '../settings/settings_screen.dart';
 import '../tickets/cancel_ticket_dialog.dart';
 import '../tickets/qr_scanner_screen.dart';
 import '../venues/venue_detail_screen.dart';
+import '../../widgets/brand_header.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

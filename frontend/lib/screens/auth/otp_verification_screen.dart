@@ -235,8 +235,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isEmailOtp ? 'Xác thực Email' : 'Xác thực mã OTP'),
+      appBar: SportSpotUnifiedHeader(
+        screenName: widget.isEmailOtp ? 'Xác thực Email' : 'Xác thực mã OTP',
       ),
       body: SafeArea(
         child: SingleChildScrollView(
