@@ -307,6 +307,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
+      appBar: const SportSpotUnifiedHeader(
+        screenName: 'Hồ Sơ Cá Nhân',
+        showBackButton: false,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),

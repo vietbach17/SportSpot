@@ -97,8 +97,8 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
     final isCancelled = _currentTicket.status == 'Cancelled';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Vé Điện Tử QR (Vé Ngoại Tuyến)'),
+      appBar: SportSpotUnifiedHeader(
+        screenName: 'Vé Điện Tử QR',
         actions: [
           IconButton(
             tooltip: 'Sao chép chuỗi QR Payload',
@@ -390,28 +390,79 @@ class _TicketQrDetailScreenState extends State<TicketQrDetailScreen> {
 
                 // Nút Giả lập Lễ tân quét mã QR Check-in & Giải ngân Escrow
                 if (!isSettled && !isCancelled) ...[
-                  SizedBox(
+                  Container(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF16A34A),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: _isCheckingIn ? null : _simulateStaffScanCheckIn,
-                      icon: _isCheckingIn
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: AppPrimitives.turf500,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppPrimitives.turf500.withValues(alpha: 0.28),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _isCheckingIn ? null : _simulateStaffScanCheckIn,
+                        borderRadius: BorderRadius.circular(14),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.22),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                alignment: Alignment.center,
+                                child: _isCheckingIn
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.qr_code_scanner_rounded, size: 22, color: Colors.white),
                               ),
-                            )
-                          : const Icon(Icons.qr_code_scanner_rounded),
-                      label: const Text(
-                        'Giả lập Lễ tân Quét QR Điểm danh (Giải ngân Escrow)',
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Giả lập Lễ tân Quét QR',
+                                      style: TextStyle(
+                                        fontFamily: AppTheme.headingFont,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Điểm danh check-in · Giải ngân Escrow',
+                                      style: TextStyle(
+                                        fontFamily: AppTheme.bodyFont,
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white.withValues(alpha: 0.88),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),

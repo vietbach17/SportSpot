@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_theme.dart';
 import '../../data/services/token_service.dart';
 import '../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
 import '../main/main_screen.dart';
 import '../../data/sportspot_mock_data.dart';
+import '../../widgets/brand_header.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -52,44 +54,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xE61E212B) : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: isDark ? Colors.white12 : Colors.black12,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 26,
-                          height: 26,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF00A859),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.sports_tennis_rounded,
-                              size: 16, color: Colors.white),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Sport',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : const Color(0xFF2563EB),
-                          ),
-                        ),
-                        const Text(
-                          'Spot',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF10B981),
-                          ),
-                        ),
-                      ],
+                    child: const SportSpotBrandWordmark(
+                      showLogo: true,
+                      logoSize: 26,
+                      fontSize: 16,
                     ),
                   ),
 
@@ -331,6 +307,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     RichText(
                       text: TextSpan(
                         style: TextStyle(
+                          fontFamily: AppTheme.headingFont,
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
                           height: 1.2,

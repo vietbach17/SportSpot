@@ -20,6 +20,7 @@ class VenueProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _errorMessage;
+  bool _hasLiveApi = false;
 
   List<VenueItemModel> get venues => _venues;
   List<SportCategoryModel> get sports => _sports;
@@ -31,6 +32,7 @@ class VenueProvider extends ChangeNotifier {
   String get currentLocationName => _currentLocationName;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get hasLiveApi => _hasLiveApi;
 
   VenueProvider() {
     loadInitialData();
@@ -44,8 +46,10 @@ class VenueProvider extends ChangeNotifier {
     try {
       _sports = await _repository.getSports();
       await _fetchVenues();
+      _hasLiveApi = true;
     } catch (e) {
       _errorMessage = e.toString();
+      _hasLiveApi = false;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -63,11 +67,7 @@ class VenueProvider extends ChangeNotifier {
   }
 
   void selectSport(int? sportId) {
-    if (_selectedSportId == sportId) {
-      _selectedSportId = null; // Bấm lại để bỏ chọn, xem tất cả
-    } else {
-      _selectedSportId = sportId;
-    }
+    _selectedSportId = sportId;
     notifyListeners();
     refreshVenues();
   }
@@ -94,8 +94,10 @@ class VenueProvider extends ChangeNotifier {
 
     try {
       await _fetchVenues();
+      _hasLiveApi = true;
     } catch (e) {
       _errorMessage = e.toString();
+      _hasLiveApi = false;
     } finally {
       _isLoading = false;
       notifyListeners();

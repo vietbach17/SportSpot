@@ -161,23 +161,41 @@ class CancelTicketDialog extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Giữ lại vé'),
+                    child: SizedBox(
+                      height: 48,
+                      child: OutlinedButton(
+                        style: AppTheme.secondaryButtonStyle(borderRadius: 12),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Giữ lại vé',
+                          style: TextStyle(
+                            fontFamily: AppTheme.headingFont,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFDC2626),
-                        foregroundColor: Colors.white,
+                    child: SizedBox(
+                      height: 48,
+                      child: ElevatedButton(
+                        style: AppTheme.destructiveButtonStyle(filled: true, borderRadius: 12),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          onConfirmCancel();
+                        },
+                        child: Text(
+                          'Xác nhận hủy',
+                          style: TextStyle(
+                            fontFamily: AppTheme.headingFont,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                          ),
+                        ),
                       ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        onConfirmCancel();
-                      },
-                      child: const Text('Xác nhận hủy'),
                     ),
                   ),
                 ],

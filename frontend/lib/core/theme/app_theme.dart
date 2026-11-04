@@ -188,9 +188,9 @@ class AppTheme {
     ),
   ];
 
-  // --- Typography: Nunito (Headings/Buttons/Scores) + Be Vietnam Pro (Body) ---
-  static String? get headingFont => GoogleFonts.nunito().fontFamily;
-  static String? get bodyFont => GoogleFonts.beVietnamPro().fontFamily;
+  // --- Typography: Montserrat (Unified SportSpot Design System) ---
+  static String? get headingFont => GoogleFonts.montserrat().fontFamily;
+  static String? get bodyFont => GoogleFonts.montserrat().fontFamily;
 
   // Typography scale
   static TextStyle displayStyle({
@@ -261,6 +261,113 @@ class AppTheme {
   // ==========================================================================
   // LIGHT THEME CONFIGURATION
   // ==========================================================================
+  // --- Standardized Button Style Presets ---
+  static ButtonStyle primaryButtonStyle({
+    Color? backgroundColor,
+    Color? foregroundColor,
+    EdgeInsetsGeometry? padding,
+    double borderRadius = AppPrimitives.radiusMd,
+  }) {
+    return ElevatedButton.styleFrom(
+      backgroundColor: backgroundColor ?? carbon,
+      foregroundColor: foregroundColor ?? Colors.white,
+      elevation: 0,
+      padding: padding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+      textStyle: TextStyle(
+        fontFamily: headingFont,
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0,
+      ),
+    );
+  }
+
+  static ButtonStyle secondaryButtonStyle({
+    Color? foregroundColor,
+    Color? borderColor,
+    Color? backgroundColor,
+    EdgeInsetsGeometry? padding,
+    double borderRadius = AppPrimitives.radiusMd,
+  }) {
+    return OutlinedButton.styleFrom(
+      backgroundColor: backgroundColor ?? Colors.transparent,
+      foregroundColor: foregroundColor ?? carbon,
+      side: BorderSide(color: borderColor ?? borderSubtle, width: 1.2),
+      padding: padding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+      textStyle: TextStyle(
+        fontFamily: headingFont,
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+
+  static ButtonStyle destructiveButtonStyle({
+    bool filled = false,
+    EdgeInsetsGeometry? padding,
+    double borderRadius = AppPrimitives.radiusMd,
+  }) {
+    if (filled) {
+      return ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFDC2626),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        textStyle: TextStyle(
+          fontFamily: headingFont,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
+    return OutlinedButton.styleFrom(
+      backgroundColor: const Color(0xFFDC2626).withValues(alpha: 0.08),
+      foregroundColor: const Color(0xFFDC2626),
+      side: BorderSide(
+        color: const Color(0xFFDC2626).withValues(alpha: 0.35),
+        width: 1.2,
+      ),
+      padding: padding ?? const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+      textStyle: TextStyle(
+        fontFamily: headingFont,
+        fontSize: 13.5,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+
+  static ButtonStyle successButtonStyle({
+    EdgeInsetsGeometry? padding,
+    double borderRadius = AppPrimitives.radiusMd,
+  }) {
+    return ElevatedButton.styleFrom(
+      backgroundColor: AppPrimitives.turf500,
+      foregroundColor: Colors.white,
+      elevation: 0,
+      padding: padding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+      textStyle: TextStyle(
+        fontFamily: headingFont,
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -356,6 +463,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppPrimitives.radiusPill),
         ),
         side: const BorderSide(color: borderSubtle, width: 1),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 6),
         labelStyle: TextStyle(
           fontFamily: headingFont,
           fontWeight: FontWeight.w700,
@@ -420,7 +528,7 @@ class AppTheme {
 // 4. MICRO-INTERACTION & POLISH REUSABLE COMPONENTS
 // ============================================================================
 
-/// Widget cung cấp hiệu ứng co giãn xúc giác nhẹ nhàng khi nhấn (Tactile Micro-interaction)
+/// Widget cung cáº¥p hiá»‡u á»©ng co giÃ£n xÃºc giÃ¡c nháº¹ nhÃ ng khi nháº¥n (Tactile Micro-interaction)
 class AppPressable extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
@@ -468,7 +576,7 @@ class _AppPressableState extends State<AppPressable> {
   }
 }
 
-/// Huy hiệu nhãn trạng thái tinh gọn (Pill Badge Component)
+/// Huy hiá»‡u nhÃ£n tráº¡ng thÃ¡i tinh gá»n (Pill Badge Component)
 class AppBadge extends StatelessWidget {
   final String text;
   final Color? color;
@@ -519,6 +627,169 @@ class AppBadge extends StatelessWidget {
 // ============================================================================
 // 5. DESIGN SYSTEM TOKEN ALIASES (CONVENIENCE SHORTHANDS)
 // ============================================================================
+
+/// Há»‡ thá»‘ng nÃºt báº¥m chuáº©n má»±c SportSpot (Unified Button Design System)
+enum AppButtonVariant { primary, secondary, destructive, success, ghost }
+
+class AppButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+  final Widget? trailing;
+  final AppButtonVariant variant;
+  final bool isLoading;
+  final bool isFullWidth;
+  final double height;
+  final double borderRadius;
+  final EdgeInsetsGeometry? padding;
+
+  const AppButton({
+    super.key,
+    required this.label,
+    this.onPressed,
+    this.icon,
+    this.trailing,
+    this.variant = AppButtonVariant.primary,
+    this.isLoading = false,
+    this.isFullWidth = true,
+    this.height = 48.0,
+    this.borderRadius = 12.0,
+    this.padding,
+  });
+
+  const AppButton.destructive({
+    super.key,
+    required this.label,
+    this.onPressed,
+    this.icon = Icons.cancel_outlined,
+    this.trailing,
+    this.isLoading = false,
+    this.isFullWidth = true,
+    this.height = 48.0,
+    this.borderRadius = 12.0,
+    this.padding,
+  }) : variant = AppButtonVariant.destructive;
+
+  const AppButton.success({
+    super.key,
+    required this.label,
+    this.onPressed,
+    this.icon,
+    this.trailing,
+    this.isLoading = false,
+    this.isFullWidth = true,
+    this.height = 48.0,
+    this.borderRadius = 12.0,
+    this.padding,
+  }) : variant = AppButtonVariant.success;
+
+  const AppButton.secondary({
+    super.key,
+    required this.label,
+    this.onPressed,
+    this.icon,
+    this.trailing,
+    this.isLoading = false,
+    this.isFullWidth = true,
+    this.height = 48.0,
+    this.borderRadius = 12.0,
+    this.padding,
+  }) : variant = AppButtonVariant.secondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    Color bgColor;
+    Color fgColor;
+    Border? border;
+
+    switch (variant) {
+      case AppButtonVariant.destructive:
+        bgColor = const Color(0xFFDC2626).withValues(alpha: isDark ? 0.16 : 0.08);
+        fgColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+        border = Border.all(
+          color: const Color(0xFFDC2626).withValues(alpha: isDark ? 0.4 : 0.28),
+          width: 1.2,
+        );
+        break;
+      case AppButtonVariant.success:
+        bgColor = AppPrimitives.turf500;
+        fgColor = Colors.white;
+        break;
+      case AppButtonVariant.secondary:
+        bgColor = isDark ? const Color(0xFF1E2128) : Colors.white;
+        fgColor = isDark ? Colors.white : AppPrimitives.carbon900;
+        border = Border.all(
+          color: isDark ? AppPrimitives.carbon700 : AppPrimitives.carbon200,
+          width: 1.2,
+        );
+        break;
+      case AppButtonVariant.ghost:
+        bgColor = Colors.transparent;
+        fgColor = isDark ? Colors.white : AppPrimitives.carbon900;
+        break;
+      case AppButtonVariant.primary:
+        bgColor = isDark ? Colors.white : AppPrimitives.carbon900;
+        fgColor = isDark ? AppPrimitives.carbon900 : Colors.white;
+        break;
+    }
+
+    final content = Row(
+      mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (isLoading)
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: fgColor,
+            ),
+          )
+        else ...[
+          if (icon != null) ...[
+            Icon(icon, size: 18, color: fgColor),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: AppTheme.headingFont,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: fgColor,
+              ),
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: 6),
+            trailing!,
+          ],
+        ],
+      ],
+    );
+
+    return AppPressable(
+      onTap: isLoading ? null : onPressed,
+      child: Container(
+        width: isFullWidth ? double.infinity : null,
+        height: height,
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: border,
+        ),
+        alignment: Alignment.center,
+        child: content,
+      ),
+    );
+  }
+}
 
 typedef AppColors = AppPrimitives;
 

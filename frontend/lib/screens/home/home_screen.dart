@@ -12,6 +12,7 @@ import '../../widgets/match_ui.dart';
 import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/bounce_interaction.dart';
 import '../../widgets/shimmer_skeleton.dart';
+import '../../widgets/brand_header.dart';
 import '../venues/venue_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
 
@@ -29,15 +30,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int radiusKm = 5;
-  String selectedCategory = 'Badminton';
+  String selectedCategory = 'Tất cả';
   final TextEditingController _searchController = TextEditingController();
 
   final List<String> categories = [
     'Tất cả',
-    'Badminton',
+    'Cầu lông',
     'Pickleball',
-    'Mini Football',
-    'Basketball',
+    'Bóng đá',
+    'Bóng rổ',
+    'Bóng chuyền',
+    'Tennis',
     'Padel',
   ];
 
@@ -54,13 +57,44 @@ class _HomeScreenState extends State<HomeScreen> {
     context.read<VenueProvider>().onSearchChanged(_searchController.text);
   }
 
-  int? _getSportId(String cat) {
+  int? _getSportId(String cat, [List<SportCategoryModel>? apiSports]) {
     if (cat == 'Tất cả') return null;
-    if (cat.contains('Badminton')) return 1;
-    if (cat.contains('Pickleball')) return 2;
-    if (cat.contains('Football')) return 3;
-    if (cat.contains('Basketball')) return 4;
+    if (apiSports != null && apiSports.isNotEmpty) {
+      final match = apiSports.where((s) {
+        final n = s.name.toLowerCase();
+        final c = cat.toLowerCase();
+        if (c == 'cầu lông' && (n.contains('cầu lông') || n.contains('badminton'))) return true;
+        if (c == 'pickleball' && n.contains('pickleball')) return true;
+        if (c == 'bóng đá' && (n.contains('bóng đá') || n.contains('football') || n.contains('soccer'))) return true;
+        if (c == 'bóng rổ' && (n.contains('bóng rổ') || n.contains('basketball'))) return true;
+        if (c == 'bóng chuyền' && (n.contains('bóng chuyền') || n.contains('volleyball'))) return true;
+        if (c == 'tennis' && n.contains('tennis')) return true;
+        if (c == 'padel' && n.contains('padel')) return true;
+        return n.contains(c);
+      }).firstOrNull;
+      if (match != null) return match.id;
+    }
+
+    if (cat == 'Cầu lông' || cat.contains('Badminton')) return 1;
+    if (cat == 'Pickleball') return 2;
+    if (cat == 'Bóng đá' || cat.contains('Football') || cat.contains('Soccer')) return 3;
+    if (cat == 'Bóng rổ' || cat.contains('Basketball')) return 4;
+    if (cat == 'Bóng chuyền' || cat.contains('Volleyball')) return 5;
+    if (cat == 'Tennis') return 6;
+    if (cat == 'Padel') return 7;
     return null;
+  }
+
+  IconData _getCategoryIcon(String cat) {
+    if (cat == 'Tất cả') return Icons.grid_view_rounded;
+    if (cat == 'Cầu lông' || cat.contains('Badminton')) return Icons.sports_tennis_rounded;
+    if (cat == 'Pickleball') return Icons.sports_baseball_rounded;
+    if (cat == 'Bóng đá' || cat.contains('Football')) return Icons.sports_soccer_rounded;
+    if (cat == 'Bóng rổ' || cat.contains('Basketball')) return Icons.sports_basketball_rounded;
+    if (cat == 'Bóng chuyền' || cat.contains('Volleyball')) return Icons.sports_volleyball_rounded;
+    if (cat == 'Tennis') return Icons.sports_tennis_rounded;
+    if (cat == 'Padel') return Icons.sports_handball_rounded;
+    return Icons.tune_rounded;
   }
 
   void _cycleRadius() {
@@ -94,6 +128,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
+      appBar: SportSpotUnifiedHeader(
+        screenName: 'Khám Phá Sân',
+        showBackButton: false,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.notifications_none_rounded, color: isDark ? Colors.white : const Color(0xFF111315)),
+            tooltip: 'Thông báo',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
@@ -209,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(width: 10),
 
-                  // Right Utility Controls: Radius + Notification
+                  // Right Utility Control: Radius
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -248,49 +298,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: borderColor, width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Icon(Icons.notifications_outlined, size: 19),
-                          Positioned(
-                            right: -1,
-                            top: -1,
-                            child: Container(
-                              width: 7,
-                              height: 7,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF00A859),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -433,7 +440,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 10),
               SizedBox(
-                height: 42,
+                height: 46,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -445,19 +452,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     return BounceTap(
                       onTap: () {
                         setState(() => selectedCategory = cat);
-                        context.read<VenueProvider>().selectSport(_getSportId(cat));
+                        final venueProv = context.read<VenueProvider>();
+                        venueProv.selectSport(_getSportId(cat, venueProv.sports));
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? (isDark ? Colors.white : const Color(0xFF111315))
                               : cardBg,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? Colors.transparent : borderColor,
+                            color: isSelected
+                                ? Colors.transparent
+                                : (isDark ? const Color(0xFF333846) : const Color(0xFFD1D5DB)),
                             width: 1.2,
                           ),
                           boxShadow: isSelected
@@ -471,17 +481,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               : null,
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              cat.contains('Badminton')
-                                  ? Icons.sports_tennis_rounded
-                                  : cat.contains('Football')
-                                      ? Icons.sports_soccer_rounded
-                                      : cat.contains('Basketball')
-                                          ? Icons.sports_basketball_rounded
-                                          : cat.contains('Pickleball')
-                                              ? Icons.sports_baseball_rounded
-                                              : Icons.tune_rounded,
+                              _getCategoryIcon(cat),
                               size: 16,
                               color: isSelected
                                   ? (isDark ? const Color(0xFF111315) : Colors.white)
@@ -491,11 +494,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                               cat,
                               style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                fontFamily: AppTheme.headingFont,
+                                fontSize: 12.5,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                                 color: isSelected
                                     ? (isDark ? const Color(0xFF111315) : Colors.white)
-                                    : (isDark ? const Color(0xFFF6F6F3) : const Color(0xFF111315)),
+                                    : (isDark ? const Color(0xFFF6F6F3) : const Color(0xFF1F2937)),
                               ),
                             ),
                           ],
@@ -507,166 +511,26 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Hero Promotional Banner
-              BounceTap(
-                onTap: () {
-                  final vProv = context.read<VenueProvider>();
-                  final target = vProv.venues.isNotEmpty 
-                      ? vProv.venues.first.toSportSpotVenue() 
-                      : SportSpotMockData.venues.first;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => VenueDetailScreen(venue: target),
-                    ),
-                  );
-                },
-                child: Container(
-                  height: 170,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF111315),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: borderColor, width: 1.2),
-                    image: const DecorationImage(
-                      image: NetworkImage(SportSpotMockData.heroBanner),
-                      fit: BoxFit.cover,
-                      opacity: 0.72,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(17),
-                          gradient: const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Color(0xD90D0E12),
-                              Color(0xF50D0E12),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Flexible(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.6),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.white24),
-                                    ),
-                                    child: const Text(
-                                      "⚡ Chia tiền tức thì",
-                                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF00C853), Color(0xFF00A859)],
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF00A859).withValues(alpha: 0.4),
-                                        blurRadius: 6,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Text(
-                                    "Tiết kiệm 30%",
-                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'SÂN ĐẸP CUỐI TUẦN',
-                                        style: TextStyle(
-                                          color: Color(0xFF00E676),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 0.2,
-                                        ),
-                                      ),
-                                      SizedBox(height: 3),
-                                      Text(
-                                        'Đặt Sân Cùng Bạn Bè & Chia Tiền Tức Thì',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w900,
-                                          height: 1.25,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.2),
-                                        blurRadius: 8,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF111315), size: 19),
-                                ),
-                              ],
-                            )
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
               // Featured Venues Section
               Builder(
                 builder: (context) {
                   final venueProvider = context.watch<VenueProvider>();
-                  final bool hasLiveApi = venueProvider.venues.isNotEmpty;
+                  final bool hasLiveApi = venueProvider.hasLiveApi;
                   final List<SportSpotVenue> displayVenues = hasLiveApi
                       ? venueProvider.venues.map((v) => v.toSportSpotVenue()).toList()
-                      : SportSpotMockData.venues;
+                      : SportSpotMockData.venues.where((v) {
+                          final sportId = _getSportId(selectedCategory, venueProvider.sports);
+                          if (sportId == null) return true;
+                          final disc = v.disciplines.map((d) => d.toLowerCase()).toList();
+                          if (sportId == 1 && (disc.contains('badminton') || disc.contains('cầu lông'))) return true;
+                          if (sportId == 2 && disc.contains('pickleball')) return true;
+                          if (sportId == 3 && (disc.contains('football') || disc.contains('soccer') || disc.contains('bóng đá'))) return true;
+                          if (sportId == 4 && (disc.contains('basketball') || disc.contains('bóng rổ'))) return true;
+                          if (sportId == 5 && (disc.contains('volleyball') || disc.contains('bóng chuyền'))) return true;
+                          if (sportId == 6 && disc.contains('tennis')) return true;
+                          if (sportId == 7 && disc.contains('padel')) return true;
+                          return false;
+                        }).toList();
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -751,6 +615,38 @@ class _HomeScreenState extends State<HomeScreen> {
                             SizedBox(height: 14),
                             SkeletonCard(height: 220),
                           ],
+                        )
+                      else if (displayVenues.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: cardBg,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: borderColor, width: 1.2),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(Icons.sports_outlined, size: 42, color: isDark ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF)),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Không có sân phù hợp với bộ môn này',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : const Color(0xFF111315),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Hãy thử chọn bán kính rộng hơn hoặc bộ môn khác',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ],
+                          ),
                         )
                       else
                         ...displayVenues.map((venue) => _buildVenueCard(context, venue, isDark, borderColor, cardBg)),

@@ -13,6 +13,7 @@ import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/match_ui.dart';
 import '../../widgets/stacked_avatars.dart';
 import '../../widgets/shimmer_skeleton.dart';
+import '../../widgets/bounce_interaction.dart';
 import '../../widgets/recruitment_form.dart';
 import '../auth/login_screen.dart';
 import '../../data/services/database_helper.dart';
@@ -211,9 +212,21 @@ class _StitchMatchFeedState extends State<MatchFeedScreen> {
     }).toList();
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF111216) : const Color(0xFFF7F8FA),
+      appBar: SportSpotUnifiedHeader(
+        screenName: 'Tìm Kèo Giao Lưu',
+        showBackButton: false,
+        actions: [
+          IconButton(
+            onPressed: _showHostGameDialog,
+            icon: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF00A859)),
+            tooltip: 'Tạo Kèo Mới',
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -671,93 +684,158 @@ class _Module4MatchFeedState extends State<MatchFeedScreen> {
       const SizedBox(height: 12),
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final item in <(int?, String)>[
-              (null, 'Tất cả'),
-              (1, 'Cầu lông'),
-              (2, 'Pickleball'),
-              (3, 'Bóng đá mini'),
-              (4, 'Bóng rổ'),
-            ])
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  showCheckmark: false,
-                  selected: sportId == item.$1,
-                  avatar: Icon(
-                    matchSportIcon(item.$1 ?? 0),
-                    size: 18,
-                    color: sportId == item.$1
-                        ? Colors.white
-                        : MatchColors.muted,
+        physics: const BouncingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              for (final item in <(int?, String)>[
+                (null, 'Tất cả'),
+                (1, 'Cầu lông'),
+                (2, 'Pickleball'),
+                (3, 'Bóng đá mini'),
+                (4, 'Bóng rổ'),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: BounceTap(
+                    onTap: () {
+                      sportId = item.$1;
+                      reload();
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 9,
+                      ),
+                      decoration: BoxDecoration(
+                        color: sportId == item.$1 ? MatchColors.blue : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: sportId == item.$1
+                              ? MatchColors.blue
+                              : const Color(0xFFD1D5DB),
+                          width: 1.2,
+                        ),
+                        boxShadow: sportId == item.$1
+                            ? [
+                                BoxShadow(
+                                  color: MatchColors.blue.withValues(alpha: 0.2),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            matchSportIcon(item.$1 ?? 0),
+                            size: 18,
+                            color: sportId == item.$1
+                                ? Colors.white
+                                : const Color(0xFF4B5563),
+                          ),
+                          const SizedBox(width: 7),
+                          Text(
+                            item.$2,
+                            softWrap: false,
+                            overflow: TextOverflow.visible,
+                            style: TextStyle(
+                              fontFamily: AppTheme.headingFont,
+                              fontWeight: sportId == item.$1 ? FontWeight.w700 : FontWeight.w600,
+                              fontSize: 12.5,
+                              color: sportId == item.$1 ? Colors.white : const Color(0xFF1F2937),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  label: Text(item.$2),
-                  labelStyle: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                    color: sportId == item.$1 ? Colors.white : MatchColors.ink,
-                  ),
-                  selectedColor: MatchColors.blue,
-                  backgroundColor: Colors.white,
-                  side: BorderSide(
-                    color: sportId == item.$1
-                        ? MatchColors.blue
-                        : MatchColors.line,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 10,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  onSelected: (_) {
-                    sportId = item.$1;
-                    reload();
-                  },
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
       const SizedBox(height: 10),
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: [
-            const Icon(Icons.tune_rounded, size: 15, color: MatchColors.muted),
-            const SizedBox(width: 6),
-            for (final skill in ['Tất cả', 'Cơ bản', 'Trung bình', 'Nâng cao'])
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: FilterChip(
-                  showCheckmark: false,
-                  selected: _selectedSkill == skill,
-                  label: Text(skill),
-                  labelStyle: TextStyle(
-                    fontSize: 11,
-                    fontWeight: _selectedSkill == skill ? FontWeight.w700 : FontWeight.w600,
-                    color: _selectedSkill == skill ? MatchColors.blue : MatchColors.muted,
-                  ),
-                  backgroundColor: MatchColors.canvas,
-                  selectedColor: const Color(0xFFEDF3FF),
-                  side: BorderSide(
-                    color: _selectedSkill == skill ? MatchColors.blue : Colors.transparent,
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                  onSelected: (_) {
-                    setState(() {
-                      _selectedSkill = skill;
-                    });
-                  },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E4EB), width: 1),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.tune_rounded, size: 14, color: MatchColors.muted),
+                    SizedBox(width: 5),
+                    Text(
+                      'Trình độ:',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: MatchColors.muted,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-          ],
+              for (final skill in ['Tất cả', 'Cơ bản', 'Trung bình', 'Nâng cao'])
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: BounceTap(
+                    onTap: () {
+                      setState(() {
+                        _selectedSkill = skill;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _selectedSkill == skill ? MatchColors.blue : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _selectedSkill == skill ? MatchColors.blue : const Color(0xFFD1D5DB),
+                          width: 1.2,
+                        ),
+                        boxShadow: _selectedSkill == skill
+                            ? [
+                                BoxShadow(
+                                  color: MatchColors.blue.withValues(alpha: 0.2),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        skill,
+                        softWrap: false,
+                        overflow: TextOverflow.visible,
+                        style: TextStyle(
+                          fontFamily: AppTheme.headingFont,
+                          fontSize: 12,
+                          fontWeight: _selectedSkill == skill ? FontWeight.w700 : FontWeight.w600,
+                          color: _selectedSkill == skill ? Colors.white : const Color(0xFF374151),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
       const SizedBox(height: 14),
@@ -783,10 +861,9 @@ class _Module4MatchFeedState extends State<MatchFeedScreen> {
     final auth = context.watch<AuthProvider>();
     return MatchTheme(
       child: Scaffold(
-        appBar: AppBar(
-          title: SportSpotBrandTitle(
-            title: widget.staff ? 'Quầy lễ tân' : 'SportSpot',
-          ),
+        appBar: SportSpotUnifiedHeader(
+          screenName: widget.staff ? 'Quầy Lễ Tân' : 'Tìm Kèo Giao Lưu',
+          showBackButton: widget.staff,
           actions: [
             if (!widget.staff && auth.currentUser?.role == 'VenueStaff')
               IconButton(
@@ -805,7 +882,6 @@ class _Module4MatchFeedState extends State<MatchFeedScreen> {
               onPressed: reload,
               icon: const Icon(Icons.refresh_rounded),
             ),
-            const SizedBox(width: 8),
           ],
         ),
         floatingActionButton: widget.staff
@@ -1349,44 +1425,66 @@ class _MatchCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   const Divider(height: 1, color: MatchColors.line),
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    alignment: WrapAlignment.end,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+                  Row(
                     children: [
-                      OutlinedButton.icon(
-                        onPressed: () => MatchDiscussionSheet.show(
-                          context,
-                          matchId: m.id,
-                          matchTitle: '${m.sport} • ${m.venue}',
-                        ),
-                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 14),
-                        label: const Text('Thảo luận'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          side: const BorderSide(color: MatchColors.line),
-                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      Expanded(
+                        child: SizedBox(
+                          height: 40,
+                          child: OutlinedButton.icon(
+                            onPressed: () => MatchDiscussionSheet.show(
+                              context,
+                              matchId: m.id,
+                              matchTitle: '${m.sport} • ${m.venue}',
+                            ),
+                            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: MatchColors.ink),
+                            label: Text(
+                              'Thảo luận',
+                              style: TextStyle(
+                                fontFamily: AppTheme.headingFont,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: MatchColors.ink,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF8F9FA),
+                              foregroundColor: MatchColors.ink,
+                              side: const BorderSide(color: Color(0xFFE2E4EB), width: 1),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 0,
+                            ),
                           ),
                         ),
                       ),
-                      OutlinedButton.icon(
-                        onPressed: () => showRefereeSheet(context, m),
-                        icon: const Icon(Icons.sports_rounded, size: 14, color: MatchColors.blue),
-                        label: const Text('Trọng tài'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: MatchColors.blue,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          side: const BorderSide(color: MatchColors.line),
-                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: SizedBox(
+                          height: 40,
+                          child: OutlinedButton.icon(
+                            onPressed: () => showRefereeSheet(context, m),
+                            icon: const Icon(Icons.sports_rounded, size: 16, color: Color(0xFF00A859)),
+                            label: Text(
+                              'Trọng tài',
+                              style: TextStyle(
+                                fontFamily: AppTheme.headingFont,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: MatchColors.ink,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF8F9FA),
+                              foregroundColor: MatchColors.ink,
+                              side: const BorderSide(color: Color(0xFFE2E4EB), width: 1),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 0,
+                            ),
                           ),
                         ),
                       ),
@@ -2403,15 +2501,14 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   @override
   Widget build(BuildContext context) => MatchTheme(
     child: Scaffold(
-      appBar: AppBar(
-        title: const Text('Chi tiết kèo'),
+      appBar: SportSpotUnifiedHeader(
+        screenName: 'Chi tiết kèo',
         actions: [
           IconButton(
             tooltip: 'Tải lại',
             onPressed: busy ? null : reload,
             icon: const Icon(Icons.refresh_rounded),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: FutureBuilder<OpenMatch>(

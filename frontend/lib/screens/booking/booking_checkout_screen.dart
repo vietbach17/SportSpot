@@ -9,6 +9,7 @@ import '../../data/models/booking_model.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/ticket_provider.dart';
 import '../../widgets/match_ui.dart';
+import '../../widgets/brand_header.dart';
 import '../../widgets/recruitment_form.dart';
 import '../main/main_screen.dart';
 import 'booking_detail_screen.dart';
@@ -899,8 +900,8 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
 
     return MatchTheme(
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Tóm tắt & Đặt sân'),
+        appBar: const SportSpotUnifiedHeader(
+          screenName: 'Tóm tắt & Đặt sân',
         ),
         bottomNavigationBar: _buildBottomConfirmBar(provider),
         body: SingleChildScrollView(

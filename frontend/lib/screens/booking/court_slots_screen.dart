@@ -4,8 +4,11 @@ import 'package:provider/provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../widgets/date_selector_widget.dart';
 import '../../widgets/match_ui.dart';
+import '../../widgets/bounce_interaction.dart';
+import '../../core/theme/app_theme.dart';
 import '../../widgets/time_slot_grid_widget.dart';
 import 'booking_checkout_screen.dart';
+import '../../widgets/brand_header.dart';
 
 class CourtSlotsScreen extends StatefulWidget {
   final int venueId;
@@ -36,8 +39,8 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
 
     return MatchTheme(
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(provider.venueDetail?.name ?? 'Đặt Khung Giờ'),
+        appBar: SportSpotUnifiedHeader(
+          screenName: provider.venueDetail?.name ?? 'Đặt Khung Giờ',
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh_rounded),
@@ -155,29 +158,40 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
             runSpacing: 8,
             children: provider.subVenues.map((sub) {
               final isSelected = provider.selectedSubVenue?.id == sub.id;
-              return ChoiceChip(
-                showCheckmark: false,
-                label: Text(sub.name),
-                selected: isSelected,
-                selectedColor: MatchColors.blue,
-                backgroundColor: Colors.white,
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : MatchColors.ink,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
+              return BounceTap(
+                onTap: () => provider.selectSubVenue(sub),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? MatchColors.blue : Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected ? MatchColors.blue : MatchColors.line,
+                      width: 1.2,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: MatchColors.blue.withValues(alpha: 0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    sub.name,
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
+                    style: TextStyle(
+                      fontFamily: AppTheme.headingFont,
+                      color: isSelected ? Colors.white : MatchColors.ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
-                side: BorderSide(
-                  color: isSelected ? MatchColors.blue : MatchColors.line,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                onSelected: (selected) {
-                  if (selected) {
-                    provider.selectSubVenue(sub);
-                  }
-                },
               );
             }).toList(),
           ),
