@@ -60,7 +60,9 @@ class OpenMatch {
           ? json['hostAvatarUrl'].toString()
           : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80',
       amenities = json['amenities']?.toString(),
-      slots = List<String>.from(json['timeSlots'] ?? []),
+      slots = (json['timeSlots'] != null && (json['timeSlots'] as List).isNotEmpty)
+          ? List<String>.from(json['timeSlots'])
+          : const ['18:00 - 20:00'],
       members = (json['members'] as List? ?? [])
           .map((m) => MatchMember(m as Map<String, dynamic>))
           .toList();
