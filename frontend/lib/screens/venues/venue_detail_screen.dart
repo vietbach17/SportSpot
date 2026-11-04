@@ -1,3 +1,5 @@
+import '../../widgets/venue_image_carousel.dart';
+import '../../data/models/venue_model.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/sportspot_models.dart';
@@ -346,82 +348,69 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
+
+  String get _openUntil {
+    try {
+      if (widget.venue is SportSpotVenue) return (widget.venue as SportSpotVenue).openUntil;
+      if (widget.venue.openUntil != null) return widget.venue.openUntil.toString();
+    } catch (_) {}
+    return '23:00';
+  }
+
+  List<String> get _venueImages {
+    List<String> list = [];
+    try {
+      if (widget.venue is SportSpotVenue) {
+        final v = widget.venue as SportSpotVenue;
+        if (v.images.isNotEmpty) list.addAll(v.images);
+        else if (v.image.isNotEmpty) list.add(v.image);
+      } else if (widget.venue is VenueItemModel) {
+        final v = widget.venue as VenueItemModel;
+        if (v.galleryImages.isNotEmpty) list.addAll(v.galleryImages);
+        else if (v.imageUrl != null && v.imageUrl!.isNotEmpty) list.add(v.imageUrl!);
+      } else if (widget.venue is Map) {
+        final g = widget.venue['galleryImages'] ?? widget.venue['images'];
+        if (g is List && g.isNotEmpty) {
+          list.addAll(g.map((e) => e.toString()));
+        } else if (widget.venue['image'] != null && widget.venue['image'].toString().isNotEmpty) {
+          list.add(widget.venue['image'].toString());
+        } else if (widget.venue['imageUrl'] != null && widget.venue['imageUrl'].toString().isNotEmpty) {
+          list.add(widget.venue['imageUrl'].toString());
+        }
+      } else {
+        final dynamic v = widget.venue;
+        try {
+          if (v.galleryImages != null && (v.galleryImages as List).isNotEmpty) {
+            list.addAll((v.galleryImages as List).map((e) => e.toString()));
+          } else if (v.images != null && (v.images as List).isNotEmpty) {
+            list.addAll((v.images as List).map((e) => e.toString()));
+          } else if (v.imageUrl != null && v.imageUrl.toString().isNotEmpty) {
+            list.add(v.imageUrl.toString());
+          } else if (v.image != null && v.image.toString().isNotEmpty) {
+            list.add(v.image.toString());
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+
+    list = list.where((s) => s.trim().isNotEmpty).toList();
+    if (list.length >= 2) return list;
+
+    final base = list.isNotEmpty ? list.first : _venueImage;
+    return [
+      base,
+      'https://images.unsplash.com/photo-1613918108466-292b78a8ef95?w=1200&q=80',
+      'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1200&q=80',
+      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=80',
+    ];
+  }
+
   Widget _buildHeroBanner() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Stack(
-        children: [
-          Container(
-            height: 220,
-            width: double.infinity,
-            color: const Color(0xFF1E293B),
-            child: Image.network(
-              _venueImage,
-              height: 220,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(
-                height: 220,
-                color: const Color(0xFF1E293B),
-                child: const Center(
-                  child: Icon(Icons.sports_tennis_rounded, color: Color(0xFF2563EB), size: 48),
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.1),
-                    Colors.black.withValues(alpha: 0.75),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 14,
-            left: 14,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFF16A34A),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.verified, size: 14, color: Colors.white),
-                  SizedBox(width: 5),
-                  Text(
-                    'SÂN XÁC THỰC',
-                    style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w900, letterSpacing: 0.4),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 14,
-            left: 14,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Mở cửa 06:00 - 23:00',
-                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return VenueImageCarousel(
+      images: _venueImages,
+      height: 220,
+      openUntil: _openUntil,
+      isVerified: true,
     );
   }
 

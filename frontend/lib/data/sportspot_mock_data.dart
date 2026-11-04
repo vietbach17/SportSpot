@@ -43,6 +43,12 @@ class SportSpotMockData {
       totalCourts: 6,
       isVerified: true,
       image: cauGiayVenue,
+      images: [
+        cauGiayVenue,
+        cauGiayDetailHero,
+        'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1200&q=80',
+        'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=80',
+      ],
       disciplines: ['badminton', 'pickleball', 'cầu lông'],
       amenities: [
         VenueAmenity(label: 'Free Parking', icon: 'local_parking'),
@@ -84,6 +90,12 @@ class SportSpotMockData {
       totalCourts: 4,
       isVerified: true,
       image: matchFootball,
+      images: [
+        matchFootball,
+        'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1600&q=85',
+        'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&q=85',
+        'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200&q=80',
+      ],
       disciplines: ['football', 'bóng đá'],
       amenities: [
         VenueAmenity(label: 'Free Parking', icon: 'local_parking'),

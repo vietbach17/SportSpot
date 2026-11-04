@@ -33,6 +33,7 @@ class SportSpotVenue {
   final int totalCourts;
   final bool isVerified;
   final String image;
+  final List<String> images;
   final List<String> disciplines;
   final List<VenueAmenity> amenities;
   final int slotsAvailableToday;
@@ -50,11 +51,14 @@ class SportSpotVenue {
     required this.totalCourts,
     required this.isVerified,
     required this.image,
+    this.images = const [],
     required this.disciplines,
     required this.amenities,
     required this.slotsAvailableToday,
     required this.courts,
   });
+
+  List<String> get allImages => images.isNotEmpty ? images : [image];
 }
 
 class TimeSlotItem {
