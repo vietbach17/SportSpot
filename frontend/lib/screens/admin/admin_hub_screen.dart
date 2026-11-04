@@ -233,7 +233,9 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
     return Scaffold(
       backgroundColor: bg,
       appBar: SportSpotUnifiedHeader(
-        screenName: 'Quản Trị Hệ Thống',
+        screenName: widget.initialTabIndex == 2
+            ? 'Quản Lý Người Dùng'
+            : (widget.initialTabIndex == 1 ? 'Duyệt Hồ Sơ Cụm Sân' : 'Thống Kê Toàn Sàn'),
         actions: [
           IconButton(
             tooltip: 'Xuất báo cáo Excel/CSV',
@@ -302,34 +304,13 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
             ),
           ),
 
-          // Tab Bar Navigation
-          Container(
-            color: cardBg,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: const Color(0xFF00A859),
-              unselectedLabelColor: mutedC,
-              indicatorColor: const Color(0xFF00A859),
-              indicatorWeight: 3,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-              tabs: const [
-                Tab(icon: Icon(Icons.analytics_outlined, size: 20), text: 'Tổng Quan'),
-                Tab(icon: Icon(Icons.approval_rounded, size: 20), text: 'Duyệt Sân'),
-                Tab(icon: Icon(Icons.people_outline_rounded, size: 20), text: 'Người Dùng'),
-              ],
-            ),
-          ),
-
-          // Tab View Content
+          // Nội dung tab tương ứng theo menu điều hướng đáy
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildOverviewTab(cardBg, textC, mutedC, borderC),
-                _buildVenuesTab(cardBg, textC, mutedC, borderC),
-                _buildUsersTab(cardBg, textC, mutedC, borderC),
-              ],
-            ),
+            child: widget.initialTabIndex == 2
+                ? _buildUsersTab(cardBg, textC, mutedC, borderC)
+                : (widget.initialTabIndex == 1
+                    ? _buildVenuesTab(cardBg, textC, mutedC, borderC)
+                    : _buildOverviewTab(cardBg, textC, mutedC, borderC)),
           ),
         ],
       ),

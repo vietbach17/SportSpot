@@ -310,6 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ? (ticketProvider.tickets.isNotEmpty ? ticketProvider.tickets.fold<int>(0, (sum, t) => sum + (t.timeSlots.length.clamp(1, 4))) : 3)
         : ticketProvider.tickets.fold<int>(0, (sum, t) => sum + (t.timeSlots.length.clamp(1, 4)));
     final walletDisplay = CancelTicketDialog.formatVnd(ticketProvider.walletBalance);
+    final isPlayer = !isGuest && (user.role == 'Player' || user.role == 'Customer');
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -526,17 +527,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 14),
 
-              // Match Stats Row
-              Row(
-                children: [
-                  _buildStatCard(matchCount.toString(), 'Trận đấu', const Color(0xFF111315), cardColor, borderColor, isDark),
-                  const SizedBox(width: 10),
-                  _buildStatCard('${hoursCount}h', 'Giờ ra sân', const Color(0xFF00A859), cardColor, borderColor, isDark),
-                  const SizedBox(width: 10),
-                  _buildStatCard(walletDisplay, 'Ví cọc/hoàn', const Color(0xFFF59E0B), cardColor, borderColor, isDark),
-                ],
-              ),
-              const SizedBox(height: 14),
+              // Match Stats Row (Chỉ hiển thị cho người chơi)
+              if (isPlayer) ...[
+                Row(
+                  children: [
+                    _buildStatCard(matchCount.toString(), 'Trận đấu', const Color(0xFF111315), cardColor, borderColor, isDark),
+                    const SizedBox(width: 10),
+                    _buildStatCard('${hoursCount}h', 'Giờ ra sân', const Color(0xFF00A859), cardColor, borderColor, isDark),
+                    const SizedBox(width: 10),
+                    _buildStatCard(walletDisplay, 'Ví cọc/hoàn', const Color(0xFFF59E0B), cardColor, borderColor, isDark),
+                  ],
+                ),
+                const SizedBox(height: 14),
+              ],
 
               // Wallet Card
               Container(
@@ -622,9 +625,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 14),
 
               // ==========================================
-              // DANH SÁCH SÂN YÊU THÍCH CỦA TÔI
+              // DANH SÁCH SÂN YÊU THÍCH CỦA TÔI (Chỉ hiển thị cho người chơi)
               // ==========================================
-              if (!isGuest) ...[
+              if (isPlayer) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
@@ -1012,8 +1015,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Skill Ratings Breakdown (Chỉ hiển thị cho Hội viên, ẩn đối với khách vãng lai)
-              if (!isGuest) ...[
+              // Skill Ratings Breakdown (Chỉ hiển thị cho người chơi, ẩn với Admin, Owner, Staff, Guest)
+              if (isPlayer) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
