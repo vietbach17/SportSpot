@@ -58,6 +58,7 @@ class DateSelectorWidget extends StatelessWidget {
               '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
 
           return GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => onDateSelected(date),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),

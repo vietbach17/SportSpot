@@ -73,6 +73,7 @@ class TimeSlotGridWidget extends StatelessWidget {
             : (slot.status == 'Past' ? 'Đã qua' : 'Đã kín');
 
         return GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: isAvailable ? () => onSlotToggled(slot) : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
