@@ -714,17 +714,17 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
                         children: [
                           Row(
                             children: [
-                              Flexible(
+                              Expanded(
                                 child: Text(
                                   user['name'],
-                                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: textC),
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textC),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: roleColor.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(5),
@@ -740,6 +740,8 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
                           Text(
                             '${user['phone']} • ${user['email']}',
                             style: TextStyle(fontSize: 11, color: mutedC),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             'Tham gia: ${user['joinDate']}',

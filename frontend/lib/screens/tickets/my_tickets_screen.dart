@@ -98,6 +98,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     final textColor = isDark ? const Color(0xFFF6F6F3) : const Color(0xFF111315);
     final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
 
+    bool isGuest = false;
+    try {
+      isGuest = Provider.of<AuthProvider>(context, listen: false).isGuest;
+    } catch (_) {}
+
     final tickets = _filteredTickets;
     final reminders = _provider.upcomingReminders;
 
@@ -194,6 +199,10 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     Color textColor,
     Color mutedColor,
   ) {
+    bool isGuest = false;
+    try {
+      isGuest = Provider.of<AuthProvider>(context, listen: false).isGuest;
+    } catch (_) {}
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -220,7 +229,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'VÍ HOÀN TIỀN',
+                        isGuest ? 'VÍ TẠM VÃNG LAI' : 'VÍ HOÀN TIỀN',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,

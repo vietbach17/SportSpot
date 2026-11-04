@@ -59,7 +59,15 @@ public class PaymentsController : ControllerBase
     public async Task<ActionResult<ApiResponse<WalletAndHistoryDto>>> GetPaymentHistory([FromQuery] int? userId)
     {
         var uid = userId ?? GetCurrentUserId();
-        if (uid <= 0) uid = 1; // Fallback dev mode
+        if (uid <= 0)
+        {
+            return Ok(ApiResponse<WalletAndHistoryDto>.Ok(new WalletAndHistoryDto
+            {
+                WalletBalance = 320000,
+                EscrowHoldingTotal = 0,
+                Transactions = new List<TransactionHistoryDto>()
+            }, "Số dư ví khách vãng lai (Guest Wallet)."));
+        }
         var result = await _paymentService.GetUserTransactionsAsync(uid);
         return StatusCode(result.StatusCode, result);
     }

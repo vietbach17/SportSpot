@@ -360,9 +360,14 @@ class DatabaseHelper {
   Future<int> getGuestWalletBalance() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getInt(_guestWalletKey) ?? 60000;
+      final val = prefs.getInt(_guestWalletKey);
+      if (val == null || val <= 0) {
+        await prefs.setInt(_guestWalletKey, 320000);
+        return 320000;
+      }
+      return val;
     } catch (_) {
-      return 60000;
+      return 320000;
     }
   }
 
@@ -371,7 +376,7 @@ class DatabaseHelper {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_guestWalletKey, amount.clamp(0, 100000000));
     } catch (e) {
-      debugPrint('setGuestWalletBalance error: ');
+      debugPrint('setGuestWalletBalance error: $e');
     }
   }
 
@@ -408,7 +413,8 @@ class DatabaseHelper {
       if (raw != null && raw.isNotEmpty) {
         map = Map<String, dynamic>.from(jsonDecode(raw) as Map);
       }
-      map[''] = {
+      map.remove(''); // Clear legacy empty key
+      map[matchId.toString()] = {
         'match_id': matchId,
         'booking_code': bookingCode,
         'qr_payload': qrPayload,
@@ -418,7 +424,22 @@ class DatabaseHelper {
       };
       await prefs.setString(_guestTicketsKey, jsonEncode(map));
     } catch (e) {
-      debugPrint('recordGuestJoinedMatch error: ');
+      debugPrint('recordGuestJoinedMatch error: $e');
+    }
+  }
+
+  Future<void> removeGuestJoinedMatch(int matchId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_guestTicketsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final map = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+        map.remove(matchId.toString());
+        map.remove(''); // Clear legacy empty key
+        await prefs.setString(_guestTicketsKey, jsonEncode(map));
+      }
+    } catch (e) {
+      debugPrint('removeGuestJoinedMatch error: $e');
     }
   }
 
@@ -428,12 +449,13 @@ class DatabaseHelper {
       final raw = prefs.getString(_guestTicketsKey);
       if (raw != null && raw.isNotEmpty) {
         final map = Map<String, dynamic>.from(jsonDecode(raw) as Map);
-        if (map.containsKey('')) {
-          return Map<String, dynamic>.from(map[''] as Map);
+        final key = matchId.toString();
+        if (map.containsKey(key)) {
+          return Map<String, dynamic>.from(map[key] as Map);
         }
       }
     } catch (e) {
-      debugPrint('getGuestJoinedTicket error: ');
+      debugPrint('getGuestJoinedTicket error: $e');
     }
     return null;
   }

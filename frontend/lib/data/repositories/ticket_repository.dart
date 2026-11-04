@@ -1,6 +1,7 @@
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../models/ticket_model.dart';
+import '../services/token_service.dart';
 import '../services/database_helper.dart';
 import 'mock_ticket_repository.dart';
 
@@ -243,6 +244,17 @@ class ApiTicketRepository implements TicketRepository {
 
   @override
   Future<WalletSummaryResult> getWalletAndHistory() async {
+    final token = await TokenService.getToken();
+    final isGuest = token == null || token.isEmpty;
+    if (isGuest) {
+      final guestBal = await _dbHelper.getGuestWalletBalance();
+      return WalletSummaryResult(
+        walletBalance: guestBal > 0 ? guestBal : 320000,
+        escrowHoldingTotal: 0,
+        transactions: const [],
+      );
+    }
+
     try {
       final data = await _client.get(ApiConstants.paymentHistory);
       final map = Map<String, dynamic>.from(data as Map);
@@ -255,7 +267,13 @@ class ApiTicketRepository implements TicketRepository {
         transactions: txList,
       );
     } catch (_) {
-      return _fallbackMock.getWalletAndHistory();
+      final guestBal = await _dbHelper.getGuestWalletBalance();
+      final mock = await _fallbackMock.getWalletAndHistory();
+      return WalletSummaryResult(
+        walletBalance: guestBal > 0 ? guestBal : mock.walletBalance,
+        escrowHoldingTotal: mock.escrowHoldingTotal,
+        transactions: mock.transactions,
+      );
     }
   }
 

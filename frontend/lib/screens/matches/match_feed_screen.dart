@@ -1304,7 +1304,7 @@ class _MatchCard extends StatelessWidget {
                       runSpacing: 6,
                       children: [
                         _CardMeta(Icons.calendar_today_outlined, matchDay(m.date)),
-                        _CardMeta(Icons.schedule_rounded, m.slots.join(', ')),
+                        _CardMeta(Icons.schedule_rounded, (m.slots.isNotEmpty ? m.slots.join(', ') : '18:00 - 20:00')),
                       ],
                     ),
                   ),
@@ -1855,7 +1855,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   bool busy = false;
   bool _hasGuestJoined = false;
   String? _guestTicketQr;
-  int _guestWalletBalance = 60000;
+  int _guestWalletBalance = 320000;
 
   @override
   void initState() {
@@ -1870,10 +1870,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     if (mounted) {
       setState(() {
         _guestWalletBalance = balance;
-        if (ticketData != null) {
-          _hasGuestJoined = true;
-          _guestTicketQr = ticketData['qr_payload'] as String?;
-        }
+        _hasGuestJoined = ticketData != null;
+        _guestTicketQr = ticketData != null ? (ticketData['qr_payload'] as String?) : null;
       });
     }
   }
@@ -2149,7 +2147,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                             children: [
                               Text(m.venue, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                               const SizedBox(height: 2),
-                              Text('${m.court} · ${matchDay(m.date)} (${m.slots.join(', ')})', style: const TextStyle(fontSize: 11, color: MatchColors.muted)),
+                              Text('${m.court} · ${matchDay(m.date)} (${(m.slots.isNotEmpty ? m.slots.join(', ') : '18:00 - 20:00')})', style: const TextStyle(fontSize: 11, color: MatchColors.muted)),
                               const Divider(height: 16),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2424,6 +2422,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
         try {
           await widget.repository.leave(m.id);
         } catch (_) {}
+        await DatabaseHelper().removeGuestJoinedMatch(m.id);
 
         final newBalance = await DatabaseHelper().getGuestWalletBalance();
         if (mounted) {
@@ -2992,7 +2991,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                         _DetailLine(
                           Icons.schedule_rounded,
                           'Khung giờ',
-                          m.slots.join(', '),
+                          (m.slots.isNotEmpty ? m.slots.join(', ') : '18:00 - 20:00'),
                         ),
                         const SizedBox(height: 18),
                         _DetailLine(
