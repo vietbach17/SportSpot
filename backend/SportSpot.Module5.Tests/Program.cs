@@ -427,12 +427,68 @@ using (var db = Context())
     var pushRes = await fcmService.SendPushAsync("fcm_test_token_user_1", "Nhắc lịch thi đấu", "Bạn có trận cầu lông lúc 18:00");
     Check(pushRes, "Fallback SendPushAsync succeeds without service account");
 
+    // Build and verify FCM v1 High-Priority Message for background/terminated wake
+    var v1Msg = fcmService.BuildHighPriorityMessage("fcm_test_token_user_1", "Kèo mới gần bạn", "Có 1 kèo Pickleball vừa mở", new Dictionary<string, string> { { "matchId", "10" } });
+    Check(v1Msg.Token == "fcm_test_token_user_1" &&
+          v1Msg.Android?.Priority == FirebaseAdmin.Messaging.Priority.High &&
+          v1Msg.Android?.Notification?.ChannelId == FcmPushService.DefaultHighImportanceChannelId &&
+          v1Msg.Android?.Notification?.Priority == FirebaseAdmin.Messaging.NotificationPriority.MAX &&
+          v1Msg.Android?.Notification?.ClickAction == "FLUTTER_NOTIFICATION_CLICK" &&
+          v1Msg.Apns?.Headers?["apns-priority"] == "10",
+          "FCM v1 High-Priority message payload configured for terminated app wake");
+
     // Send push to user (persists in Notifications table + dispatches)
     var sendUserRes = await fcmService.SendToUserAsync(1, "Kèo mới gần bạn", "Có 1 kèo Pickleball vừa mở", "match");
     Check(sendUserRes, "SendToUserAsync succeeds and saves Notification entity");
 
     var lastNotif = await db.Notifications.OrderByDescending(n => n.Id).FirstOrDefaultAsync();
     Check(lastNotif != null && lastNotif.Title == "Kèo mới gần bạn" && lastNotif.UserId == 1, "Notification successfully persisted in database table");
+
+    // 13. Test Real FCM HTTP v1 push with service account credentials to active device token
+    var serviceAccountPath = Path.Combine(Directory.GetCurrentDirectory(), "backend/SportSpot.API/firebase-service-account.json");
+    if (!File.Exists(serviceAccountPath))
+    {
+        serviceAccountPath = Path.Combine(Directory.GetCurrentDirectory(), "../SportSpot.API/firebase-service-account.json");
+    }
+    if (File.Exists(serviceAccountPath))
+    {
+        var realConfig = new TestConfig(new Dictionary<string, string?>
+        {
+            { "Firebase:Enabled", "true" },
+            { "Firebase:ProjectId", "sportspot-prm393" },
+            { "Firebase:ServiceAccountJsonPath", serviceAccountPath }
+        });
+
+        var realFcmService = new FcmPushService(db, Microsoft.Extensions.Logging.Abstractions.NullLogger<FcmPushService>.Instance, realConfig);
+        var activeDeviceToken = "fQXVcWCrROGl5O_oUskrhY:APA91bEcozVkXy2eas-LXF_YF7wMEB78ToCeSX42x_W2xpUYjuggv9YZGV1ByLrH8_rOUaudJARbfyNnt_fgZox-7j4ZWDEsPTwp8wD28298R4Sz5xKuUzg";
+
+        var realPushRes = await realFcmService.SendPushAsync(
+            activeDeviceToken,
+            "⚡ SportSpot Real-time Push",
+            "Thông báo tức thời (<1s) qua FCM HTTP v1 chính thức!",
+            new Dictionary<string, string> { { "type", "Reminder" }, { "timestamp", DateTime.UtcNow.ToString("o") } }
+        );
+        Check(realPushRes, "Real FCM HTTP v1 push dispatched to emulator device token successfully");
+    }
 }
 
 Console.WriteLine($"All {passed} Module 5 backend checks passed!");
+
+class TestConfig : Microsoft.Extensions.Configuration.IConfiguration
+{
+    private readonly Dictionary<string, string?> _dict;
+    public TestConfig(Dictionary<string, string?> dict) => _dict = dict;
+    public string? this[string key] { get => _dict.TryGetValue(key, out var v) ? v : null; set => _dict[key] = value; }
+    public IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren() => Enumerable.Empty<Microsoft.Extensions.Configuration.IConfigurationSection>();
+    public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() => new DummyChangeToken();
+    public Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key) => null!;
+}
+
+class DummyChangeToken : Microsoft.Extensions.Primitives.IChangeToken
+{
+    public bool HasChanged => false;
+    public bool ActiveChangeCallbacks => false;
+    public IDisposable RegisterChangeCallback(Action<object?> callback, object? state) => new DummyDisposable();
+}
+
+class DummyDisposable : IDisposable { public void Dispose() {} }

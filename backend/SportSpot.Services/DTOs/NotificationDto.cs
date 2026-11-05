@@ -31,3 +31,12 @@ public class SendPushRequest
     public string? Type { get; set; } = "general";
     public Dictionary<string, string>? Data { get; set; }
 }
+
+public class TestPushRequest
+{
+    public string? Title { get; set; } = "🔥 Kèo mới tại SportSpot!";
+    public string? Body { get; set; } = "CLB Cầu lông Kỳ Hòa vừa có 1 suất trống lúc 19:00. Đặt ngay!";
+    public int? UserId { get; set; } = 1;
+    public string? FcmToken { get; set; }
+    public string? Topic { get; set; } = "sportspot_all";
+}

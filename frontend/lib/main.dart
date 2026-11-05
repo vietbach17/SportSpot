@@ -20,7 +20,8 @@ void main() async {
   final bool hasSeenOnboarding = await TokenService.isOnboardingSeen();
 
   // Khởi tạo dịch vụ Push notification (FCM)
-  FcmPushService.instance.initialize();
+  // Khởi tạo dịch vụ Push notification (FCM) với background handler
+  await FcmPushService.instance.initialize();
 
   runApp(
     MultiProvider(
