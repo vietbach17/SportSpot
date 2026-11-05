@@ -384,6 +384,44 @@ void main() {
     expect(repo.mapsLink, 'https://www.google.com/maps?q=10.799,106.678');
   });
 
+  testWidgets(
+    'Court count creates courts and keeps edited names when resized',
+    (tester) async {
+      final repo = VenueRepo();
+      await openForm(tester, repo, v: application('Rejected'));
+      final count = find.byKey(const ValueKey('courtCount'));
+      final courts = find.byKey(const ValueKey('courts'));
+      expect(tester.widget<TextFormField>(count).controller!.text, '2');
+      await tester.ensureVisible(courts);
+      await tester.enterText(courts, 'Sân VIP\nSân thường');
+      await tester.ensureVisible(count);
+      await tester.enterText(count, '3');
+      expect(
+        tester.widget<TextFormField>(courts).controller!.text,
+        'Sân VIP\nSân thường\nSân 3',
+      );
+      await tester.enterText(count, '1');
+      await tester.enterText(count, '3');
+      expect(
+        tester.widget<TextFormField>(courts).controller!.text,
+        'Sân VIP\nSân thường\nSân 3',
+      );
+      await send(tester);
+      expect(repo.body!['courtNames'], ['Sân VIP', 'Sân thường', 'Sân 3']);
+    },
+  );
+
+  testWidgets('Court count rejects values outside 1 to 20', (tester) async {
+    final repo = VenueRepo();
+    await openForm(tester, repo, v: application('Rejected'));
+    final count = find.byKey(const ValueKey('courtCount'));
+    await tester.ensureVisible(count);
+    await tester.enterText(count, '21');
+    await send(tester);
+    expect(repo.submits, 0);
+    expect(find.text('Giá trị từ 1.0 đến 20.0'), findsOneWidget);
+  });
+
   testWidgets('Registration and moderation fit a 320px phone', (tester) async {
     tester.view.physicalSize = const Size(320, 740);
     tester.view.devicePixelRatio = 1;

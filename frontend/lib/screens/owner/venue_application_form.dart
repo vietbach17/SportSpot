@@ -20,6 +20,7 @@ class VenueApplicationForm extends StatefulWidget {
 class _VenueApplicationFormState extends State<VenueApplicationForm> {
   final _form = GlobalKey<FormState>();
   final Map<String, TextEditingController> _fields = {};
+  final List<String> _courtNameCache = [];
   List<Map<String, dynamic>> _sports = [];
   List<VenueSlotConfigItemModel> _slots = [];
   List<UploadedVenueImageModel> _images = [], _unused = [];
@@ -48,10 +49,12 @@ class _VenueApplicationFormState extends State<VenueApplicationForm> {
       'description': v?.description ?? '',
       'amenities': v?.amenities ?? '',
       'courts': v?.courtNames.join('\n') ?? 'Sân 1',
+      'courtCount': '${v?.courtNames.length ?? 1}',
     };
     for (final entry in values.entries) {
       _fields[entry.key] = TextEditingController(text: entry.value);
     }
+    _courtNameCache.addAll(_courtNames());
     _sportId = v?.sportId;
     _deposit = v?.minDepositPercent ?? 30;
     _images = [...?v?.images];
@@ -195,6 +198,31 @@ class _VenueApplicationFormState extends State<VenueApplicationForm> {
           .where((s) => s.isNotEmpty)
           .toList();
 
+  void _rememberCourtNames() {
+    final names = _courtNames();
+    for (var i = 0; i < names.length; i++) {
+      if (i < _courtNameCache.length) {
+        _courtNameCache[i] = names[i];
+      } else {
+        _courtNameCache.add(names[i]);
+      }
+    }
+  }
+
+  void _resizeCourts(String value) {
+    final count = int.tryParse(value.trim());
+    if (count == null || count < 1 || count > 20) return;
+    _rememberCourtNames();
+    while (_courtNameCache.length < count) {
+      var number = _courtNameCache.length + 1;
+      while (_courtNameCache.any((n) => n.toLowerCase() == 'sân $number')) {
+        number++;
+      }
+      _courtNameCache.add('Sân $number');
+    }
+    f('courts').text = _courtNameCache.take(count).join('\n');
+  }
+
   Future<void> _addImageLink() async {
     final url = f('imageLink').text.trim();
     final uri = Uri.tryParse(url);
@@ -232,11 +260,13 @@ class _VenueApplicationFormState extends State<VenueApplicationForm> {
     double? lower,
     double? upper,
     bool integer = false,
+    ValueChanged<String>? onChanged,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 14),
     child: TextFormField(
       key: ValueKey(key),
       controller: f(key),
+      onChanged: onChanged,
       maxLength: maxLength,
       maxLines: lines,
       keyboardType: lower != null
@@ -389,9 +419,27 @@ class _VenueApplicationFormState extends State<VenueApplicationForm> {
                       ),
                       const SizedBox(height: 16),
                       _text(
+                        'courtCount',
+                        'Số lượng sân con',
+                        lower: 1,
+                        upper: 20,
+                        integer: true,
+                        onChanged: _resizeCourts,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 14),
+                        child: Text(
+                          'Tự tạo tên theo số lượng sân con (1–20 sân). Bạn có thể chỉnh tên từng sân bên dưới.',
+                        ),
+                      ),
+                      _text(
                         'courts',
                         'Tên sân con (mỗi dòng một sân)',
                         lines: 4,
+                        onChanged: (_) {
+                          _rememberCourtNames();
+                          f('courtCount').text = '${_courtNames().length}';
+                        },
                       ),
                       _text(
                         'description',
