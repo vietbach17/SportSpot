@@ -1509,6 +1509,8 @@ class _RefereeItem extends StatelessWidget {
   final String fee;
   final List<String> badges;
   final VoidCallback onBook;
+  final bool isHost;
+  final bool isGuest;
 
   const _RefereeItem({
     required this.name,
@@ -1518,6 +1520,8 @@ class _RefereeItem extends StatelessWidget {
     required this.fee,
     required this.badges,
     required this.onBook,
+    this.isHost = false,
+    this.isGuest = false,
   });
 
   @override
@@ -1643,17 +1647,35 @@ class _RefereeItem extends StatelessWidget {
                 ],
               ),
               ElevatedButton.icon(
-                onPressed: onBook,
-                icon: const Icon(Icons.add_task_rounded, size: 15),
-                label: const Text('Thuê trọng tài'),
+                onPressed: isHost
+                    ? onBook
+                    : () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isGuest
+                                  ? 'Tài khoản khách vãng lai không được chọn trọng tài. Chỉ Đội trưởng / Chủ kèo (Host) mới có quyền thuê trọng tài.'
+                                  : 'Chỉ Đội trưởng / Chủ kèo (Host) mới có quyền chọn và thuê trọng tài cho trận đấu này.',
+                            ),
+                            backgroundColor: const Color(0xFF1E293B),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                icon: Icon(
+                  isHost ? Icons.add_task_rounded : Icons.lock_outline_rounded,
+                  size: 15,
+                ),
+                label: Text(isHost ? 'Thuê trọng tài' : 'Chỉ Host được thuê'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: MatchColors.navy,
-                  foregroundColor: Colors.white,
+                  backgroundColor: isHost ? MatchColors.navy : const Color(0xFFF1F5F9),
+                  foregroundColor: isHost ? Colors.white : const Color(0xFF94A3B8),
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
+                    side: isHost ? BorderSide.none : const BorderSide(color: Color(0xFFCBD5E1), width: 1),
                   ),
                 ),
               ),
@@ -1666,6 +1688,14 @@ class _RefereeItem extends StatelessWidget {
 }
 
 void showRefereeSheet(BuildContext context, OpenMatch match) {
+  bool isHost = false;
+  bool isGuest = true;
+  try {
+    final auth = context.read<AuthProvider>();
+    isGuest = auth.isGuest || !auth.isAuthenticated || auth.currentUser == null;
+    isHost = !isGuest && (auth.currentUser?.userId == match.hostId);
+  } catch (_) {}
+
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -1674,7 +1704,7 @@ void showRefereeSheet(BuildContext context, OpenMatch match) {
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (ctx) => DraggableScrollableSheet(
-      initialChildSize: 0.65,
+      initialChildSize: 0.68,
       minChildSize: 0.4,
       maxChildSize: 0.9,
       expand: false,
@@ -1752,6 +1782,36 @@ void showRefereeSheet(BuildContext context, OpenMatch match) {
                 ],
               ),
             ),
+            if (!isHost) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.lock_person_rounded, size: 20, color: Color(0xFFD97706)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isGuest
+                            ? 'Tài khoản khách vãng lai không được chọn trọng tài. Chỉ Đội trưởng / Chủ kèo (Host) mới có quyền thuê trọng tài.'
+                            : 'Chỉ Đội trưởng / Chủ kèo (Host) mới có quyền chọn và thuê trọng tài cho trận đấu này.',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF92400E),
+                          fontWeight: FontWeight.w600,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Expanded(
               child: ListView(
@@ -1764,6 +1824,8 @@ void showRefereeSheet(BuildContext context, OpenMatch match) {
                     matchCount: 128,
                     fee: '150.000 đ/giờ',
                     badges: const ['Chứng nhận VFF', 'Còi vàng 2025'],
+                    isHost: isHost,
+                    isGuest: isGuest,
                     onBook: () {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1780,6 +1842,8 @@ void showRefereeSheet(BuildContext context, OpenMatch match) {
                     matchCount: 85,
                     fee: '120.000 đ/giờ',
                     badges: const ['Liên đoàn Thể thao', 'Nhiệt tình'],
+                    isHost: isHost,
+                    isGuest: isGuest,
                     onBook: () {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1796,6 +1860,8 @@ void showRefereeSheet(BuildContext context, OpenMatch match) {
                     matchCount: 64,
                     fee: '100.000 đ/giờ',
                     badges: const ['Đúng giờ', 'Hỗ trợ tính điểm'],
+                    isHost: isHost,
+                    isGuest: isGuest,
                     onBook: () {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(

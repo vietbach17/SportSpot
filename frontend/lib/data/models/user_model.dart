@@ -1,5 +1,6 @@
 class UserModel {
   final int userId;
+  int get id => userId;
   String fullName;
   final String phoneNumber;
   String? email;
