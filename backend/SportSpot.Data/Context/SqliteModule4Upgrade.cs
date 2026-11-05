@@ -61,6 +61,19 @@ public static class SqliteModule4Upgrade
                 FOREIGN KEY (VenueId) REFERENCES Venues(Id) ON DELETE CASCADE,
                 FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE RESTRICT
             );");
+            db.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS UserSkills (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId INTEGER NOT NULL,
+                SportId INTEGER NOT NULL,
+                SkillLevel TEXT NOT NULL DEFAULT 'Phong trào',
+                RatingScore NUMERIC NOT NULL DEFAULT 3.5,
+                IsVerified INTEGER NOT NULL DEFAULT 0,
+                VerifiedBy TEXT NULL,
+                UpdatedAt TEXT NOT NULL,
+                FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE,
+                FOREIGN KEY (SportId) REFERENCES Sports(Id) ON DELETE CASCADE
+            );");
+            db.Database.ExecuteSqlRaw(@"CREATE UNIQUE INDEX IF NOT EXISTS IX_UserSkills_UserId_SportId ON UserSkills(UserId, SportId);");
             transaction.Commit();
         }
         finally { db.Database.CloseConnection(); }
