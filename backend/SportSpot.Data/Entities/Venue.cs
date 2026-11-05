@@ -46,6 +46,12 @@ public class Venue
 
     public int PeakPrice { get; set; }
 
+    /// <summary>Số lượng slot tối đa cho mỗi đơn đặt qua App (mặc định 3).</summary>
+    public int MaxSlotsPerBooking { get; set; } = 3;
+
+    /// <summary>Tỷ lệ đặt cọc tối thiểu qua App: 30, 50 hoặc 100 (%).</summary>
+    public int MinDepositPercent { get; set; } = 30;
+
     [Column(TypeName = "decimal(2,1)")]
     public decimal Rating { get; set; } = 5.0m;
 
@@ -63,6 +69,7 @@ public class Venue
     [ConcurrencyCheck] public int ReviewRevision { get; set; }
     public ICollection<VenueImage> Images { get; set; } = new List<VenueImage>();
     public ICollection<VenueModerationLog> ModerationHistory { get; set; } = new List<VenueModerationLog>();
+    public ICollection<VenueSlotConfig> SlotConfigs { get; set; } = new List<VenueSlotConfig>();
 
     public ICollection<SubVenue> SubVenues { get; set; } = new List<SubVenue>();
     public ICollection<Service> Services { get; set; } = new List<Service>();

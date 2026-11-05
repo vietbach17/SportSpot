@@ -16,13 +16,19 @@ public class OwnerController : ControllerBase
 {
     private readonly IOwnerService _ownerService;
     private readonly OwnerScheduleService _schedule;
+    private readonly OwnerConfigService _config;
     private readonly SportSpotDbContext _db;
     private int UserId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
 
-    public OwnerController(IOwnerService ownerService, OwnerScheduleService schedule, SportSpotDbContext db)
+    public OwnerController(
+        IOwnerService ownerService,
+        OwnerScheduleService schedule,
+        OwnerConfigService config,
+        SportSpotDbContext db)
     {
         _ownerService = ownerService;
         _schedule = schedule;
+        _config = config;
         _db = db;
     }
 
@@ -32,12 +38,7 @@ public class OwnerController : ControllerBase
     [HttpGet("dashboard")]
     public async Task<ActionResult<ApiResponse<OwnerDashboardDto>>> GetDashboard([FromQuery] int? venueId)
     {
-        var venues = await _schedule.Venues(UserId);
-        if (!venues.Success) return StatusCode(venues.StatusCode, ApiResponse<OwnerDashboardDto>.Fail(venues.Message, venues.StatusCode));
-        var targetVenueId = venueId ?? venues.Data!.FirstOrDefault()?.Id ?? 0;
-        if (targetVenueId == 0) return StatusCode(403, ApiResponse<OwnerDashboardDto>.Fail("Tài khoản chưa được phân công cụm sân. Nhờ quản trị viên gán sân để quản lý.", 403));
-        if (!await _schedule.CanManage(UserId, targetVenueId)) return Forbid();
-        var result = await _ownerService.GetOwnerDashboardAsync(targetVenueId);
+        var result = await _ownerService.GetOwnerDashboardForUserAsync(UserId, venueId);
         return StatusCode(result.StatusCode, result);
     }
 
@@ -69,6 +70,53 @@ public class OwnerController : ControllerBase
     public async Task<IActionResult> Complete(int id) => Respond(await _schedule.Complete(UserId, id));
     [HttpPut("venues/{id:int}/prices")]
     public async Task<IActionResult> Prices(int id, UpdateVenuePricesRequest request) => Respond(await _schedule.Prices(UserId, id, request));
+
+    // ==========================================
+    // OWNER CONFIGURATION DASHBOARD ENDPOINTS
+    // ==========================================
+    [HttpGet("venues/{venueId:int}/config")]
+    public async Task<IActionResult> GetVenueConfig(int venueId) => Respond(await _config.GetConfig(UserId, venueId));
+
+    [HttpPut("venues/{venueId:int}/info")]
+    public async Task<IActionResult> UpdateVenueInfo(int venueId, UpdateOwnerVenueInfoRequest request)
+        => Respond(await _config.UpdateVenueInfo(UserId, venueId, request));
+
+    [HttpPut("venues/{venueId:int}/slots")]
+    public async Task<IActionResult> UpdateVenueSlots(int venueId, UpdateOwnerSlotConfigRequest request)
+        => Respond(await _config.UpdateSlotConfig(UserId, venueId, request));
+
+    [HttpPost("venues/{venueId:int}/subvenues")]
+    public async Task<IActionResult> AddSubVenue(int venueId, UpsertSubVenueRequest request)
+        => Respond(await _config.AddSubVenue(UserId, venueId, request));
+
+    [HttpPut("subvenues/{subVenueId:int}")]
+    public async Task<IActionResult> UpdateSubVenue(int subVenueId, UpsertSubVenueRequest request)
+        => Respond(await _config.UpdateSubVenue(UserId, subVenueId, request));
+
+    [HttpDelete("subvenues/{subVenueId:int}")]
+    public async Task<IActionResult> DeleteSubVenue(int subVenueId)
+        => Respond(await _config.DeleteSubVenue(UserId, subVenueId));
+
+    [HttpPost("venues/{venueId:int}/services")]
+    public async Task<IActionResult> AddService(int venueId, UpsertVenueServiceRequest request)
+        => Respond(await _config.AddService(UserId, venueId, request));
+
+    [HttpPut("services/{serviceId:int}")]
+    public async Task<IActionResult> UpdateService(int serviceId, UpsertVenueServiceRequest request)
+        => Respond(await _config.UpdateService(UserId, serviceId, request));
+
+    [HttpDelete("services/{serviceId:int}")]
+    public async Task<IActionResult> DeleteService(int serviceId)
+        => Respond(await _config.DeleteService(UserId, serviceId));
+
+    [HttpPost("venues/{venueId:int}/staff")]
+    public async Task<IActionResult> AssignStaff(int venueId, AssignVenueStaffRequest request)
+        => Respond(await _config.AssignStaff(UserId, venueId, request));
+
+    [HttpDelete("venues/{venueId:int}/staff/{staffUserId:int}")]
+    public async Task<IActionResult> RemoveStaff(int venueId, int staffUserId)
+        => Respond(await _config.RemoveStaff(UserId, venueId, staffUserId));
+
     [Authorize(Roles = "Admin"), HttpPut("venues/{venueId:int}/owner/{ownerId:int}")]
     public async Task<IActionResult> AssignOwner(int venueId, int ownerId)
     {

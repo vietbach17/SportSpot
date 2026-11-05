@@ -1,3 +1,4 @@
+import 'venue_applications_screen.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/brand_header.dart';
@@ -53,6 +54,11 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
         });
       }
     }
+  }
+
+  Future<void> _openApplications() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const VenueApplicationsScreen()));
+    if (mounted) await _loadDashboard();
   }
 
   Future<void> _toggleSubVenue(SubVenueManagementModel subVenue) async {
@@ -124,6 +130,11 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
         screenName: 'Bảng Điều Khiển Chủ Sân',
         actions: [
           IconButton(
+            tooltip: 'Đăng ký và theo dõi hồ sơ sân',
+            icon: const Icon(Icons.add_business),
+            onPressed: _openApplications,
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Color(0xFF2563EB)),
             tooltip: 'Làm mới số liệu',
             onPressed: _loadDashboard,
@@ -145,9 +156,28 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                     ],
                   ),
                 )
-              : _buildDashboardContent(cardColor, borderColor, textColor, mutedColor),
+              : _dashboardData?.venueId == 0
+                  ? _buildNoVenue()
+                  : _buildDashboardContent(cardColor, borderColor, textColor, mutedColor),
     );
   }
+
+  Widget _buildNoVenue() => Center(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.add_business_outlined, size: 56, color: Color(0xFF16A34A)),
+        const SizedBox(height: 16),
+        const Text('Chưa có cụm sân được phê duyệt', textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        const Text('Đăng ký sân mới hoặc theo dõi hồ sơ đã gửi. Số liệu doanh thu sẽ hiển thị sau khi sân được admin phê duyệt.', textAlign: TextAlign.center),
+        const SizedBox(height: 20),
+        FilledButton.icon(onPressed: _openApplications, icon: const Icon(Icons.assignment_outlined), label: const Text('Đăng ký / Theo dõi hồ sơ')),
+        TextButton(onPressed: _loadDashboard, child: const Text('Kiểm tra lại trạng thái')),
+      ]),
+    ),
+  );
 
   Widget _buildDashboardContent(Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
     final data = _dashboardData!;

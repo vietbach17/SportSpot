@@ -22,11 +22,13 @@ class ScheduleSlot {
   final int id;
   final String startTime, endTime;
   final bool isPeak;
+  final int price;
   ScheduleSlot.fromJson(Map<String, dynamic> j)
     : id = j['id'],
       startTime = j['startTime'],
       endTime = j['endTime'],
-      isPeak = j['isPeak'];
+      isPeak = j['isPeak'] == true,
+      price = (j['price'] as num?)?.toInt() ?? 0;
 }
 
 class ScheduleBooking {

@@ -1,3 +1,5 @@
+import '../owner/venue_applications_screen.dart';
+import '../auth/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
@@ -9,7 +11,6 @@ import '../../providers/auth_provider.dart';
 import '../../data/repositories/match_repository.dart';
 import '../../data/models/match_model.dart';
 import '../../widgets/match_ui.dart';
-import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/bounce_interaction.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../../widgets/brand_header.dart';
@@ -365,25 +366,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   _buildQuickAction('Đăng ký sân', Icons.add_business_rounded, const Color(0xFF111315), () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    final confirmed = await SportSpotConfirmSheet.show(
-                      context,
-                      title: 'Đăng Ký Cụm Sân Mới',
-                      message: 'Bạn muốn trở thành đối tác chủ sân trên hệ thống SportSpot? Đội ngũ quản trị sẽ liên hệ xác minh.',
-                      confirmLabel: 'Mở mẫu đăng ký',
-                      cancelLabel: 'Để sau',
-                      icon: Icons.add_business_rounded,
-                      actionType: ConfirmActionType.success,
-                    );
-                    if (!mounted) return;
-                    if (confirmed == true) {
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Mở mẫu đăng ký cụm sân mới'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                    final auth = context.read<AuthProvider>();
+                    if (!auth.isAuthenticated) {
+                      await Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+                      if (!mounted || !auth.isAuthenticated) return;
                     }
+                    if (!context.mounted) return;
+                    await Navigator.push(context, MaterialPageRoute(builder: (_) => VenueApplicationsScreen(onStatusRefresh: auth.refreshProfile)));
+                    if (mounted) await auth.refreshProfile();
                   }, isDark, borderColor, cardBg),
                   const SizedBox(width: 8),
                   _buildQuickAction('Tạo trận', Icons.group_add_rounded, const Color(0xFF00A859), () {

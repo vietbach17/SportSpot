@@ -9,6 +9,7 @@ import '../../providers/venue_provider.dart';
 import '../auth/login_screen.dart';
 import '../booking/court_slots_screen.dart';
 import '../owner/owner_dashboard_screen.dart';
+import '../owner/venue_applications_screen.dart';
 import '../payment/wallet_history_screen.dart';
 import '../settings/settings_screen.dart';
 import '../admin/admin_hub_screen.dart';
@@ -906,6 +907,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
+
+              if (!auth.isGuest && (auth.currentUser?.role == 'Player' || auth.currentUser?.role == 'Owner'))
+                Card(child: ListTile(
+                  leading: const Icon(Icons.add_business),
+                  title: const Text('Đăng ký và theo dõi hồ sơ sân'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => VenueApplicationsScreen(onStatusRefresh: auth.refreshProfile))),
+                )),
 
               // Owner Dashboard Access (Chỉ hiện cho Owner hoặc Admin)
               if (canAccessOwner) ...[

@@ -22,6 +22,8 @@ public class VenueListDto
 public class VenueDetailDto : VenueListDto
 {
     public string? Description { get; set; }
+    public int MaxSlotsPerBooking { get; set; } = 3;
+    public int MinDepositPercent { get; set; } = 30;
     public List<string> GalleryImages { get; set; } = new();
     public List<SubVenueDto> SubVenues { get; set; } = new();
     public List<ServiceDto> Services { get; set; } = new();

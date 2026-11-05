@@ -127,6 +127,8 @@ public class VenueService : IVenueService
             ImageUrl = venue.ImageUrl,
             BasePrice = venue.BasePrice,
             PeakPrice = venue.PeakPrice,
+            MaxSlotsPerBooking = venue.MaxSlotsPerBooking > 0 ? venue.MaxSlotsPerBooking : 3,
+            MinDepositPercent = venue.MinDepositPercent is 30 or 50 or 100 ? venue.MinDepositPercent : 30,
             Rating = venue.Rating,
             Amenities = venue.Amenities,
             Description = venue.Description,
@@ -165,6 +167,8 @@ public class VenueService : IVenueService
         }
 
         var allSlots = await _unitOfWork.Venues.GetAllTimeSlotsOrderedAsync();
+        var slotConfigs = await _unitOfWork.Venues.GetVenueSlotConfigsAsync(id);
+        var activeSlots = VenueSlotHelper.ResolveActiveSlots(venue, allSlots, slotConfigs);
         var bookedSlotIds = subVenueId > 0
             ? await _unitOfWork.Venues.GetBookedSlotIdsAsync(subVenueId, playDate)
             : new List<int>();
@@ -172,9 +176,9 @@ public class VenueService : IVenueService
         var now = MatchRules.VietnamNow;
         var isToday = playDate == DateOnly.FromDateTime(now);
 
-        var slotStatuses = allSlots.Select(slot =>
+        var slotStatuses = activeSlots.Select(slot =>
         {
-            var isBooked = bookedSlotIds.Contains(slot.Id);
+            var isBooked = bookedSlotIds.Contains(slot.SlotId);
             var isPast = false;
             if (isToday && TimeOnly.TryParse(slot.EndTime, out var endTime))
             {
@@ -185,11 +189,11 @@ public class VenueService : IVenueService
 
             return new TimeSlotStatusDto
             {
-                SlotId = slot.Id,
+                SlotId = slot.SlotId,
                 StartTime = slot.StartTime,
                 EndTime = slot.EndTime,
                 IsPeak = slot.IsPeak,
-                Price = slot.IsPeak ? venue.PeakPrice : venue.BasePrice,
+                Price = slot.EffectivePrice,
                 IsBooked = isBooked || isPast,
                 Status = status
             };

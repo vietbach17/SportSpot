@@ -36,6 +36,7 @@ public class SubVenueManagementDto
 public class OwnerDashboardDto
 {
     public int VenueId { get; set; }
+    public bool HasVenue => VenueId > 0;
     public string VenueName { get; set; } = string.Empty;
     public string VenueAddress { get; set; } = string.Empty;
     public string SportName { get; set; } = string.Empty;

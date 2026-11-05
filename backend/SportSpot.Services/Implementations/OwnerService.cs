@@ -9,10 +9,30 @@ namespace SportSpot.Services.Implementations;
 public class OwnerService : IOwnerService
 {
     private readonly SportSpotDbContext _context;
+    private readonly OwnerScheduleService _schedule;
 
-    public OwnerService(SportSpotDbContext context)
+    public OwnerService(SportSpotDbContext context, OwnerScheduleService? schedule = null)
     {
         _context = context;
+        _schedule = schedule ?? new OwnerScheduleService(context);
+    }
+
+    public async Task<ApiResponse<OwnerDashboardDto>> GetOwnerDashboardForUserAsync(int userId, int? venueId = null)
+    {
+        var venues = await _schedule.Venues(userId);
+        if (!venues.Success)
+            return ApiResponse<OwnerDashboardDto>.Fail(venues.Message, venues.StatusCode);
+
+        // No approved venue is a normal onboarding state, not a permission error.
+        if (!venueId.HasValue && venues.Data!.Count == 0)
+            return ApiResponse<OwnerDashboardDto>.Ok(new OwnerDashboardDto(),
+                "Tài khoản chưa có cụm sân được phê duyệt. Hãy đăng ký cụm sân mới hoặc theo dõi hồ sơ đang chờ duyệt.");
+
+        var targetVenueId = venueId ?? venues.Data!.First().Id;
+        if (!await _schedule.CanManage(userId, targetVenueId))
+            return ApiResponse<OwnerDashboardDto>.Fail("Bạn không có quyền quản lý cụm sân này", 403);
+
+        return await GetOwnerDashboardAsync(targetVenueId);
     }
 
     public async Task<ApiResponse<OwnerDashboardDto>> GetOwnerDashboardAsync(int venueId)
@@ -20,6 +40,7 @@ public class OwnerService : IOwnerService
         var venue = await _context.Venues
             .Include(v => v.Sport)
             .Include(v => v.SubVenues)
+            .Include(v => v.SlotConfigs)
             .FirstOrDefaultAsync(v => v.Id == venueId);
 
         if (venue == null)
@@ -39,8 +60,9 @@ public class OwnerService : IOwnerService
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
-        var totalTimeSlots = await _context.TimeSlots.CountAsync();
-        if (totalTimeSlots == 0) totalTimeSlots = 13;
+        var allSlots = await _context.TimeSlots.ToListAsync();
+        var activeVenueSlots = VenueSlotHelper.ResolveActiveSlots(venue, allSlots, venue.SlotConfigs);
+        var totalTimeSlots = activeVenueSlots.Count > 0 ? activeVenueSlots.Count : 13;
 
         var today = DateOnly.FromDateTime(MatchRules.VietnamNow);
 
@@ -109,7 +131,7 @@ public class OwnerService : IOwnerService
                 SubVenueName = b.SubVenue?.Name ?? "Sân chính",
                 PlayDate = b.PlayDate.ToString("yyyy-MM-dd"),
                 TimeSlots = b.BookingDetails
-                    .OrderBy(bd => bd.SlotId)
+                    .OrderBy(bd => bd.TimeSlot != null ? bd.TimeSlot.StartTime : "")
                     .Select(bd => $"{bd.TimeSlot?.StartTime ?? ""}-{bd.TimeSlot?.EndTime ?? ""}")
                     .Where(s => s != "-")
                     .ToList(),

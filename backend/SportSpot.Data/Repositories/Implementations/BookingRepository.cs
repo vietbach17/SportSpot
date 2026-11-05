@@ -16,6 +16,8 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
         return await _context.SubVenues
             .Include(sv => sv.Venue)
                 .ThenInclude(v => v!.Sport)
+            .Include(sv => sv.Venue)
+                .ThenInclude(v => v!.SlotConfigs)
             .FirstOrDefaultAsync(sv => sv.Id == subVenueId && sv.IsActive && sv.Venue!.IsActive && sv.Venue.ApprovalStatus == "Approved");
     }
 
@@ -66,6 +68,9 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
             .Include(b => b.SubVenue)
                 .ThenInclude(sv => sv!.Venue)
                     .ThenInclude(v => v!.Sport)
+            .Include(b => b.SubVenue)
+                .ThenInclude(sv => sv!.Venue)
+                    .ThenInclude(v => v!.OwnerUser)
             .Include(b => b.BookingDetails)
                 .ThenInclude(bd => bd.TimeSlot)
             .Include(b => b.Transactions)
@@ -82,6 +87,8 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
             .Include(b => b.User)
             .Include(b => b.BookingDetails)
                 .ThenInclude(bd => bd.TimeSlot)
+            .Include(b => b.BookingServices)
+                .ThenInclude(bs => bs.Service)
             .Include(b => b.Transactions)
             .Include(b => b.OpenMatch)
                 .ThenInclude(m => m!.MatchMembers)
@@ -99,6 +106,8 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
                     .ThenInclude(v => v!.Sport)
             .Include(b => b.BookingDetails)
                 .ThenInclude(bd => bd.TimeSlot)
+            .Include(b => b.BookingServices)
+                .ThenInclude(bs => bs.Service)
             .Include(b => b.Transactions)
             .FirstOrDefaultAsync(b => b.Id == bookingId);
     }

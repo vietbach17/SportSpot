@@ -14,6 +14,7 @@ public class SportSpotDbContext : DbContext
     public DbSet<SubVenue> SubVenues => Set<SubVenue>();
     public DbSet<Service> Services => Set<Service>();
     public DbSet<TimeSlot> TimeSlots => Set<TimeSlot>();
+    public DbSet<VenueSlotConfig> VenueSlotConfigs => Set<VenueSlotConfig>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<BookingDetail> BookingDetails => Set<BookingDetail>();
@@ -37,6 +38,8 @@ public class SportSpotDbContext : DbContext
         base.OnModelCreating(modelBuilder);
         modelBuilder.Entity<User>().Property(u => u.IsActive).HasDefaultValue(true);
         modelBuilder.Entity<Venue>().Property(v => v.ApprovalStatus).HasDefaultValue("Approved");
+        modelBuilder.Entity<Venue>().Property(v => v.MaxSlotsPerBooking).HasDefaultValue(3);
+        modelBuilder.Entity<Venue>().Property(v => v.MinDepositPercent).HasDefaultValue(30);
         modelBuilder.Entity<Venue>().HasOne(v => v.OwnerUser).WithMany()
             .HasForeignKey(v => v.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Venue>().HasIndex(v => new { v.ApprovalStatus, v.SubmittedAt });
@@ -49,6 +52,11 @@ public class SportSpotDbContext : DbContext
             .HasForeignKey(l => l.AdminUserId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<VenueModerationLog>().HasOne(l => l.Venue).WithMany(v => v.ModerationHistory)
             .HasForeignKey(l => l.VenueId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<VenueSlotConfig>().HasOne(sc => sc.Venue).WithMany(v => v.SlotConfigs)
+            .HasForeignKey(sc => sc.VenueId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<VenueSlotConfig>().HasOne(sc => sc.TimeSlot).WithMany()
+            .HasForeignKey(sc => sc.SlotId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<VenueSlotConfig>().HasIndex(sc => new { sc.VenueId, sc.SlotId }).IsUnique();
 
         modelBuilder.Entity<Team>().HasOne(t => t.CaptainUser).WithMany()
             .HasForeignKey(t => t.CaptainUserId).OnDelete(DeleteBehavior.Restrict);
@@ -132,7 +140,7 @@ public class SportSpotDbContext : DbContext
             new Sport { Id = 5, Name = "Tennis", IconUrl = "https://cdn-icons-png.flaticon.com/512/2906/2906478.png" }
         );
 
-        // Seed TimeSlots (6:00 - 22:00)
+        // Seed TimeSlots: Classic 1..13 (default legacy 06:00-11:00 & 14:00-22:00) + Extended 14..19 (05:00-06:00, 11:00-14:00, 22:00-23:59)
         modelBuilder.Entity<TimeSlot>().HasData(
             new TimeSlot { Id = 1, StartTime = "06:00", EndTime = "07:00", IsPeak = false },
             new TimeSlot { Id = 2, StartTime = "07:00", EndTime = "08:00", IsPeak = false },
@@ -146,7 +154,13 @@ public class SportSpotDbContext : DbContext
             new TimeSlot { Id = 10, StartTime = "18:00", EndTime = "19:00", IsPeak = true },
             new TimeSlot { Id = 11, StartTime = "19:00", EndTime = "20:00", IsPeak = true },
             new TimeSlot { Id = 12, StartTime = "20:00", EndTime = "21:00", IsPeak = true },
-            new TimeSlot { Id = 13, StartTime = "21:00", EndTime = "22:00", IsPeak = true }
+            new TimeSlot { Id = 13, StartTime = "21:00", EndTime = "22:00", IsPeak = true },
+            new TimeSlot { Id = 14, StartTime = "05:00", EndTime = "06:00", IsPeak = false },
+            new TimeSlot { Id = 15, StartTime = "11:00", EndTime = "12:00", IsPeak = false },
+            new TimeSlot { Id = 16, StartTime = "12:00", EndTime = "13:00", IsPeak = false },
+            new TimeSlot { Id = 17, StartTime = "13:00", EndTime = "14:00", IsPeak = false },
+            new TimeSlot { Id = 18, StartTime = "22:00", EndTime = "23:00", IsPeak = true },
+            new TimeSlot { Id = 19, StartTime = "23:00", EndTime = "23:59", IsPeak = true }
         );
     }
 }

@@ -36,6 +36,7 @@ namespace SportSpot.Data.Migrations
                         .HasColumnType("character varying(20)");
 
                     b.Property<string>("BookingType")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
@@ -768,6 +769,48 @@ namespace SportSpot.Data.Migrations
                             EndTime = "22:00",
                             IsPeak = true,
                             StartTime = "21:00"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            EndTime = "06:00",
+                            IsPeak = false,
+                            StartTime = "05:00"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            EndTime = "12:00",
+                            IsPeak = false,
+                            StartTime = "11:00"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            EndTime = "13:00",
+                            IsPeak = false,
+                            StartTime = "12:00"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            EndTime = "14:00",
+                            IsPeak = false,
+                            StartTime = "13:00"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            EndTime = "23:00",
+                            IsPeak = true,
+                            StartTime = "22:00"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            EndTime = "23:59",
+                            IsPeak = true,
+                            StartTime = "23:00"
                         });
                 });
 
@@ -852,6 +895,11 @@ namespace SportSpot.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("IsFindMatchEnabled")
                         .HasColumnType("boolean");
@@ -949,6 +997,13 @@ namespace SportSpot.Data.Migrations
                     b.Property<string>("Amenities")
                         .HasColumnType("text");
 
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Approved");
+
                     b.Property<int>("BasePrice")
                         .HasColumnType("integer");
 
@@ -966,8 +1021,8 @@ namespace SportSpot.Data.Migrations
                         .HasColumnType("character varying(20)");
 
                     b.Property<string>("ImageUrl")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -978,10 +1033,23 @@ namespace SportSpot.Data.Migrations
                     b.Property<decimal>("Longitude")
                         .HasColumnType("decimal(10,7)");
 
+                    b.Property<int>("MaxSlotsPerBooking")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(3);
+
+                    b.Property<int>("MinDepositPercent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(30);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("OwnerUserId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("PeakPrice")
                         .HasColumnType("integer");
@@ -989,14 +1057,144 @@ namespace SportSpot.Data.Migrations
                     b.Property<decimal>("Rating")
                         .HasColumnType("decimal(2,1)");
 
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("ReviewRevision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ReviewedByUserId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("SportId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("SportId");
+
+                    b.HasIndex("ApprovalStatus", "SubmittedAt");
+
+                    b.ToTable("Venues");
+                });
+
+            modelBuilder.Entity("SportSpot.Data.Entities.VenueImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PublicId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("UploadedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int?>("VenueId")
+                        .IsConcurrencyToken()
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SportId");
+                    b.HasIndex("UploadedByUserId");
 
-                    b.ToTable("Venues");
+                    b.HasIndex("VenueId");
+
+                    b.ToTable("VenueImages");
+                });
+
+            modelBuilder.Entity("SportSpot.Data.Entities.VenueModerationLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AdminUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("VenueId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdminUserId");
+
+                    b.HasIndex("VenueId");
+
+                    b.ToTable("VenueModerationLogs");
+                });
+
+            modelBuilder.Entity("SportSpot.Data.Entities.VenueSlotConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CustomPrice")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPeak")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SlotId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VenueId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SlotId");
+
+                    b.HasIndex("VenueId", "SlotId")
+                        .IsUnique();
+
+                    b.ToTable("VenueSlotConfigs");
                 });
 
             modelBuilder.Entity("SportSpot.Data.Entities.Booking", b =>
@@ -1288,13 +1486,76 @@ namespace SportSpot.Data.Migrations
 
             modelBuilder.Entity("SportSpot.Data.Entities.Venue", b =>
                 {
+                    b.HasOne("SportSpot.Data.Entities.User", "OwnerUser")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SportSpot.Data.Entities.Sport", "Sport")
                         .WithMany("Venues")
                         .HasForeignKey("SportId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("OwnerUser");
+
                     b.Navigation("Sport");
+                });
+
+            modelBuilder.Entity("SportSpot.Data.Entities.VenueImage", b =>
+                {
+                    b.HasOne("SportSpot.Data.Entities.User", "UploadedByUser")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportSpot.Data.Entities.Venue", "Venue")
+                        .WithMany("Images")
+                        .HasForeignKey("VenueId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("UploadedByUser");
+
+                    b.Navigation("Venue");
+                });
+
+            modelBuilder.Entity("SportSpot.Data.Entities.VenueModerationLog", b =>
+                {
+                    b.HasOne("SportSpot.Data.Entities.User", "AdminUser")
+                        .WithMany()
+                        .HasForeignKey("AdminUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportSpot.Data.Entities.Venue", "Venue")
+                        .WithMany("ModerationHistory")
+                        .HasForeignKey("VenueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AdminUser");
+
+                    b.Navigation("Venue");
+                });
+
+            modelBuilder.Entity("SportSpot.Data.Entities.VenueSlotConfig", b =>
+                {
+                    b.HasOne("SportSpot.Data.Entities.TimeSlot", "TimeSlot")
+                        .WithMany()
+                        .HasForeignKey("SlotId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportSpot.Data.Entities.Venue", "Venue")
+                        .WithMany("SlotConfigs")
+                        .HasForeignKey("VenueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TimeSlot");
+
+                    b.Navigation("Venue");
                 });
 
             modelBuilder.Entity("SportSpot.Data.Entities.Booking", b =>
@@ -1304,6 +1565,8 @@ namespace SportSpot.Data.Migrations
                     b.Navigation("BookingServices");
 
                     b.Navigation("OpenMatch");
+
+                    b.Navigation("TeamChallenges");
 
                     b.Navigation("Transactions");
                 });
@@ -1335,9 +1598,15 @@ namespace SportSpot.Data.Migrations
 
             modelBuilder.Entity("SportSpot.Data.Entities.Venue", b =>
                 {
+                    b.Navigation("Images");
+
+                    b.Navigation("ModerationHistory");
+
                     b.Navigation("Reviews");
 
                     b.Navigation("Services");
+
+                    b.Navigation("SlotConfigs");
 
                     b.Navigation("SubVenues");
                 });

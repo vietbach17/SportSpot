@@ -66,6 +66,48 @@ class ApiClient {
     return _processResponse(response);
   }
 
+  Future<dynamic> delete(String endpoint, {bool requiresAuth = true}) async {
+    final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+    final headers = await _getHeaders(requiresAuth: requiresAuth);
+
+    final response = await http
+        .delete(uri, headers: headers)
+        .timeout(const Duration(seconds: 15));
+
+    return _processResponse(response);
+  }
+
+  Future<dynamic> uploadMultipartBytes(
+    String endpoint, {
+    required List<int> bytes,
+    required String filename,
+    String fieldName = 'file',
+    bool requiresAuth = true,
+  }) async {
+    final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+    final req = http.MultipartRequest('POST', uri);
+    req.headers['Accept'] = 'application/json';
+
+    if (requiresAuth) {
+      final token = await TokenService.getToken();
+      if (token != null && token.isNotEmpty) {
+        req.headers['Authorization'] = 'Bearer $token';
+      }
+    }
+
+    req.files.add(
+      http.MultipartFile.fromBytes(
+        fieldName,
+        bytes,
+        filename: filename,
+      ),
+    );
+
+    final streamed = await req.send().timeout(const Duration(seconds: 60));
+    final response = await http.Response.fromStream(streamed);
+    return _processResponse(response);
+  }
+
   dynamic _processResponse(http.Response response) {
     try {
       final utf8Body = utf8.decode(response.bodyBytes);

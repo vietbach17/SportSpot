@@ -31,10 +31,30 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
     public async Task<ApiResponse<List<OpenMatchDto>>> GetStaffMatchesAsync(int staffId)
     {
         var staff = await unitOfWork.Users.GetByIdAsync(staffId);
-        if (staff?.Role != "VenueStaff" || staff.StaffVenueId == null)
-            return ApiResponse<List<OpenMatchDto>>.Fail("Chỉ lễ tân được phân công cụm sân mới có quyền truy cập", 403);
+        if (staff == null || !staff.IsActive || staff.Role is not ("VenueStaff" or "Owner" or "Admin"))
+            return ApiResponse<List<OpenMatchDto>>.Fail("Chỉ lễ tân hoặc chủ cụm sân được phân công mới có quyền truy cập", 403);
+
+        HashSet<int> managedVenueIds;
+        if (staff.Role == "Admin")
+        {
+            managedVenueIds = (await db.Venues.Where(v => v.ApprovalStatus == "Approved").Select(v => v.Id).ToListAsync()).ToHashSet();
+        }
+        else if (staff.Role == "Owner")
+        {
+            managedVenueIds = (await db.Venues
+                .Where(v => v.ApprovalStatus == "Approved" && (v.OwnerUserId == staffId || (v.OwnerUserId == null && v.Id == staff.StaffVenueId)))
+                .Select(v => v.Id).ToListAsync()).ToHashSet();
+        }
+        else
+        {
+            if (staff.StaffVenueId == null)
+                return ApiResponse<List<OpenMatchDto>>.Fail("Chỉ lễ tân được phân công cụm sân mới có quyền truy cập", 403);
+            managedVenueIds = new HashSet<int> { staff.StaffVenueId.Value };
+        }
+
         var matches = await unitOfWork.Matches.GetOpenMatchesWithDetailsAsync(null, null);
-        return ApiResponse<List<OpenMatchDto>>.Ok(matches.Where(m => m.Booking?.SubVenue?.VenueId == staff.StaffVenueId
+        return ApiResponse<List<OpenMatchDto>>.Ok(matches.Where(m => m.Booking?.SubVenue != null
+            && managedVenueIds.Contains(m.Booking.SubVenue.VenueId)
             && MatchRules.IsUpcoming(m.Booking) && m.CurrentJoinedPlayers < m.NeededPlayers)
             .OrderBy(m => m.Booking!.PlayDate).Select(Map).ToList());
     }
@@ -128,15 +148,22 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
         }, "Khách vãng lai tham gia thành công");
     }
 
-
     private async Task<ApiResponse<object>> AddMemberAsync(int matchId, int actorId, bool atDesk, string gateway)
     {
         var actor = await unitOfWork.Users.GetByIdAsync(actorId);
-        if (actor == null) return ApiResponse<object>.Fail("Vui lòng đăng nhập", 401);
+        if (actor == null || !actor.IsActive) return ApiResponse<object>.Fail("Vui lòng đăng nhập", 401);
         var match = await unitOfWork.Matches.GetMatchByIdWithDetailsAsync(matchId);
         if (match?.Booking == null) return ApiResponse<object>.Fail("Không tìm thấy kèo đấu", 404);
-        if (atDesk && (actor.Role != "VenueStaff" || actor.StaffVenueId != match.Booking.SubVenue?.VenueId))
-            return ApiResponse<object>.Fail("Bạn không phải lễ tân của cụm sân này", 403);
+        if (atDesk)
+        {
+            var venueId = match.Booking.SubVenue?.VenueId ?? 0;
+            var venue = venueId > 0 ? await db.Venues.FindAsync(venueId) : null;
+            var canAssignAtDesk = actor.Role == "Admin"
+                || (actor.Role == "VenueStaff" && actor.StaffVenueId == venueId)
+                || (actor.Role == "Owner" && venue != null && (venue.OwnerUserId == actorId || (venue.OwnerUserId == null && actor.StaffVenueId == venueId)));
+            if (!canAssignAtDesk)
+                return ApiResponse<object>.Fail("Bạn không phải lễ tân hoặc chủ của cụm sân này", 403);
+        }
         if (!atDesk && gateway != "MockPayment")
             return ApiResponse<object>.Fail("Thanh toán thực cần xác nhận từ Module 5 trước khi ghi nhận thành viên");
         if (!atDesk && match.HostUserId == actorId)
@@ -157,7 +184,6 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
         match.CurrentJoinedPlayers++;
         match.Revision++;
         if (match.CurrentJoinedPlayers == match.NeededPlayers) match.Status = "Full";
-        // A negative balance is credit owed to a prepaid Host; never discard contributions by clamping to zero.
         match.Booking.RemainingBalance -= match.CostPerPerson;
         await unitOfWork.Transactions.AddAsync(new Transaction {
             BookingId = match.BookingId, UserId = actorId, Amount = match.CostPerPerson,

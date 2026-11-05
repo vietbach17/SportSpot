@@ -41,7 +41,7 @@ public class TicketService : ITicketService
                 Address = b.SubVenue?.Venue?.Address ?? string.Empty,
                 PlayDate = b.PlayDate,
                 TimeSlots = b.BookingDetails
-                    .OrderBy(bd => bd.SlotId)
+                    .OrderBy(bd => bd.TimeSlot != null ? bd.TimeSlot.StartTime : "")
                     .Select(bd => $"{bd.TimeSlot?.StartTime}-{bd.TimeSlot?.EndTime}")
                     .ToList(),
                 UserRoleInMatch = "Host",
@@ -86,7 +86,7 @@ public class TicketService : ITicketService
                 Address = b.SubVenue?.Venue?.Address ?? string.Empty,
                 PlayDate = b.PlayDate,
                 TimeSlots = b.BookingDetails
-                    .OrderBy(bd => bd.SlotId)
+                    .OrderBy(bd => bd.TimeSlot != null ? bd.TimeSlot.StartTime : "")
                     .Select(bd => $"{bd.TimeSlot?.StartTime}-{bd.TimeSlot?.EndTime}")
                     .ToList(),
                 UserRoleInMatch = "JoinedPlayer",
@@ -135,10 +135,16 @@ public class TicketService : ITicketService
             return ApiResponse<object>.Fail("Vé này đã quá hạn sử dụng (ngày thi đấu đã qua)", 400);
         }
 
-        // Trường hợp 1: Quét vé của Thành viên ghép kèo vãng lai (JoinedPlayer)
-        if (string.Equals(role, "JoinedPlayer", StringComparison.OrdinalIgnoreCase))
+        var ownerUser = booking.SubVenue?.Venue?.OwnerUser;
+
+        // Trường hợp 1: Quét vé của Thành viên ghép kèo vãng lai (JoinedPlayer hoặc Guest_...)
+        if (string.Equals(role, "JoinedPlayer", StringComparison.OrdinalIgnoreCase)
+            || role.StartsWith("Guest_", StringComparison.OrdinalIgnoreCase))
         {
-            var member = booking.OpenMatch?.MatchMembers.FirstOrDefault(m => m.UserId == scannedUserId);
+            var member = role.StartsWith("Guest_", StringComparison.OrdinalIgnoreCase)
+                ? booking.OpenMatch?.MatchMembers.FirstOrDefault(m => m.TicketQrPayload == request.QrPayload.Trim())
+                : booking.OpenMatch?.MatchMembers.FirstOrDefault(m => m.UserId == scannedUserId);
+
             if (member == null)
             {
                 return ApiResponse<object>.Fail("Không tìm thấy thông tin thành viên vãng lai trong kèo này", 404);
@@ -152,9 +158,21 @@ public class TicketService : ITicketService
             member.IsCheckedIn = true;
             member.CheckedInAt = DateTime.UtcNow;
 
-            foreach (var tx in booking.Transactions.Where(t => t.UserId == scannedUserId && t.Status == "Holding"))
+            int memberSettled = 0;
+            if (member.UserId.HasValue)
             {
-                tx.Status = "Settled";
+                foreach (var tx in booking.Transactions.Where(t => t.UserId == member.UserId && t.Status == "Holding"))
+                {
+                    tx.Status = "Settled";
+                    memberSettled += tx.Amount;
+                }
+            }
+
+            // Giải ngân thực 95% về ví Chủ sân (5% phí nền tảng SportSpot theo BR-PAY-03)
+            if (ownerUser != null && memberSettled > 0)
+            {
+                var ownerNet = (int)Math.Round(memberSettled * 0.95, MidpointRounding.AwayFromZero);
+                ownerUser.WalletBalance += ownerNet;
             }
 
             await _unitOfWork.SaveChangesAsync();
@@ -162,8 +180,10 @@ public class TicketService : ITicketService
             return ApiResponse<object>.Ok(new
             {
                 bookingCode = booking.BookingCode,
-                customerName = member.User?.FullName ?? $"Khách #{scannedUserId}",
-                role = "JoinedPlayer",
+                customerName = role.StartsWith("Guest_", StringComparison.OrdinalIgnoreCase)
+                    ? role[6..].Replace('_', ' ')
+                    : (member.User?.FullName ?? $"Khách #{scannedUserId}"),
+                role = role.StartsWith("Guest_", StringComparison.OrdinalIgnoreCase) ? "GuestWalkIn" : "JoinedPlayer",
                 subVenueName = booking.SubVenue?.Name,
                 venueName = booking.SubVenue?.Venue?.Name,
                 escrowStatus = "Settled",
@@ -180,6 +200,10 @@ public class TicketService : ITicketService
         booking.IsCheckedIn = true;
         booking.CheckedInAt = DateTime.UtcNow;
         booking.Status = "Completed";
+        foreach (var detail in booking.BookingDetails)
+        {
+            if (detail.Status == "Upcoming") detail.Status = "Completed";
+        }
 
         // Giải ngân Escrow: Chuyển toàn bộ các giao dịch Holding của đơn này sang Settled (BR-PAY-03)
         int settledCount = 0;
@@ -189,6 +213,13 @@ public class TicketService : ITicketService
             tx.Status = "Settled";
             settledCount++;
             settledAmount += tx.Amount;
+        }
+
+        int ownerPayout = 0;
+        if (ownerUser != null && settledAmount > 0)
+        {
+            ownerPayout = (int)Math.Round(settledAmount * 0.95, MidpointRounding.AwayFromZero);
+            ownerUser.WalletBalance += ownerPayout;
         }
 
         await _unitOfWork.SaveChangesAsync();
@@ -203,6 +234,8 @@ public class TicketService : ITicketService
             escrowStatus = "Settled",
             settledTransactionsCount = settledCount,
             settledTotalAmount = settledAmount > 0 ? settledAmount : booking.DepositAmount,
+            ownerNetPayout = ownerPayout,
+            remainingBalanceToCollect = booking.RemainingBalance,
             checkedInAt = booking.CheckedInAt
         }, "Check-in thành công! Khách hàng đã nhận sân và tiền cọc Escrow đã được giải ngân (Settled) cho chủ sân.");
     }
@@ -228,7 +261,7 @@ public class TicketService : ITicketService
         }
 
         var firstSlotTimeStr = booking.BookingDetails
-            .OrderBy(bd => bd.SlotId)
+            .OrderBy(bd => bd.TimeSlot != null ? bd.TimeSlot.StartTime : "")
             .Select(bd => bd.TimeSlot?.StartTime)
             .FirstOrDefault() ?? "18:00";
 
@@ -275,6 +308,15 @@ public class TicketService : ITicketService
         foreach (var detail in booking.BookingDetails)
         {
             detail.Status = "Cancelled";
+        }
+
+        // Hoàn lại tồn kho dịch vụ phụ trợ khi hủy đơn
+        foreach (var bs in booking.BookingServices)
+        {
+            if (bs.Service != null)
+            {
+                bs.Service.StockQuantity += bs.Quantity;
+            }
         }
 
         foreach (var tx in booking.Transactions.Where(t => t.UserId == userId && t.Status == "Holding"))

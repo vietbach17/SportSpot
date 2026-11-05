@@ -46,8 +46,18 @@ class BookingProvider extends ChangeNotifier {
   final Map<int, int> _selectedServices = {};
   Map<int, int> get selectedServices => Map.unmodifiable(_selectedServices);
 
-  int _depositPercentage = 100; // 30 or 100
+  int _depositPercentage = 100; // minDepositPercent or 100
   int get depositPercentage => _depositPercentage;
+
+  int get maxSlotsPerBooking {
+    final m = _venueDetail?.maxSlotsPerBooking ?? 3;
+    return m > 0 ? m : 3;
+  }
+
+  int get minDepositPercent {
+    final p = _venueDetail?.minDepositPercent ?? 30;
+    return (p == 30 || p == 50 || p == 100) ? p : 30;
+  }
 
   RecruitmentValue _recruitment = const RecruitmentValue();
   RecruitmentValue get recruitment => _recruitment;
@@ -79,6 +89,9 @@ class BookingProvider extends ChangeNotifier {
       _subVenues = _venueDetail?.subVenues ?? [];
       if (_subVenues.isNotEmpty) {
         _selectedSubVenue = _subVenues.first;
+      }
+      if (_depositPercentage < minDepositPercent) {
+        _depositPercentage = minDepositPercent;
       }
       initDates();
       await _fetchSlots();
@@ -151,8 +164,7 @@ class BookingProvider extends ChangeNotifier {
     }
   }
 
-  /// Toggle slot with consecutive & max 3 slots rules
-  /// Returns null on success, or an error string (e.g. for Toast/SnackBar)
+  /// Toggle slot with consecutive & maxSlotsPerBooking rules
   String? toggleSlot(VenueSlotModel slot) {
     if (!slot.isAvailable) {
       return 'Khung giờ này đã kín hoặc đã qua!';
@@ -161,11 +173,8 @@ class BookingProvider extends ChangeNotifier {
     // Check if already selected -> remove it
     if (_selectedSlots.any((s) => s.slotId == slot.slotId)) {
       _selectedSlots.removeWhere((s) => s.slotId == slot.slotId);
-      // Re-sort
       _selectedSlots.sort((a, b) => a.startTime.compareTo(b.startTime));
-      // Verify remaining slots are still contiguous
       if (!_areSlotsConsecutive(_selectedSlots)) {
-        // If removing broke continuity, clear all to avoid disjoint state
         _selectedSlots.clear();
         _selectedSlots.add(slot);
         notifyListeners();
@@ -175,9 +184,9 @@ class BookingProvider extends ChangeNotifier {
       return null;
     }
 
-    // Check maximum 3 slots (3 hours)
-    if (_selectedSlots.length >= 3) {
-      return 'Chỉ được chọn tối đa 3 slot (3 tiếng) cho một đơn đặt!';
+    final maxAllowed = maxSlotsPerBooking;
+    if (_selectedSlots.length >= maxAllowed) {
+      return 'Chỉ được chọn tối đa $maxAllowed slot ($maxAllowed tiếng) cho một đơn đặt!';
     }
 
     // Check consecutive rule
@@ -213,13 +222,17 @@ class BookingProvider extends ChangeNotifier {
     if (next <= 0) {
       _selectedServices.remove(serviceId);
     } else {
+      final svc = _venueDetail?.services.where((s) => s.id == serviceId).firstOrNull;
+      if (svc != null && svc.stockQuantity > 0 && next > svc.stockQuantity) {
+        return;
+      }
       _selectedServices[serviceId] = next;
     }
     notifyListeners();
   }
 
   void setDepositPercentage(int percentage) {
-    _depositPercentage = percentage;
+    _depositPercentage = percentage < minDepositPercent ? minDepositPercent : percentage;
     notifyListeners();
   }
 
@@ -249,8 +262,9 @@ class BookingProvider extends ChangeNotifier {
   int get totalPrice => courtPrice + servicesPrice;
 
   int get depositAmount {
-    if (_depositPercentage >= 100) return totalPrice;
-    return (totalPrice * 0.3).round();
+    final pct = _depositPercentage >= 100 ? 100 : (_depositPercentage < minDepositPercent ? minDepositPercent : _depositPercentage);
+    if (pct >= 100) return totalPrice;
+    return (totalPrice * (pct / 100.0)).round();
   }
 
   int get remainingBalance => totalPrice - depositAmount;
@@ -298,17 +312,15 @@ class BookingProvider extends ChangeNotifier {
       matchTitle: _recruitment.enabled && _recruitment.title.isNotEmpty ? _recruitment.title : null,
       matchHostNote: _recruitment.enabled && _recruitment.hostNote.isNotEmpty ? _recruitment.hostNote : null,
       matchHostPhone: _recruitment.enabled && _recruitment.hostPhone.isNotEmpty ? _recruitment.hostPhone : null,
-      depositPercentage: _depositPercentage,
+      depositPercentage: _depositPercentage < minDepositPercent ? minDepositPercent : _depositPercentage,
     );
 
     try {
       final result = await _repository.createBooking(request);
       cancelHoldTimer();
-      // DO NOT clear _selectedSlots here, so the screen doesn't flicker behind the success dialog!
       return result;
     } on ApiException catch (e) {
       if (e.statusCode == 409) {
-        // Reload slots on conflict so the user sees updated occupancy
         await loadSlotsForCurrentDate();
       }
       rethrow;

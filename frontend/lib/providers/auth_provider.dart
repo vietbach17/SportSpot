@@ -23,6 +23,21 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => !_isGuest && _currentUser != null;
   String? get errorMessage => _errorMessage;
 
+  /// Refresh role after a venue application is approved without replacing a
+  /// newer login/logout that may have happened while the request was running.
+  Future<void> refreshProfile() async {
+    final userId = _currentUser?.userId;
+    if (!isAuthenticated || userId == null) return;
+    try {
+      final data = await _apiClient.get(ApiConstants.userMe);
+      if (!isAuthenticated || _currentUser?.userId != userId) return;
+      _currentUser = UserModel.fromJson(data);
+      notifyListeners();
+    } catch (_) {
+      // A temporary connection error should keep the existing session usable.
+    }
+  }
+
   /// Khởi tạo phiên khi mở ứng dụng: Đọc token và session
   Future<void> initializeAuth() async {
     _isLoading = true;

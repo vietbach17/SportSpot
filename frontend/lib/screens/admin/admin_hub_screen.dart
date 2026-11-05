@@ -1,3 +1,4 @@
+import 'venue_moderation_screen.dart';
 import '../../core/network/api_client.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/brand_header.dart';
@@ -14,44 +15,6 @@ class AdminHubScreen extends StatefulWidget {
 class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Dữ liệu mẫu duyệt cụm sân
-  final List<Map<String, dynamic>> _pendingVenues = [
-    {
-      'id': 101,
-      'name': 'CLB Cầu Lông Tân Bình Sport',
-      'address': 'Số 42 Hoàng Hoa Thám, P.13, Q. Tân Bình, TP.HCM',
-      'ownerName': 'Trần Văn Mạnh',
-      'phone': '0912 345 678',
-      'sport': 'Cầu lông (8 sân)',
-      'status': 'Chờ duyệt',
-      'submitDate': '04/11/2026',
-      'priceRange': '100.000đ - 140.000đ/h',
-    },
-    {
-      'id': 102,
-      'name': 'Pickleball Vườn Lài Arena',
-      'address': '124 Vườn Lài, P. An Phú Đông, Quận 12, TP.HCM',
-      'ownerName': 'Lê Hoàng Yến',
-      'phone': '0988 765 432',
-      'sport': 'Pickleball (6 sân chuẩn USAPA)',
-      'status': 'Chờ duyệt',
-      'submitDate': '03/11/2026',
-      'priceRange': '150.000đ - 220.000đ/h',
-    },
-    {
-      'id': 103,
-      'name': 'Sân Bóng Đá Mini Cỏ Nhân Tạo K300',
-      'address': 'Khu K300, Đường Cộng Hòa, Q. Tân Bình',
-      'ownerName': 'Nguyễn Thành Luân',
-      'phone': '0903 112 233',
-      'sport': 'Bóng đá 5-7 người (4 sân)',
-      'status': 'Đã duyệt',
-      'submitDate': '01/11/2026',
-      'priceRange': '300.000đ - 450.000đ/h',
-    },
-  ];
-
-  // Dữ liệu người dùng hệ thống khớp 100% với Database Supabase thực tế
   final List<Map<String, dynamic>> _systemUsers = [
     {
       'id': 1,
@@ -146,56 +109,6 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  void _approveVenue(int id) {
-    setState(() {
-      final index = _pendingVenues.indexWhere((v) => v['id'] == id);
-      if (index != -1) {
-        _pendingVenues[index]['status'] = 'Đã duyệt';
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã phê duyệt cụm sân lên sàn SportSpot thành công!'),
-        backgroundColor: Color(0xFF16A34A),
-      ),
-    );
-  }
-
-  void _rejectVenue(int id) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Từ chối hồ sơ cụm sân'),
-        content: const Text('Bạn có chắc chắn muốn từ chối cụm sân này? Thông báo kèm lý do sẽ gửi về email chủ sân.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() {
-                final index = _pendingVenues.indexWhere((v) => v['id'] == id);
-                if (index != -1) {
-                  _pendingVenues[index]['status'] = 'Từ chối';
-                }
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Đã từ chối hồ sơ đăng ký cụm sân.'),
-                  backgroundColor: Color(0xFFDC2626),
-                ),
-              );
-            },
-            child: const Text('Xác nhận từ chối', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
   }
 
   void _toggleUserStatus(int id) {
@@ -589,114 +502,8 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
     );
   }
 
-  // TAB 2: DUYỆT CỤM SÂN MỚI
   Widget _buildVenuesTab(Color cardBg, Color textC, Color mutedC, Color borderC) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _pendingVenues.length,
-      itemBuilder: (context, index) {
-        final venue = _pendingVenues[index];
-        final isApproved = venue['status'] == 'Đã duyệt';
-        final isRejected = venue['status'] == 'Từ chối';
-
-        Color statusColor = const Color(0xFFF59E0B);
-        if (isApproved) statusColor = const Color(0xFF16A34A);
-        if (isRejected) statusColor = const Color(0xFFDC2626);
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderC),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      venue['name'],
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textC),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                    ),
-                    child: Text(
-                      venue['status'],
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '📍 ${venue['address']}',
-                style: TextStyle(fontSize: 12, color: mutedC),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '🏅 Quy mô: ${venue['sport']} | 💵 ${venue['priceRange']}',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textC),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '👤 Chủ sân: ${venue['ownerName']} (${venue['phone']}) • Ngày nộp: ${venue['submitDate']}',
-                style: TextStyle(fontSize: 11.5, color: mutedC),
-              ),
-              const Divider(height: 20),
-              if (!isApproved && !isRejected)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFDC2626),
-                        side: const BorderSide(color: Color(0xFFDC2626)),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      ),
-                      onPressed: () => _rejectVenue(venue['id']),
-                      child: const Text('Từ chối'),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00A859),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                      onPressed: () => _approveVenue(venue['id']),
-                      child: const Text('Phê duyệt lên sàn', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    Icon(
-                      isApproved ? Icons.verified_rounded : Icons.cancel_rounded,
-                      size: 16,
-                      color: statusColor,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      isApproved ? 'Cụm sân này đã xuất hiện trên bản đồ tìm kiếm' : 'Hồ sơ này đã bị từ chối phê duyệt',
-                      style: TextStyle(fontSize: 11.5, color: statusColor, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        );
-      },
-    );
+    return const VenueModerationScreen();
   }
 
   // TAB 3: QUẢN LÝ NGƯỜI DÙNG

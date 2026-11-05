@@ -41,13 +41,22 @@ public class VenueRepository : GenericRepository<Venue>, IVenueRepository
             .Include(v => v.SubVenues.Where(sv => sv.IsActive))
             .Include(v => v.Services)
             .Include(v => v.Images)
+            .Include(v => v.SlotConfigs)
             .FirstOrDefaultAsync(v => v.Id == id && v.IsActive && v.ApprovalStatus == "Approved");
     }
 
     public async Task<List<TimeSlot>> GetAllTimeSlotsOrderedAsync()
     {
         return await _context.TimeSlots
-            .OrderBy(s => s.Id)
+            .OrderBy(s => s.StartTime)
+            .ThenBy(s => s.Id)
+            .ToListAsync();
+    }
+
+    public async Task<List<VenueSlotConfig>> GetVenueSlotConfigsAsync(int venueId)
+    {
+        return await _context.VenueSlotConfigs
+            .Where(sc => sc.VenueId == venueId)
             .ToListAsync();
     }
 

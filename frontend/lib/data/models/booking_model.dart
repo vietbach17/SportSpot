@@ -113,6 +113,8 @@ class VenueDetailModel {
   final String district;
   final int basePrice;
   final int peakPrice;
+  final int maxSlotsPerBooking;
+  final int minDepositPercent;
   final double rating;
   final String amenities;
   final String? imageUrl;
@@ -128,6 +130,8 @@ class VenueDetailModel {
     required this.district,
     required this.basePrice,
     required this.peakPrice,
+    this.maxSlotsPerBooking = 3,
+    this.minDepositPercent = 30,
     required this.rating,
     required this.amenities,
     this.imageUrl,
@@ -145,6 +149,8 @@ class VenueDetailModel {
       district: json['district'] ?? '',
       basePrice: (json['basePrice'] as num?)?.toInt() ?? 0,
       peakPrice: (json['peakPrice'] as num?)?.toInt() ?? 0,
+      maxSlotsPerBooking: (json['maxSlotsPerBooking'] as num?)?.toInt() ?? 3,
+      minDepositPercent: (json['minDepositPercent'] as num?)?.toInt() ?? 30,
       rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
       amenities: json['amenities'] ?? '',
       imageUrl: json['imageUrl'],

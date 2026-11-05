@@ -206,6 +206,11 @@ public class AuthService : IAuthService
             return ApiResponse<AuthResponseDto>.Fail("Tài khoản hoặc mật khẩu không chính xác", 401);
         }
 
+        if (!user.IsActive)
+        {
+            return ApiResponse<AuthResponseDto>.Fail("Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.", 403);
+        }
+
         var token = _jwtService.GenerateToken(user);
         return ApiResponse<AuthResponseDto>.Ok(CreateAuthResponse(user, token), "Đăng nhập thành công");
     }

@@ -4,7 +4,7 @@ namespace SportSpot.Services.DTOs;
 
 public record ManagedVenueDto(int Id, string Name, int BasePrice, int PeakPrice);
 public record ScheduleCourtDto(int Id, string Name, bool IsActive);
-public record ScheduleSlotDto(int Id, string StartTime, string EndTime, bool IsPeak);
+public record ScheduleSlotDto(int Id, string StartTime, string EndTime, bool IsPeak, int Price = 0);
 public record ScheduleBookingDto(int Id, string Code, int SubVenueId, DateOnly PlayDate,
     List<int> SlotIds, string Type, string Status, string CustomerName, string CustomerPhone,
     string Note, int TotalPrice, int CollectedAmount, int RemainingBalance);
@@ -14,7 +14,7 @@ public class CreateManagedBookingRequest
 {
     public int SubVenueId { get; set; }
     public DateOnly PlayDate { get; set; }
-    [Required, MinLength(1), MaxLength(13)] public List<int> SlotIds { get; set; } = new();
+    [Required, MinLength(1), MaxLength(19)] public List<int> SlotIds { get; set; } = new();
     public bool Maintenance { get; set; }
     [StringLength(100)] public string CustomerName { get; set; } = "";
     [StringLength(20)] public string CustomerPhone { get; set; } = "";

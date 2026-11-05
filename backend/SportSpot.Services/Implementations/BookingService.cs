@@ -28,29 +28,33 @@ public class BookingService : IBookingService
             return ApiResponse<BookingResponseDto>.Fail("Vui lòng chọn ít nhất 1 khung giờ");
         }
 
-        if (request.SlotIds.Count > 3)
-        {
-            return ApiResponse<BookingResponseDto>.Fail("Chỉ được chọn tối đa 3 slot (3 tiếng) cho một đơn đặt");
-        }
-
         var subVenue = await _unitOfWork.Bookings.GetActiveSubVenueWithVenueAsync(request.SubVenueId);
         if (subVenue == null || subVenue.Venue == null)
         {
             return ApiResponse<BookingResponseDto>.Fail("Không tìm thấy sân con hoặc sân đang bảo trì", 404);
         }
 
+        var maxSlots = subVenue.Venue.MaxSlotsPerBooking > 0 ? subVenue.Venue.MaxSlotsPerBooking : 3;
+        if (request.SlotIds.Count > maxSlots)
+        {
+            return ApiResponse<BookingResponseDto>.Fail($"Chỉ được chọn tối đa {maxSlots} slot ({maxSlots} tiếng) cho một đơn đặt tại cụm sân này");
+        }
+
+        var allSlots = await _unitOfWork.Venues.GetAllTimeSlotsOrderedAsync();
+        var activeVenueSlots = VenueSlotHelper.ResolveActiveSlots(subVenue.Venue, allSlots, subVenue.Venue.SlotConfigs);
+        var activeSlotMap = activeVenueSlots.ToDictionary(s => s.SlotId);
+
         var selectedSlots = (await _unitOfWork.Bookings.GetTimeSlotsByIdsAsync(request.SlotIds))
             .OrderBy(s => s.StartTime).ToList();
-        if (selectedSlots.Count != request.SlotIds.Count)
+        if (selectedSlots.Count != request.SlotIds.Distinct().Count() || selectedSlots.Any(s => !activeSlotMap.ContainsKey(s.Id)))
         {
-            return ApiResponse<BookingResponseDto>.Fail("Một số khung giờ được chọn không hợp lệ");
+            return ApiResponse<BookingResponseDto>.Fail("Một số khung giờ được chọn không hợp lệ hoặc cụm sân không hoạt động vào giờ đó");
         }
 
         if (request.PlayDate < DateOnly.FromDateTime(MatchRules.VietnamNow))
             return ApiResponse<BookingResponseDto>.Fail("Không thể đặt sân cho ngày trong quá khứ");
 
         if (request.IsOpenMatch && (request.PlayDate > DateOnly.FromDateTime(MatchRules.VietnamNow).AddDays(6)
-
             || !TimeOnly.TryParse(selectedSlots[0].StartTime, out var startTime)
             || request.PlayDate.ToDateTime(startTime) <= MatchRules.VietnamNow))
             return ApiResponse<BookingResponseDto>.Fail("Kèo phải diễn ra trong 7 ngày tới và chưa bắt đầu");
@@ -71,34 +75,43 @@ public class BookingService : IBookingService
         int courtPrice = 0;
         foreach (var slot in selectedSlots)
         {
-            courtPrice += slot.IsPeak ? subVenue.Venue.PeakPrice : subVenue.Venue.BasePrice;
+            courtPrice += activeSlotMap[slot.Id].EffectivePrice;
         }
 
         int servicesPrice = 0;
         var bookingServices = new List<SportSpot.Data.Entities.BookingService>();
+        var servicesToDeduct = new List<(Service Service, int Quantity)>();
         if (request.Services != null && request.Services.Count > 0)
         {
-            var serviceIds = request.Services.Select(s => s.ServiceId).ToList();
+            var serviceIds = request.Services.Where(s => s.Quantity > 0).Select(s => s.ServiceId).Distinct().ToList();
             var availableServices = await _unitOfWork.Bookings.GetVenueServicesDictionaryAsync(subVenue.VenueId, serviceIds);
 
-            foreach (var reqService in request.Services)
+            foreach (var reqService in request.Services.Where(s => s.Quantity > 0))
             {
-                if (availableServices.TryGetValue(reqService.ServiceId, out var svc))
+                if (!availableServices.TryGetValue(reqService.ServiceId, out var svc))
+                    return ApiResponse<BookingResponseDto>.Fail("Một số dịch vụ đi kèm không thuộc cụm sân này");
+
+                if (svc.StockQuantity < reqService.Quantity)
+                    return ApiResponse<BookingResponseDto>.Fail($"Dịch vụ '{svc.Name}' chỉ còn {svc.StockQuantity} sản phẩm trong kho", 409);
+
+                var itemTotal = svc.Price * reqService.Quantity;
+                servicesPrice += itemTotal;
+                servicesToDeduct.Add((svc, reqService.Quantity));
+                bookingServices.Add(new SportSpot.Data.Entities.BookingService
                 {
-                    var itemTotal = svc.Price * reqService.Quantity;
-                    servicesPrice += itemTotal;
-                    bookingServices.Add(new SportSpot.Data.Entities.BookingService
-                    {
-                        ServiceId = svc.Id,
-                        Quantity = reqService.Quantity,
-                        Price = svc.Price
-                    });
-                }
+                    ServiceId = svc.Id,
+                    Quantity = reqService.Quantity,
+                    Price = svc.Price
+                });
             }
         }
 
         int totalPrice = courtPrice + servicesPrice;
-        int depositAmount = request.DepositPercentage >= 100 ? totalPrice : (int)Math.Round(totalPrice * 0.3);
+        var minDepositPct = subVenue.Venue.MinDepositPercent is 30 or 50 or 100 ? subVenue.Venue.MinDepositPercent : 30;
+        var appliedDepositPct = request.DepositPercentage >= 100 ? 100 : Math.Max(request.DepositPercentage, minDepositPct);
+        int depositAmount = appliedDepositPct >= 100
+            ? totalPrice
+            : (int)Math.Round(totalPrice * (appliedDepositPct / 100.0), MidpointRounding.AwayFromZero);
         int remainingBalance = totalPrice - depositAmount;
         var bookingCode = $"SP-{Random.Shared.Next(100000, 999999)}";
 
@@ -121,7 +134,7 @@ public class BookingService : IBookingService
 
         foreach (var slot in selectedSlots)
         {
-            int slotPrice = slot.IsPeak ? subVenue.Venue.PeakPrice : subVenue.Venue.BasePrice;
+            int slotPrice = activeSlotMap[slot.Id].EffectivePrice;
             booking.BookingDetails.Add(new BookingDetail
             {
                 SubVenueId = request.SubVenueId,
@@ -182,6 +195,11 @@ public class BookingService : IBookingService
                 var conflictSlotNames = string.Join(", ", conflictedSlots.Select(c => $"{c.TimeSlot?.StartTime}-{c.TimeSlot?.EndTime}"));
                 return ApiResponse<BookingResponseDto>.Fail(
                     $"Rất tiếc! Khung giờ ({conflictSlotNames}) vừa có người khác đặt trước. Vui lòng chọn khung giờ khác.", 409);
+            }
+
+            foreach (var (svc, qty) in servicesToDeduct)
+            {
+                svc.StockQuantity -= qty;
             }
 
             await _unitOfWork.Bookings.AddAsync(booking);

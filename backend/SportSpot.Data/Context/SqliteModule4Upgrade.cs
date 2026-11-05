@@ -16,6 +16,18 @@ public static class SqliteModule4Upgrade
             AddColumn(db, "Users", "StaffVenueId", "INTEGER NULL REFERENCES Venues(Id)");
             AddColumn(db, "Users", "FcmToken", "TEXT NULL");
             AddColumn(db, "Users", "DateOfBirth", "TEXT NULL");
+            AddColumn(db, "Users", "IsActive", "INTEGER NOT NULL DEFAULT 1");
+
+            AddColumn(db, "Venues", "OwnerUserId", "INTEGER NULL REFERENCES Users(Id)");
+            AddColumn(db, "Venues", "ApprovalStatus", "TEXT NOT NULL DEFAULT 'Approved'");
+            AddColumn(db, "Venues", "RejectionReason", "TEXT NULL");
+            AddColumn(db, "Venues", "SubmittedAt", "TEXT NULL");
+            AddColumn(db, "Venues", "ReviewedAt", "TEXT NULL");
+            AddColumn(db, "Venues", "ReviewedByUserId", "INTEGER NULL");
+            AddColumn(db, "Venues", "ReviewRevision", "INTEGER NOT NULL DEFAULT 0");
+            AddColumn(db, "Venues", "MaxSlotsPerBooking", "INTEGER NOT NULL DEFAULT 3");
+            AddColumn(db, "Venues", "MinDepositPercent", "INTEGER NOT NULL DEFAULT 30");
+
             AddColumn(db, "OpenMatches", "Revision", "INTEGER NOT NULL DEFAULT 0");
             AddColumn(db, "OpenMatches", "SkillLevel", "TEXT NOT NULL DEFAULT 'Cơ bản'");
             AddColumn(db, "OpenMatches", "Title", "TEXT NULL");
@@ -24,7 +36,47 @@ public static class SqliteModule4Upgrade
             AddColumn(db, "Bookings", "CustomerName", "TEXT NULL");
             AddColumn(db, "Bookings", "CustomerPhone", "TEXT NULL");
             AddColumn(db, "Bookings", "ManagementNote", "TEXT NULL");
+
             db.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS VenueImages (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    UploadedByUserId INTEGER NOT NULL REFERENCES Users(Id) ON DELETE RESTRICT,
+                    VenueId INTEGER NULL REFERENCES Venues(Id) ON DELETE SET NULL,
+                    Url TEXT NOT NULL,
+                    PublicId TEXT NOT NULL,
+                    Position INTEGER NOT NULL DEFAULT 0,
+                    CreatedAt TEXT NOT NULL);
+                CREATE INDEX IF NOT EXISTS IX_VenueImages_UploadedByUserId ON VenueImages(UploadedByUserId);
+                CREATE INDEX IF NOT EXISTS IX_VenueImages_VenueId ON VenueImages(VenueId);
+
+                CREATE TABLE IF NOT EXISTS VenueModerationLogs (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    VenueId INTEGER NOT NULL REFERENCES Venues(Id) ON DELETE CASCADE,
+                    AdminUserId INTEGER NOT NULL REFERENCES Users(Id) ON DELETE RESTRICT,
+                    Decision TEXT NOT NULL,
+                    Reason TEXT NOT NULL,
+                    CreatedAt TEXT NOT NULL);
+                CREATE INDEX IF NOT EXISTS IX_VenueModerationLogs_VenueId ON VenueModerationLogs(VenueId);
+                CREATE INDEX IF NOT EXISTS IX_VenueModerationLogs_AdminUserId ON VenueModerationLogs(AdminUserId);
+
+                CREATE TABLE IF NOT EXISTS VenueSlotConfigs (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    VenueId INTEGER NOT NULL REFERENCES Venues(Id) ON DELETE CASCADE,
+                    SlotId INTEGER NOT NULL REFERENCES TimeSlots(Id) ON DELETE CASCADE,
+                    IsActive INTEGER NOT NULL DEFAULT 1,
+                    IsPeak INTEGER NOT NULL DEFAULT 0,
+                    CustomPrice INTEGER NULL);
+                CREATE UNIQUE INDEX IF NOT EXISTS IX_VenueSlotConfigs_VenueId_SlotId ON VenueSlotConfigs(VenueId, SlotId);
+                CREATE INDEX IF NOT EXISTS IX_VenueSlotConfigs_SlotId ON VenueSlotConfigs(SlotId);
+
+                INSERT OR IGNORE INTO TimeSlots (Id, StartTime, EndTime, IsPeak) VALUES
+                    (14, '05:00', '06:00', 0),
+                    (15, '11:00', '12:00', 0),
+                    (16, '12:00', '13:00', 0),
+                    (17, '13:00', '14:00', 0),
+                    (18, '22:00', '23:00', 1),
+                    (19, '23:00', '23:59', 1);
+
                 CREATE TABLE IF NOT EXISTS UserSkills (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
                     UserId INTEGER NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
@@ -107,7 +159,6 @@ public static class SqliteModule4Upgrade
         {
             while (reader.Read()) if (reader.GetString(1) == column) return;
         }
-        // Identifiers and definitions come exclusively from the constants above.
         command.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition}";
         command.ExecuteNonQuery();
     }
