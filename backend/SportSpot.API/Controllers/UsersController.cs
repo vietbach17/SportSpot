@@ -36,6 +36,26 @@ public class UsersController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpGet("skills")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<List<UserSkillDto>>>> GetUserSkills([FromQuery] int? userId)
+    {
+        var uid = userId ?? GetCurrentUserId();
+        if (uid <= 0) uid = 1;
+        var result = await _userService.GetUserSkillsAsync(uid);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("skills")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<List<UserSkillDto>>>> SaveUserSkills([FromBody] UpdateUserSkillsRequest request, [FromQuery] int? userId)
+    {
+        var uid = userId ?? GetCurrentUserId();
+        if (uid <= 0) uid = 1;
+        var result = await _userService.SaveUserSkillsAsync(uid, request);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpPost("fcm-token")]
     [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<bool>>> SaveFcmToken([FromBody] SaveFcmTokenRequest request)

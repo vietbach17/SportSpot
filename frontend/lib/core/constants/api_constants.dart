@@ -28,6 +28,7 @@ class ApiConstants {
   // Endpoints Users
   static const String userMe = '/api/users/me';
   static const String userProfile = '/api/users/profile';
+  static const String userSkills = '/api/users/skills';
 
   // Endpoints Venues & Sports
   static const String sports = '/api/sports';

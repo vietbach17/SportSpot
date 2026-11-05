@@ -32,6 +32,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _loadFavorites();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AuthProvider>().fetchUserSkills();
+      }
+    });
   }
 
   Future<void> _loadFavorites() async {
@@ -1066,7 +1071,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      ..._buildDynamicSkills(user.favoriteSports, isDark, textColor, mutedColor),
+                      ..._buildDynamicSkills(auth, isDark, textColor, mutedColor),
                     ],
                   ),
                 ),
@@ -1121,7 +1126,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  List<Widget> _buildDynamicSkills(String? favoriteSports, bool isDark, Color textColor, Color mutedColor) {
+  List<Widget> _buildDynamicSkills(AuthProvider auth, bool isDark, Color textColor, Color mutedColor) {
+    if (auth.userSkills.isNotEmpty) {
+      final widgets = <Widget>[];
+      for (int i = 0; i < auth.userSkills.length; i++) {
+        final skill = auth.userSkills[i];
+        final title = skill.sportName;
+        final verifiedText = skill.isVerified
+            ? (skill.verifiedBy != null && skill.verifiedBy!.isNotEmpty ? 'Xác thực bởi ${skill.verifiedBy}' : 'Đã xác thực')
+            : 'Tự đánh giá';
+        final subtitle = '${skill.skillLevel} ${skill.ratingScore.toStringAsFixed(1)} • $verifiedText';
+        final progress = (skill.ratingScore / 5.0).clamp(0.2, 1.0);
+
+        Color color = const Color(0xFF00A859);
+        final lower = title.toLowerCase();
+        if (lower.contains('cầu lông')) {
+          color = const Color(0xFF00A859);
+        } else if (lower.contains('pickleball')) {
+          color = const Color(0xFF00C853);
+        } else if (lower.contains('bóng đá')) {
+          color = const Color(0xFFF59E0B);
+        } else if (lower.contains('bóng rổ')) {
+          color = const Color(0xFFEA580C);
+        } else if (lower.contains('tennis')) {
+          color = const Color(0xFF2563EB);
+        }
+
+        widgets.add(_buildSkillTile(title, subtitle, progress, color, isDark, textColor, mutedColor));
+        if (i < auth.userSkills.length - 1) {
+          widgets.add(const SizedBox(height: 12));
+        }
+      }
+      return widgets;
+    }
+
+    final favoriteSports = auth.currentUser?.favoriteSports;
     final sportsList = (favoriteSports == null || favoriteSports.trim().isEmpty)
         ? ['Cầu lông', 'Pickleball', 'Bóng đá mini']
         : favoriteSports.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
@@ -1137,7 +1176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (sport.toLowerCase().contains('cầu lông')) {
         title = 'Cầu lông';
         subtitle = 'Nâng cao 4.0 • Xác thực bởi Host';
-        progress = 0.85;
+        progress = 0.80;
         color = const Color(0xFF00A859);
       } else if (sport.toLowerCase().contains('pickleball')) {
         title = 'Pickleball';
@@ -1151,13 +1190,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         color = const Color(0xFFF59E0B);
       } else if (sport.toLowerCase().contains('bóng rổ')) {
         title = 'Bóng rổ';
-        subtitle = 'Cơ bản 3.0 • Thể lực tốt';
+        subtitle = 'Cơ bản 3.0 • Tự đánh giá';
         progress = 0.60;
         color = const Color(0xFFEA580C);
       } else if (sport.toLowerCase().contains('tennis')) {
         title = 'Tennis';
-        subtitle = 'Trung cấp 3.5 • ITF Rating';
-        progress = 0.72;
+        subtitle = 'Phong trào 3.5 • Tự đánh giá';
+        progress = 0.70;
         color = const Color(0xFF2563EB);
       }
 
@@ -1172,13 +1211,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showSportsSetupDialog(BuildContext context, AuthProvider auth) {
     final availableSports = ['Cầu lông', 'Pickleball', 'Bóng đá mini', 'Bóng rổ', 'Tennis'];
-    final currentSports = (auth.currentUser?.favoriteSports ?? '')
-        .split(',')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
+    final skillLevels = [
+      {'level': 'Cơ bản', 'score': 3.0, 'label': 'Cơ bản (3.0)'},
+      {'level': 'Phong trào', 'score': 3.5, 'label': 'Phong trào (3.5)'},
+      {'level': 'Khá', 'score': 4.0, 'label': 'Khá (4.0)'},
+      {'level': 'Bán chuyên', 'score': 4.5, 'label': 'Bán chuyên (4.5)'},
+      {'level': 'Chuyên nghiệp', 'score': 5.0, 'label': 'Chuyên nghiệp (5.0)'},
+    ];
 
-    List<String> selectedSports = List.from(currentSports);
+    final currentSelected = auth.userSkills.isNotEmpty
+        ? auth.userSkills.map((s) => s.sportName).toList()
+        : (auth.currentUser?.favoriteSports ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+
+    List<String> selectedSports = List.from(currentSelected.isEmpty ? ['Cầu lông', 'Pickleball', 'Bóng đá mini'] : currentSelected);
+
+    final Map<String, String> sportLevels = {};
+    final Map<String, double> sportScores = {};
+
+    for (final s in auth.userSkills) {
+      sportLevels[s.sportName] = s.skillLevel;
+      sportScores[s.sportName] = s.ratingScore;
+    }
+
+    for (final s in availableSports) {
+      sportLevels.putIfAbsent(s, () => s == 'Cầu lông' ? 'Khá' : 'Phong trào');
+      sportScores.putIfAbsent(s, () => s == 'Cầu lông' ? 4.0 : 3.5);
+    }
+
+    bool isSaving = false;
 
     showModalBottomSheet(
       context: context,
@@ -1191,106 +1255,261 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final cardColor = isDark ? const Color(0xFF191A20) : Colors.white;
             final textColor = isDark ? Colors.white : const Color(0xFF111315);
             final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+            final tileBg = isDark ? const Color(0xFF22252E) : const Color(0xFFF3F4F6);
 
-            return Container(
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(sheetCtx).size.height * 0.88,
               ),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: mutedColor.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(2),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: mutedColor.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Thiết Lập Bộ Môn & Kỹ Năng',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: textColor),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        onPressed: () => Navigator.pop(sheetCtx),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Chọn các bộ môn bạn tham gia thi đấu để hệ thống gợi ý kèo phù hợp và hiển thị chỉ số:',
-                    style: TextStyle(fontSize: 12, color: mutedColor),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: availableSports.map((sport) {
-                      final isSelected = selectedSports.contains(sport);
-                      return FilterChip(
-                        selected: isSelected,
-                        label: Text(sport),
-                        selectedColor: const Color(0xFF00A859).withValues(alpha: 0.2),
-                        checkmarkColor: const Color(0xFF00A859),
-                        labelStyle: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                          color: isSelected ? const Color(0xFF00A859) : textColor,
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Thiết Lập Bộ Môn & Cấp Độ Kỹ Năng',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: textColor),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        side: BorderSide(
-                          color: isSelected ? const Color(0xFF00A859) : mutedColor.withValues(alpha: 0.3),
-                          width: isSelected ? 1.5 : 1.0,
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () => Navigator.pop(sheetCtx),
                         ),
-                        onSelected: (selected) {
-                          setSheetState(() {
-                            if (selected) {
-                              selectedSports.add(sport);
-                            } else {
-                              selectedSports.remove(sport);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00A859),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () async {
-                        final sportsString = selectedSports.join(',');
-                        await auth.updateProfile(favoriteSports: sportsString);
-                        if (ctx.mounted) {
-                          Navigator.pop(sheetCtx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Đã cập nhật danh sách bộ môn & chỉ số kỹ năng thành công!'),
-                              backgroundColor: Color(0xFF00A859),
-                              behavior: SnackBarBehavior.floating,
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Chọn các bộ môn bạn chơi và tự đánh giá cấp độ kỹ năng để lưu vào hồ sơ dữ liệu:',
+                      style: TextStyle(fontSize: 12, color: mutedColor),
+                    ),
+                    const SizedBox(height: 14),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'BỘ MÔN THI ĐẤU',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: mutedColor, letterSpacing: 0.5),
                             ),
-                          );
-                        }
-                      },
-                      child: const Text('Lưu Thiết Lập Kỹ Năng', style: TextStyle(fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: availableSports.map((sport) {
+                                final isSelected = selectedSports.contains(sport);
+                                return FilterChip(
+                                  selected: isSelected,
+                                  label: Text(sport),
+                                  selectedColor: const Color(0xFF00A859).withValues(alpha: 0.18),
+                                  checkmarkColor: const Color(0xFF00A859),
+                                  labelStyle: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                    color: isSelected ? const Color(0xFF00A859) : textColor,
+                                  ),
+                                  side: BorderSide(
+                                    color: isSelected ? const Color(0xFF00A859) : mutedColor.withValues(alpha: 0.3),
+                                    width: isSelected ? 1.5 : 1.0,
+                                  ),
+                                  onSelected: (selected) {
+                                    setSheetState(() {
+                                      if (selected) {
+                                        selectedSports.add(sport);
+                                      } else {
+                                        selectedSports.remove(sport);
+                                      }
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                            if (selectedSports.isNotEmpty) ...[
+                              const SizedBox(height: 18),
+                              Text(
+                                'CẤP ĐỘ KỸ NĂNG CHO TỪNG BỘ MÔN',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: mutedColor, letterSpacing: 0.5),
+                              ),
+                              const SizedBox(height: 8),
+                              ...selectedSports.map((sport) {
+                                final currentLevel = sportLevels[sport] ?? 'Phong trào';
+                                final currentScore = sportScores[sport] ?? 3.5;
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: tileBg,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: const Color(0xFF00A859).withValues(alpha: 0.25),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                sport.contains('Cầu lông')
+                                                    ? Icons.sports_tennis_rounded
+                                                    : sport.contains('Pickleball')
+                                                        ? Icons.sports_tennis
+                                                        : sport.contains('Bóng đá')
+                                                            ? Icons.sports_soccer_rounded
+                                                            : sport.contains('Bóng rổ')
+                                                                ? Icons.sports_basketball_rounded
+                                                                : Icons.sports_baseball_rounded,
+                                                size: 16,
+                                                color: const Color(0xFF00A859),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                sport,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: textColor,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF00A859).withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              '$currentLevel • ${currentScore.toStringAsFixed(1)}',
+                                              style: const TextStyle(
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF00A859),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: skillLevels.map((lvl) {
+                                          final isMatch = currentLevel == lvl['level'];
+                                          return ChoiceChip(
+                                            selected: isMatch,
+                                            label: Text(lvl['label'] as String),
+                                            selectedColor: const Color(0xFF00A859),
+                                            backgroundColor: isDark ? const Color(0xFF191A20) : Colors.white,
+                                            labelStyle: TextStyle(
+                                              fontSize: 11.5,
+                                              fontWeight: isMatch ? FontWeight.w800 : FontWeight.w600,
+                                              color: isMatch ? Colors.white : textColor,
+                                            ),
+                                            side: BorderSide(
+                                              color: isMatch
+                                                  ? const Color(0xFF00A859)
+                                                  : mutedColor.withValues(alpha: 0.25),
+                                              width: 1.0,
+                                            ),
+                                            onSelected: (selected) {
+                                              if (selected) {
+                                                setSheetState(() {
+                                                  sportLevels[sport] = lvl['level'] as String;
+                                                  sportScores[sport] = (lvl['score'] as num).toDouble();
+                                                });
+                                              }
+                                            },
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00A859),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                setSheetState(() => isSaving = true);
+                                final skillsList = selectedSports.map((sport) {
+                                  return {
+                                    'sportName': sport,
+                                    'skillLevel': sportLevels[sport] ?? 'Phong trào',
+                                    'ratingScore': sportScores[sport] ?? 3.5,
+                                  };
+                                }).toList();
+
+                                final ok = await auth.saveUserSkills(skillsList);
+                                final sportsString = selectedSports.join(',');
+                                await auth.updateProfile(favoriteSports: sportsString);
+
+                                if (ctx.mounted) {
+                                  Navigator.pop(sheetCtx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        ok
+                                            ? 'Đã lưu thiết lập bộ môn & cấp độ kỹ năng vào Database thành công!'
+                                            : 'Không thể lưu kỹ năng, vui lòng kiểm tra kết nối!',
+                                      ),
+                                      backgroundColor: ok ? const Color(0xFF00A859) : Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              },
+                        child: isSaving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text('Lưu Thiết Lập Kỹ Năng', style: TextStyle(fontWeight: FontWeight.w800)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -1315,7 +1534,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: textColor)),
-            Text(subtitle, style: TextStyle(fontSize: 11, color: mutedColor)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                subtitle,
+                style: TextStyle(fontSize: 11, color: mutedColor),
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),

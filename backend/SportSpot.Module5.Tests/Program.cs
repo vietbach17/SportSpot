@@ -472,6 +472,32 @@ using (var db = Context())
     }
 }
 
+// 12. Test UserSkills Save & Retrieval
+using (var db = Context())
+{
+    var uow = Uow(db);
+    var userService = new UserService(uow, db);
+
+    var saveReq = new UpdateUserSkillsRequest
+    {
+        Skills = new List<UpdateUserSkillItemRequest>
+        {
+            new() { SportName = "Cầu lông", SkillLevel = "Khá", RatingScore = 4.0m },
+            new() { SportName = "Pickleball", SkillLevel = "Phong trào", RatingScore = 3.5m }
+        }
+    };
+
+    var saveRes = await userService.SaveUserSkillsAsync(1, saveReq);
+    Check(saveRes.Success && saveRes.Data.Count == 2, "SaveUserSkillsAsync saves 2 skills successfully");
+    Check(saveRes.Data.Any(s => s.SportName == "Cầu lông" && s.RatingScore == 4.0m && s.SkillLevel == "Khá"), "Skill Cầu lông has level Khá and score 4.0");
+
+    var getRes = await userService.GetUserSkillsAsync(1);
+    Check(getRes.Success && getRes.Data.Count == 2, "GetUserSkillsAsync retrieves saved skills");
+
+    var user = await db.Users.FindAsync(1);
+    Check(user != null && user.FavoriteSports != null && user.FavoriteSports.Contains("Cầu lông"), "User.FavoriteSports is kept in sync with UserSkills");
+}
+
 Console.WriteLine($"All {passed} Module 5 backend checks passed!");
 
 class TestConfig : Microsoft.Extensions.Configuration.IConfiguration

@@ -25,7 +25,70 @@ public static class DbInitializer
             context.SaveChanges();
         }
 
-        // 2. Seed 5 Cụm sân thể thao có thật tại TP.HCM (GPS thật phục vụ test khoảng cách)
+        // 2. Seed Tennis nếu chưa có
+        if (!context.Sports.Any(s => s.Name == "Tennis"))
+        {
+            context.Sports.Add(new Sport
+            {
+                Name = "Tennis",
+                IconUrl = "https://cdn-icons-png.flaticon.com/512/2906/2906478.png"
+            });
+            context.SaveChanges();
+        }
+
+        // 3. Seed Default UserSkills nếu bảng UserSkills chưa có dữ liệu
+        if (!context.UserSkills.Any())
+        {
+            var firstUser = context.Users.FirstOrDefault();
+            if (firstUser != null)
+            {
+                var sports = context.Sports.ToList();
+                var s1 = sports.FirstOrDefault(s => s.Name.Contains("Cầu lông"));
+                var s2 = sports.FirstOrDefault(s => s.Name.Contains("Pickleball"));
+                var s3 = sports.FirstOrDefault(s => s.Name.Contains("Bóng đá"));
+
+                if (s1 != null)
+                {
+                    context.UserSkills.Add(new UserSkill
+                    {
+                        UserId = firstUser.Id,
+                        SportId = s1.Id,
+                        SkillLevel = "Khá",
+                        RatingScore = 4.0m,
+                        IsVerified = true,
+                        VerifiedBy = "CLB Kỳ Hòa Host",
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+                if (s2 != null)
+                {
+                    context.UserSkills.Add(new UserSkill
+                    {
+                        UserId = firstUser.Id,
+                        SportId = s2.Id,
+                        SkillLevel = "Phong trào",
+                        RatingScore = 3.5m,
+                        IsVerified = false,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+                if (s3 != null)
+                {
+                    context.UserSkills.Add(new UserSkill
+                    {
+                        UserId = firstUser.Id,
+                        SportId = s3.Id,
+                        SkillLevel = "Phong trào",
+                        RatingScore = 3.5m,
+                        IsVerified = false,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+                context.SaveChanges();
+            }
+        }
+
+        // 4. Seed 5 Cụm sân thể thao có thật tại TP.HCM (GPS thật phục vụ test khoảng cách)
         var venuesToAdd = new List<Venue>();
 
         if (!context.Venues.Any(v => v.Name.Contains("Kỳ Hòa")))

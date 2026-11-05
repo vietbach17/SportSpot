@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
 import '../data/models/user_model.dart';
+import '../data/models/user_skill_model.dart';
 import '../data/services/database_helper.dart';
 import '../data/services/token_service.dart';
 
@@ -15,6 +16,8 @@ class AuthProvider extends ChangeNotifier {
   String? _errorMessage;
 
   UserModel? get currentUser => _currentUser;
+  List<UserSkillModel> _userSkills = [];
+  List<UserSkillModel> get userSkills => _userSkills;
   bool get isGuest => _isGuest;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => !_isGuest && _currentUser != null;
@@ -357,6 +360,41 @@ class AuthProvider extends ChangeNotifier {
       final res = await _apiClient.put(ApiConstants.userProfile, body);
       _currentUser = UserModel.fromJson(res);
 
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Lấy danh sách kỹ năng bộ môn của người dùng từ Database
+  Future<void> fetchUserSkills() async {
+    try {
+      final res = await _apiClient.get(ApiConstants.userSkills);
+      if (res is List) {
+        _userSkills = res.map((e) => UserSkillModel.fromJson(e)).toList();
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  /// Lưu danh sách kỹ năng bộ môn xuống bảng UserSkills trong Supabase Database
+  Future<bool> saveUserSkills(List<Map<String, dynamic>> skills) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final res = await _apiClient.post(ApiConstants.userSkills, {'skills': skills});
+      if (res is List) {
+        _userSkills = res.map((e) => UserSkillModel.fromJson(e)).toList();
+        if (_currentUser != null && _userSkills.isNotEmpty) {
+          _currentUser!.favoriteSports = _userSkills.map((s) => s.sportName).join(',');
+        }
+      }
       notifyListeners();
       return true;
     } catch (e) {

@@ -25,6 +25,7 @@ public class SportSpotDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<FavoriteVenue> FavoriteVenues => Set<FavoriteVenue>();
     public DbSet<MatchComment> MatchComments => Set<MatchComment>();
+    public DbSet<UserSkill> UserSkills => Set<UserSkill>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,6 +51,7 @@ public class SportSpotDbContext : DbContext
         modelBuilder.Entity<Booking>().Property(b => b.Status).IsConcurrencyToken();
         modelBuilder.Entity<User>().Property(u => u.WalletBalance).IsConcurrencyToken();
         modelBuilder.Entity<MatchMember>().HasIndex(m => new { m.MatchId, m.UserId }).IsUnique();
+        modelBuilder.Entity<UserSkill>().HasIndex(us => new { us.UserId, us.SportId }).IsUnique();
 
         // Sports Unique
         modelBuilder.Entity<Sport>()
@@ -93,7 +95,8 @@ public class SportSpotDbContext : DbContext
             new Sport { Id = 1, Name = "Cầu lông", IconUrl = "https://cdn-icons-png.flaticon.com/512/2906/2906478.png" },
             new Sport { Id = 2, Name = "Pickleball", IconUrl = "https://cdn-icons-png.flaticon.com/512/8144/8144709.png" },
             new Sport { Id = 3, Name = "Bóng đá mini", IconUrl = "https://cdn-icons-png.flaticon.com/512/861/861512.png" },
-            new Sport { Id = 4, Name = "Bóng rổ", IconUrl = "https://cdn-icons-png.flaticon.com/512/889/889455.png" }
+            new Sport { Id = 4, Name = "Bóng rổ", IconUrl = "https://cdn-icons-png.flaticon.com/512/889/889455.png" },
+            new Sport { Id = 5, Name = "Tennis", IconUrl = "https://cdn-icons-png.flaticon.com/512/2906/2906478.png" }
         );
 
         // Seed TimeSlots (6:00 - 22:00)
