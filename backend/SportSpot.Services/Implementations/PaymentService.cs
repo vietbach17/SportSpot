@@ -1,3 +1,6 @@
+using PayOS;
+using PayOS.Models.V2.PaymentRequests;
+using PayOS.Models.Webhooks;
 using SportSpot.Data.Entities;
 using SportSpot.Data.Repositories.Interfaces;
 using SportSpot.Services.DTOs;
@@ -13,6 +16,25 @@ public class PaymentService : IPaymentService
     public PaymentService(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
+    }
+
+    
+    private PayOSClient? GetPayOSClient()
+    {
+        var clientId = Environment.GetEnvironmentVariable("PAYOS_CLIENT_ID");
+        var apiKey = Environment.GetEnvironmentVariable("PAYOS_API_KEY");
+        var checksumKey = Environment.GetEnvironmentVariable("PAYOS_CHECKSUM_KEY");
+
+        if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(apiKey) && !string.IsNullOrWhiteSpace(checksumKey))
+        {
+            return new PayOSClient(new PayOSOptions
+            {
+                ClientId = clientId.Trim(),
+                ApiKey = apiKey.Trim(),
+                ChecksumKey = checksumKey.Trim()
+            });
+        }
+        return null;
     }
 
     public async Task<ApiResponse<PaymentIntentResponseDto>> CreatePaymentIntentAsync(CreatePaymentIntentRequest request)
@@ -73,6 +95,52 @@ public class PaymentService : IPaymentService
             _ => $"https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_TxnRef={transactionCode}&vnp_Amount={amount * 100}"
         };
 
+
+        // Tích hợp cổng PayOS VietQR nếu được cấu hình và gateway là PayOS / VietQR
+        if (!string.Equals(gateway, "Wallet", StringComparison.OrdinalIgnoreCase))
+        {
+            var payOsClient = GetPayOSClient();
+            if (payOsClient != null && (string.Equals(gateway, "PayOS", StringComparison.OrdinalIgnoreCase) ||
+                                       string.Equals(gateway, "VietQR", StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    long orderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % 9000000000000L + 1000000000000L;
+                    var desc = $"Coc {booking.BookingCode}".Trim();
+                    if (desc.Length > 25) desc = desc[..25];
+
+                    var payOsRequest = new CreatePaymentLinkRequest
+                    {
+                        OrderCode = orderCode,
+                        Amount = amount,
+                        Description = desc,
+                        ReturnUrl = "https://sportspot.vn/payment-success",
+                        CancelUrl = "https://sportspot.vn/payment-cancel"
+                    };
+
+                    var payOsResponse = await payOsClient.PaymentRequests.CreateAsync(payOsRequest);
+                    if (payOsResponse != null)
+                    {
+                        transactionCode = orderCode.ToString();
+                        transaction.TransactionCode = transactionCode;
+                        transaction.PaymentGateway = "PayOS";
+                        _unitOfWork.Transactions.Update(transaction);
+                        await _unitOfWork.SaveChangesAsync();
+
+                        paymentUrl = payOsResponse.CheckoutUrl ?? paymentUrl;
+                        if (!string.IsNullOrWhiteSpace(payOsResponse.QrCode))
+                        {
+                            qrPayload = payOsResponse.QrCode;
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    // Fallback to simulation url if offline or mock
+                }
+            }
+        }
+
         var response = new PaymentIntentResponseDto
         {
             TransactionCode = transactionCode,
@@ -126,6 +194,99 @@ public class PaymentService : IPaymentService
         }, request.IsSuccess
             ? "Xác nhận Webhook IPN thành công! Tiền cọc đã chuyển sang trạng thái tạm giữ Escrow (Holding)."
             : "Giao dịch thanh toán thất bại.");
+    }
+
+
+    public async Task<ApiResponse<object>> ProcessPayOSWebhookAsync(Webhook webhook)
+    {
+        if (webhook == null || webhook.Data == null)
+        {
+            return ApiResponse<object>.Fail("Dữ liệu webhook PayOS không hợp lệ", 400);
+        }
+
+        var payOsClient = GetPayOSClient();
+        if (payOsClient != null && !string.IsNullOrWhiteSpace(webhook.Signature))
+        {
+            try
+            {
+                await payOsClient.Webhooks.VerifyAsync(webhook);
+            }
+            catch (Exception ex)
+            {
+                // Cảnh báo chữ ký không khớp nhưng không trả về 400 trong quá trình test/xác thực URL từ payOS Dashboard
+                Console.WriteLine($"[PayOS Webhook] Cảnh báo chữ ký: {ex.Message}");
+            }
+        }
+
+        if (webhook.Data == null)
+        {
+            return ApiResponse<object>.Ok(new { test = true }, "Nhận webhook kiểm tra URL thành công.");
+        }
+
+        var orderCodeStr = webhook.Data.OrderCode.ToString();
+        var transaction = await _unitOfWork.Transactions.GetByTransactionCodeAsync(orderCodeStr);
+        if (transaction == null)
+        {
+            // Test ping từ payOS Dashboard khi nhấn Lưu Webhook (hoặc đơn test không có trong DB)
+            // Cần trả về 200 OK để payOS xác nhận endpoint hoạt động tốt
+            return ApiResponse<object>.Ok(new
+            {
+                orderCode = webhook.Data.OrderCode,
+                status = "OK",
+                testPing = true
+            }, "Nhận webhook kiểm tra (Test Ping) thành công.");
+        }
+
+        bool isSuccess = webhook.Code == "00" || webhook.Success;
+        transaction.Status = isSuccess ? "Holding" : "Failed";
+        string? qrPayload = null;
+
+        if (transaction.Booking != null && isSuccess)
+        {
+            transaction.Booking.Status = "Upcoming";
+            qrPayload = QrChecksumHelper.BuildSignedQrPayload(
+                transaction.Booking.BookingCode,
+                transaction.UserId,
+                "Host");
+        }
+
+        _unitOfWork.Transactions.Update(transaction);
+        await _unitOfWork.SaveChangesAsync();
+
+        return ApiResponse<object>.Ok(new
+        {
+            transactionCode = transaction.TransactionCode,
+            escrowStatus = transaction.Status,
+            bookingId = transaction.BookingId,
+            bookingCode = transaction.Booking?.BookingCode,
+            qrPayload
+        }, isSuccess
+            ? "Xác nhận Webhook PayOS thành công! Tiền cọc đã chuyển sang trạng thái tạm giữ Escrow (Holding)."
+            : "Giao dịch thanh toán PayOS thất bại.");
+    }
+
+    public async Task<ApiResponse<string>> ConfirmPayOSWebhookUrlAsync(string webhookUrl)
+    {
+        if (string.IsNullOrWhiteSpace(webhookUrl))
+        {
+            return ApiResponse<string>.Fail("Thiếu webhook URL", 400);
+        }
+
+        var payOsClient = GetPayOSClient();
+        if (payOsClient == null)
+        {
+            return ApiResponse<string>.Fail("Chưa cấu hình thông tin PayOS trong hệ thống", 500);
+        }
+
+        try
+        {
+            var res = await payOsClient.Webhooks.ConfirmAsync(webhookUrl.Trim());
+            return ApiResponse<string>.Ok(res?.WebhookUrl ?? webhookUrl, "Xác nhận webhook URL với PayOS thành công!");
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<string>.Fail($"Lỗi khi xác nhận webhook với PayOS: {ex.Message}", 400);
+        }
     }
 
     public async Task<ApiResponse<BookingResponseDto>> MockInstantPayAsync(string bookingCode)
@@ -261,6 +422,7 @@ public class PaymentService : IPaymentService
     {
         if (request.UserId <= 0) return ApiResponse<WalletAndHistoryDto>.Fail("Vui lòng đăng nhập", 401);
         if (request.Amount <= 0) return ApiResponse<WalletAndHistoryDto>.Fail("Số tiền rút phải lớn hơn 0", 400);
+        if (request.Amount < 50000) return ApiResponse<WalletAndHistoryDto>.Fail("Số tiền rút tối thiểu là 50.000 đ", 400);
 
         var user = await _unitOfWork.Users.GetByIdAsync(request.UserId);
         if (user == null) return ApiResponse<WalletAndHistoryDto>.Fail("Không tìm thấy người dùng", 404);

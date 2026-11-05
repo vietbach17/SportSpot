@@ -266,7 +266,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                             Text('Khung giờ: ', style: TextStyle(fontSize: 12.5, color: mutedC)),
                             Expanded(
                               child: Text(
-                                '${provider.selectedSlots.map((s) => '${s.startTime}-${s.endTime}').join(', ')} (${DateFormat("dd/MM/yyyy").format(provider.selectedDate)})',
+                                '${provider.selectedSlots.map((s) => "${s.startTime}-${s.endTime}").join(", ")} (${DateFormat("dd/MM/yyyy").format(provider.selectedDate)})',
                                 style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: textC),
                                 textAlign: TextAlign.end,
                                 overflow: TextOverflow.ellipsis,
@@ -278,9 +278,11 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Tiền cọc cần thanh toán (30%):',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textC),
+                            Flexible(
+                              child: Text(
+                                'Tiền cọc cần thanh toán (30%):',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textC),
+                              ),
                             ),
                             Text(
                               currencyFormat.format(deposit),
@@ -352,7 +354,7 @@ class _BookingCheckoutScreenState extends State<BookingCheckoutScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    Text('Quét mã QR VietQR / MoMo / VNPay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textC)),
+                                    Flexible(child: Text('Quét mã QR VietQR / MoMo / VNPay', overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textC))),
                                     const SizedBox(width: 6),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

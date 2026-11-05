@@ -42,6 +42,36 @@ public class PaymentsController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+
+    /// <summary>
+    /// POST /api/payments/payos-webhook: Nhận Webhook IPN trực tiếp từ PayOS khi khách chuyển khoản thành công.
+    /// </summary>
+    /// <summary>
+    /// GET /api/payments/payos-webhook: Kiểm tra trạng thái hoạt động của webhook endpoint.
+    /// </summary>
+    [HttpGet("payos-webhook")]
+    public ActionResult<ApiResponse<string>> PayOSWebhookHealth()
+    {
+        return Ok(ApiResponse<string>.Ok("SportSpot PayOS Webhook endpoint is active and healthy!"));
+    }
+
+    [HttpPost("payos-webhook")]
+    public async Task<ActionResult<ApiResponse<object>>> PayOSWebhook([FromBody] PayOS.Models.Webhooks.Webhook webhook)
+    {
+        var result = await _paymentService.ProcessPayOSWebhookAsync(webhook);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    /// <summary>
+    /// POST /api/payments/confirm-payos-webhook: Xác nhận Webhook URL với PayOS.
+    /// </summary>
+    [HttpPost("confirm-payos-webhook")]
+    public async Task<ActionResult<ApiResponse<string>>> ConfirmPayOSWebhook([FromBody] ConfirmWebhookDto dto)
+    {
+        var result = await _paymentService.ConfirmPayOSWebhookUrlAsync(dto.WebhookUrl);
+        return StatusCode(result.StatusCode, result);
+    }
+
     /// <summary>
     /// POST /api/payments/mock-pay/{bookingCode}: Kích hoạt thanh toán giả lập thành công tức thì để cả nhóm test sinh vé QR.
     /// </summary>

@@ -51,13 +51,13 @@ class TicketProvider extends ChangeNotifier {
 
     try {
       final res = await _repository.getMyTickets(forceOffline: _isOfflineMode);
-      _tickets = res.tickets;
+      _tickets = List<TicketModel>.from(res.tickets);
       _isFromSqliteOffline = res.isFromSqliteOffline;
 
       final walletRes = await _repository.getWalletAndHistory();
       _walletBalance = walletRes.walletBalance > 0 ? walletRes.walletBalance : (_walletBalance > 0 ? _walletBalance : 320000);
       _escrowHoldingTotal = walletRes.escrowHoldingTotal > 0 ? walletRes.escrowHoldingTotal : 120000;
-      _transactions = walletRes.transactions;
+      _transactions = List<TransactionHistoryModel>.from(walletRes.transactions);
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
     } finally {

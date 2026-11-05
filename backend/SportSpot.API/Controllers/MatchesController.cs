@@ -1,7 +1,6 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using SportSpot.Services.DTOs;
 using SportSpot.Services.Interfaces;
 
@@ -46,7 +45,6 @@ public class MatchesController(IMatchService matches, IWebHostEnvironment enviro
         return StatusCode(result.StatusCode, result);
     }
 
-
     [HttpPost("{id:int}/guest-join")]
     public async Task<IActionResult> GuestJoin(int id, GuestJoinMatchRequest request)
     {
@@ -86,57 +84,17 @@ public class MatchesController(IMatchService matches, IWebHostEnvironment enviro
     }
 
     [HttpGet("{id:int}/comments")]
-    public async Task<IActionResult> GetComments(int id, [FromServices] SportSpot.Data.Context.SportSpotDbContext db)
+    public async Task<IActionResult> GetComments(int id)
     {
-        var comments = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
-            db.MatchComments
-                .Include(c => c.User)
-                .Where(c => c.MatchId == id)
-                .OrderBy(c => c.CreatedAt)
-                .Select(c => new MatchCommentDto
-                {
-                    Id = c.Id,
-                    MatchId = c.MatchId,
-                    UserId = c.UserId,
-                    UserName = c.User != null ? c.User.FullName : "Thành viên",
-                    UserAvatarUrl = c.User != null ? c.User.AvatarUrl : null,
-                    Content = c.Content,
-                    CreatedAt = c.CreatedAt
-                })
-        );
-        return Ok(ApiResponse<List<MatchCommentDto>>.Ok(comments));
+        var result = await matches.GetMatchCommentsAsync(id);
+        return StatusCode(result.StatusCode, result);
     }
 
     [HttpPost("{id:int}/comments")]
-    public async Task<IActionResult> AddComment(int id, [FromBody] CreateMatchCommentRequest request, [FromServices] SportSpot.Data.Context.SportSpotDbContext db)
+    public async Task<IActionResult> AddComment(int id, [FromBody] CreateMatchCommentRequest request)
     {
-        var uid = UserId > 0 ? UserId : 1;
-        var user = await db.Users.FindAsync(uid);
-        var match = await db.OpenMatches.FindAsync(id);
-        if (match == null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy trận đấu", 404));
-        if (string.IsNullOrWhiteSpace(request.Content)) return BadRequest(ApiResponse<object>.Fail("Nội dung không được để trống", 400));
-
-        var comment = new SportSpot.Data.Entities.MatchComment
-        {
-            MatchId = id,
-            UserId = uid,
-            Content = request.Content.Trim(),
-            CreatedAt = DateTime.UtcNow
-        };
-        db.MatchComments.Add(comment);
-        await db.SaveChangesAsync();
-
-        var dto = new MatchCommentDto
-        {
-            Id = comment.Id,
-            MatchId = comment.MatchId,
-            UserId = comment.UserId,
-            UserName = user?.FullName ?? "Thành viên",
-            UserAvatarUrl = user?.AvatarUrl,
-            Content = comment.Content,
-            CreatedAt = comment.CreatedAt
-        };
-        return Ok(ApiResponse<MatchCommentDto>.Ok(dto, "Gửi bình luận thành công"));
+        var result = await matches.AddMatchCommentAsync(id, UserId, request);
+        return StatusCode(result.StatusCode, result);
     }
 
     private int UserId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;

@@ -56,6 +56,11 @@ public class TopUpWalletRequest
     public string PaymentGateway { get; set; } = "VNPay";
 }
 
+public class ConfirmWebhookDto
+{
+    public string WebhookUrl { get; set; } = string.Empty;
+}
+
 public class WithdrawWalletRequest
 {
     public int UserId { get; set; }

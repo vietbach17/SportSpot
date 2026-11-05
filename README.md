@@ -62,3 +62,37 @@ flutter pub get
 flutter run
 ```
 * *(Lưu ý: Trên máy ảo Android Emulator, địa chỉ gọi về Backend localhost trên máy tính là `http://10.0.2.2:5000`).*
+
+---
+
+## 💳 Tích Hợp Cổng Thanh Toán VietQR payOS & Ngrok Webhook
+
+Hệ thống hỗ trợ thanh toán cọc trực tuyến qua cổng **VietQR payOS** kết hợp cơ chế ký quỹ **Escrow Holding**:
+
+1. **Cấu hình Khóa Bí Mật (`.env`):**
+   - Sao chép file `.env.example` thành `.env` và điền các khóa `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`.
+   - **Bảo mật:** File `.env` và binary `ngrok.exe` đã được cấu hình trong `.gitignore`, tuyệt đối không commit lên Git repository.
+2. **Khởi động Ngrok Tunnel:**
+   - Nhấp đúp file [`start-ngrok.bat`](./start-ngrok.bat) (hoặc chạy trong Docker WSL qua [`start-ngrok-wsl.bat`](./start-ngrok-wsl.bat)).
+   - Web UI Dashboard: `http://localhost:4040`.
+3. **Đăng ký Webhook IPN:**
+   - Đường dẫn webhook tự động: `https://<your-domain>/api/payments/payos-webhook`.
+   - Backend tự động xác thực chữ ký HMAC-SHA256, chuyển trạng thái đơn sang `Upcoming` và phát hành vé điện tử QR an toàn.
+
+---
+
+## 🧪 Kiểm Thử Tự Động (Automated Testing)
+
+Toàn bộ hệ thống được bảo vệ bởi **189 kịch bản kiểm thử tự động (Pass 100%)**:
+
+```bash
+# 1. Kiểm thử Backend Module 4 (Matchmaking & Split Cost - 44 checks)
+dotnet run --project backend/SportSpot.Module4.Tests
+
+# 2. Kiểm thử Backend Module 5 (Full System Integration & Escrow - 70 checks)
+dotnet run --project backend/SportSpot.Module5.Tests
+
+# 3. Kiểm thử Frontend Flutter (14 test suites, 75 widget & RBAC role tests)
+cd frontend && flutter test
+```
+

@@ -66,7 +66,6 @@ class VenueBookingModal extends StatelessWidget {
   }
 
 
-
   List<String> get _images {
     List<String> list = [];
     try {

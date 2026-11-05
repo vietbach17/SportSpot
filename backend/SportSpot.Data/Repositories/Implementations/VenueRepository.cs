@@ -59,4 +59,28 @@ public class VenueRepository : GenericRepository<Venue>, IVenueRepository
             .Select(bd => bd.SlotId)
             .ToListAsync();
     }
+
+    public async Task<List<int>> GetFavoriteVenueIdsAsync(int userId)
+    {
+        return await _context.FavoriteVenues
+            .Where(f => f.UserId == userId)
+            .Select(f => f.VenueId)
+            .ToListAsync();
+    }
+
+    public async Task<FavoriteVenue?> GetFavoriteVenueAsync(int userId, int venueId)
+    {
+        return await _context.FavoriteVenues
+            .FirstOrDefaultAsync(f => f.UserId == userId && f.VenueId == venueId);
+    }
+
+    public async Task AddFavoriteVenueAsync(FavoriteVenue favorite)
+    {
+        await _context.FavoriteVenues.AddAsync(favorite);
+    }
+
+    public void RemoveFavoriteVenue(FavoriteVenue favorite)
+    {
+        _context.FavoriteVenues.Remove(favorite);
+    }
 }

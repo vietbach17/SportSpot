@@ -130,6 +130,11 @@ public class TicketService : ITicketService
             return ApiResponse<object>.Fail("Đơn đặt sân này đã bị hủy, không thể check-in", 400);
         }
 
+        if (booking.PlayDate < DateOnly.FromDateTime(MatchRules.VietnamNow))
+        {
+            return ApiResponse<object>.Fail("Vé này đã quá hạn sử dụng (ngày thi đấu đã qua)", 400);
+        }
+
         // Trường hợp 1: Quét vé của Thành viên ghép kèo vãng lai (JoinedPlayer)
         if (string.Equals(role, "JoinedPlayer", StringComparison.OrdinalIgnoreCase))
         {

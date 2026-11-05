@@ -157,7 +157,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF111216) : const Color(0xFFF7F8FA);
     final cardColor = isDark ? const Color(0xFF191A20) : Colors.white;
-    final borderColor = isDark
+final borderColor = isDark
         ? const Color(0xFF2E313A)
         : const Color(0xFFE5E7EB);
     final textColor = isDark
@@ -166,6 +166,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     final mutedColor = isDark
         ? const Color(0xFF94A3B8)
         : const Color(0xFF6B7280);
+
 
     final tickets = _filteredTickets;
     final reminders = _provider.upcomingReminders;

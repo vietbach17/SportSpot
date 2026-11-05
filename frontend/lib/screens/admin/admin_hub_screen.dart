@@ -286,9 +286,12 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
                     children: [
                       Row(
                         children: [
-                          Text(
-                            'SportSpot System Admin',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textC),
+                          Flexible(
+                            child: Text(
+                              'SportSpot System Admin',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textC),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                           const SizedBox(width: 6),
                           Container(
@@ -410,10 +413,14 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Chỉ Số Vận Hành Ghép Kèo (Module 4 & 5)',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textC),
+                  Flexible(
+                    child: Text(
+                      'Chỉ Số Vận Hành Ghép Kèo (Module 4 & 5)',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textC),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                  const SizedBox(width: 6),
                   const Icon(Icons.speed_rounded, color: Color(0xFF00A859), size: 20),
                 ],
               ),
@@ -452,9 +459,12 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
               children: [
                 Icon(Icons.download_rounded, color: Colors.white, size: 20),
                 SizedBox(width: 8),
-                Text(
-                  'Xuất Toàn Bộ Báo Cáo Kế Toán & Đối Soát (Excel)',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                Flexible(
+                  child: Text(
+                    'Xuất Toàn Bộ Báo Cáo Kế Toán & Đối Soát (Excel)',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -476,7 +486,7 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
     required Color borderC,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(14),
@@ -527,7 +537,14 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: TextStyle(fontSize: 12, color: textC, fontWeight: FontWeight.w500)),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 12, color: textC, fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
             Text(percentText, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
           ],
         ),

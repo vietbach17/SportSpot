@@ -445,13 +445,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          isGuest ? 'Khách Vãng Lai (Guest)' : (user.fullName.isNotEmpty ? user.fullName : 'Hội Viên'),
-                          style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w900,
-                            color: textColor,
-                            letterSpacing: 0,
+                        Flexible(
+                          child: Text(
+                            isGuest ? 'Khách Vãng Lai (Guest)' : (user.fullName.isNotEmpty ? user.fullName : 'Hội Viên'),
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                              color: textColor,
+                              letterSpacing: 0,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -493,8 +498,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
 
                     ] else
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 6,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -514,7 +522,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
                           OutlinedButton.icon(
                             onPressed: () => _showEditProfileSheet(context, auth),
                             icon: const Icon(Icons.edit_note_rounded, size: 16),
@@ -654,26 +661,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(7),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE11D48).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE11D48).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.favorite_rounded, color: Color(0xFFE11D48), size: 18),
                               ),
-                              child: const Icon(Icons.favorite_rounded, color: Color(0xFFE11D48), size: 18),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Sân Yêu Thích (${favoriteVenues.length})',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: textColor,
+                              const SizedBox(width: 10),
+                              Flexible(
+                                child: Text(
+                                  'Sân Yêu Thích (${favoriteVenues.length})',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: textColor,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         if (favoriteVenues.isNotEmpty)
                           InkWell(
@@ -1373,32 +1385,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                sport.contains('Cầu lông')
-                                                    ? Icons.sports_tennis_rounded
-                                                    : sport.contains('Pickleball')
-                                                        ? Icons.sports_tennis
-                                                        : sport.contains('Bóng đá')
-                                                            ? Icons.sports_soccer_rounded
-                                                            : sport.contains('Bóng rổ')
-                                                                ? Icons.sports_basketball_rounded
-                                                                : Icons.sports_baseball_rounded,
-                                                size: 16,
-                                                color: const Color(0xFF00A859),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                sport,
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: textColor,
+                                          Expanded(
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  sport.contains('Cầu lông')
+                                                      ? Icons.sports_tennis_rounded
+                                                      : sport.contains('Pickleball')
+                                                          ? Icons.sports_tennis
+                                                          : sport.contains('Bóng đá')
+                                                              ? Icons.sports_soccer_rounded
+                                                              : sport.contains('Bóng rổ')
+                                                                  ? Icons.sports_basketball_rounded
+                                                                  : Icons.sports_baseball_rounded,
+                                                  size: 16,
+                                                  color: const Color(0xFF00A859),
                                                 ),
-                                              ),
-                                            ],
+                                                const SizedBox(width: 6),
+                                                Flexible(
+                                                  child: Text(
+                                                    sport,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w800,
+                                                      color: textColor,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
+                                          const SizedBox(width: 8),
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                             decoration: BoxDecoration(
@@ -1539,6 +1557,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Text(
                 subtitle,
                 style: TextStyle(fontSize: 11, color: mutedColor),
+maxLines: 1,
+
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
               ),

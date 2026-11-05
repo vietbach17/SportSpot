@@ -1,3 +1,4 @@
+using SportSpot.Data.Entities;
 using SportSpot.Data.Repositories.Interfaces;
 using SportSpot.Services.DTOs;
 using SportSpot.Services.Helpers;
@@ -193,5 +194,48 @@ public class VenueService : IVenueService
         }).ToList();
 
         return ApiResponse<List<TimeSlotStatusDto>>.Ok(slotStatuses, "Lấy danh sách khung giờ thành công");
+    }
+
+    public async Task<ApiResponse<List<int>>> GetFavoriteVenueIdsAsync(int userId)
+    {
+        var uid = userId > 0 ? userId : 1;
+        var favoriteIds = await _unitOfWork.Venues.GetFavoriteVenueIdsAsync(uid);
+        return ApiResponse<List<int>>.Ok(favoriteIds);
+    }
+
+    public async Task<ApiResponse<FavoriteToggleResultDto>> ToggleFavoriteAsync(int venueId, int userId)
+    {
+        var uid = userId > 0 ? userId : 1;
+        var existing = await _unitOfWork.Venues.GetFavoriteVenueAsync(uid, venueId);
+
+        bool isFavorite;
+        string message;
+
+        if (existing != null)
+        {
+            _unitOfWork.Venues.RemoveFavoriteVenue(existing);
+            isFavorite = false;
+            message = "Đã bỏ yêu thích cụm sân";
+        }
+        else
+        {
+            await _unitOfWork.Venues.AddFavoriteVenueAsync(new FavoriteVenue
+            {
+                UserId = uid,
+                VenueId = venueId,
+                CreatedAt = DateTime.UtcNow
+            });
+            isFavorite = true;
+            message = "Đã thêm sân vào danh sách yêu thích";
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+
+        return ApiResponse<FavoriteToggleResultDto>.Ok(new FavoriteToggleResultDto
+        {
+            VenueId = venueId,
+            IsFavorite = isFavorite,
+            Message = message
+        }, message);
     }
 }

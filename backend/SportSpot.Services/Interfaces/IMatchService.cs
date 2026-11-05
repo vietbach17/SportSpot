@@ -14,4 +14,6 @@ public interface IMatchService
     Task<ApiResponse<object>> StopRecruitingAsync(int matchId, int hostUserId);
     Task<ApiResponse<object>> LeaveMatchAsync(int matchId, int userId);
     Task<ApiResponse<object>> GuestJoinMatchAsync(int matchId, GuestJoinMatchRequest request);
+    Task<ApiResponse<List<MatchCommentDto>>> GetMatchCommentsAsync(int matchId);
+    Task<ApiResponse<MatchCommentDto>> AddMatchCommentAsync(int matchId, int userId, CreateMatchCommentRequest request);
 }

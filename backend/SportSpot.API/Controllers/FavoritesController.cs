@@ -1,9 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SportSpot.Data.Context;
-using SportSpot.Data.Entities;
 using SportSpot.Services.DTOs;
+using SportSpot.Services.Interfaces;
 
 namespace SportSpot.API.Controllers;
 
@@ -11,65 +9,27 @@ namespace SportSpot.API.Controllers;
 [Route("api/[controller]")]
 public class FavoritesController : ControllerBase
 {
-    private readonly SportSpotDbContext _context;
+    private readonly IVenueService _venueService;
 
-    public FavoritesController(SportSpotDbContext context)
+    public FavoritesController(IVenueService venueService)
     {
-        _context = context;
+        _venueService = venueService;
     }
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<List<int>>>> GetFavoriteVenueIds([FromQuery] int? userId)
     {
         var uid = userId ?? GetCurrentUserId();
-        if (uid <= 0) uid = 1;
-
-        var favoriteIds = await _context.FavoriteVenues
-            .Where(f => f.UserId == uid)
-            .Select(f => f.VenueId)
-            .ToListAsync();
-
-        return Ok(ApiResponse<List<int>>.Ok(favoriteIds));
+        var result = await _venueService.GetFavoriteVenueIdsAsync(uid);
+        return StatusCode(result.StatusCode, result);
     }
 
     [HttpPost("{venueId}/toggle")]
     public async Task<ActionResult<ApiResponse<FavoriteToggleResultDto>>> ToggleFavorite(int venueId, [FromQuery] int? userId)
     {
         var uid = userId ?? GetCurrentUserId();
-        if (uid <= 0) uid = 1;
-
-        var existing = await _context.FavoriteVenues
-            .FirstOrDefaultAsync(f => f.UserId == uid && f.VenueId == venueId);
-
-        bool isFavorite;
-        string message;
-
-        if (existing != null)
-        {
-            _context.FavoriteVenues.Remove(existing);
-            isFavorite = false;
-            message = "Đã bỏ yêu thích cụm sân";
-        }
-        else
-        {
-            _context.FavoriteVenues.Add(new FavoriteVenue
-            {
-                UserId = uid,
-                VenueId = venueId,
-                CreatedAt = DateTime.UtcNow
-            });
-            isFavorite = true;
-            message = "Đã thêm sân vào danh sách yêu thích";
-        }
-
-        await _context.SaveChangesAsync();
-
-        return Ok(ApiResponse<FavoriteToggleResultDto>.Ok(new FavoriteToggleResultDto
-        {
-            VenueId = venueId,
-            IsFavorite = isFavorite,
-            Message = message
-        }, message));
+        var result = await _venueService.ToggleFavoriteAsync(venueId, uid);
+        return StatusCode(result.StatusCode, result);
     }
 
     private int GetCurrentUserId()

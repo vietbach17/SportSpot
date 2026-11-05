@@ -1,11 +1,15 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using SportSpot.Data.Context;
 using SportSpot.Data.Entities;
 using SportSpot.Data.Repositories.Implementations;
 using SportSpot.Services.DTOs;
 using SportSpot.Services.Helpers;
 using SportSpot.Services.Implementations;
+using SportSpot.Services.Interfaces;
 
 using var connection = new SqliteConnection("Data Source=:memory:");
 connection.Open();
@@ -115,13 +119,51 @@ using (var db = Context())
     Check(!badScan.Success, "VerifyQr rejects tampered QR checksum");
 
     var goodScan = await ticketSvc.VerifyQrAndSettleEscrowAsync(new CheckInRequest { QrPayload = qrToScan });
-    Check(goodScan.Success, "VerifyQr succeeds and settles Escrow to venue owner");
+    Check(goodScan.Success && goodScan.Data != null, "VerifyQr succeeds and settles Escrow to venue owner");
 
     var dupScan = await ticketSvc.VerifyQrAndSettleEscrowAsync(new CheckInRequest { QrPayload = qrToScan });
     Check(!dupScan.Success, "Duplicate QR check-in is rejected");
 
     var settledTxs = await db.Transactions.Where(t => t.BookingId == bookingCheckInId).ToListAsync();
     Check(settledTxs.All(t => t.Status == "Settled"), "All Holding transactions transitioned to Settled after check-in");
+
+    // 3.5 Test Cancelled booking check-in rejection
+    var cancelledBooking = new Booking
+    {
+        BookingCode = "SP-CANCELLED",
+        UserId = 1,
+        SubVenueId = 1,
+        PlayDate = DateOnly.FromDateTime(MatchRules.VietnamNow).AddDays(2),
+        CourtPrice = 100000,
+        TotalPrice = 100000,
+        DepositAmount = 30000,
+        RemainingBalance = 70000,
+        Status = "Cancelled"
+    };
+    db.Bookings.Add(cancelledBooking);
+    await db.SaveChangesAsync();
+    var cancelledQr = QrChecksumHelper.BuildSignedQrPayload("SP-CANCELLED", 1, "Host");
+    var cancelledCheckIn = await ticketSvc.VerifyQrAndSettleEscrowAsync(new CheckInRequest { QrPayload = cancelledQr });
+    Check(!cancelledCheckIn.Success && cancelledCheckIn.StatusCode == 400, "Cancelled booking check-in is rejected with 400");
+
+    // 3.6 Test Expired / Past play date QR check-in rejection
+    var expiredBooking = new Booking
+    {
+        BookingCode = "SP-EXPIRED01",
+        UserId = 1,
+        SubVenueId = 1,
+        PlayDate = DateOnly.FromDateTime(MatchRules.VietnamNow).AddDays(-3), // 3 days in the past
+        CourtPrice = 100000,
+        TotalPrice = 100000,
+        DepositAmount = 30000,
+        RemainingBalance = 70000,
+        Status = "Upcoming"
+    };
+    db.Bookings.Add(expiredBooking);
+    await db.SaveChangesAsync();
+    var expiredQr = QrChecksumHelper.BuildSignedQrPayload("SP-EXPIRED01", 1, "Host");
+    var expiredCheckIn = await ticketSvc.VerifyQrAndSettleEscrowAsync(new CheckInRequest { QrPayload = expiredQr });
+    Check(!expiredCheckIn.Success && expiredCheckIn.StatusCode == 400, "Expired past play date booking check-in is rejected with 400");
 }
 
 // Helper to create a booking at an exact offset (in hours) from MatchRules.VietnamNow
@@ -409,8 +451,7 @@ using (var db = Context())
     Check(comments.Count > 0 && comments.First().Content.Contains("giày sân thảm"), "Match discussion comment saved and retrieved");
 }
 
-
-// 12. Test FCM Push Service (Token & Push notifications)
+// 13. Test FCM Push Service (Token & Push notifications)
 using (var db = Context())
 {
     var fcmConfig = new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build();
@@ -498,6 +539,193 @@ using (var db = Context())
     Check(user != null && user.FavoriteSports != null && user.FavoriteSports.Contains("Cầu lông"), "User.FavoriteSports is kept in sync with UserSkills");
 }
 
+// 14. Test Payment Wallet Withdrawal (POST /api/payments/withdraw)
+using (var db = Context())
+{
+    var uow = Uow(db);
+    var paymentSvc = new PaymentService(uow);
+
+    // 14.1 Invalid User Id (<= 0) -> 401
+    var resInvalidUser = await paymentSvc.WithdrawWalletAsync(new WithdrawWalletRequest
+    {
+        UserId = 0,
+        Amount = 50000,
+        BankName = "MBBank",
+        AccountNumber = "0987654321",
+        AccountHolder = "NGUYEN VAN HUY"
+    });
+    Check(!resInvalidUser.Success && resInvalidUser.StatusCode == 401, "Withdraw with UserId <= 0 rejected with 401");
+
+    // 14.2 Invalid Amount (<= 0) -> 400
+    var resInvalidAmount = await paymentSvc.WithdrawWalletAsync(new WithdrawWalletRequest
+    {
+        UserId = 1,
+        Amount = 0,
+        BankName = "MBBank",
+        AccountNumber = "0987654321",
+        AccountHolder = "NGUYEN VAN HUY"
+    });
+    Check(!resInvalidAmount.Success && resInvalidAmount.StatusCode == 400, "Withdraw with Amount <= 0 rejected with 400");
+
+    // 14.2b Amount less than 50k minimum -> 400
+    var resBelowMin = await paymentSvc.WithdrawWalletAsync(new WithdrawWalletRequest
+    {
+        UserId = 1,
+        Amount = 20000, // < 50k
+        BankName = "MBBank",
+        AccountNumber = "0987654321",
+        AccountHolder = "NGUYEN VAN HUY"
+    });
+    Check(!resBelowMin.Success && resBelowMin.StatusCode == 400, "Withdraw below minimum 50,000 VND rejected with 400");
+
+    // 14.3 Amount exceeding WalletBalance -> 400
+    var user1 = await db.Users.FindAsync(1);
+    var currentBalance = user1?.WalletBalance ?? 0;
+    var resExceeding = await paymentSvc.WithdrawWalletAsync(new WithdrawWalletRequest
+    {
+        UserId = 1,
+        Amount = currentBalance + 500000,
+        BankName = "MBBank",
+        AccountNumber = "0987654321",
+        AccountHolder = "NGUYEN VAN HUY"
+    });
+    Check(!resExceeding.Success && resExceeding.StatusCode == 400, "Withdraw exceeding WalletBalance rejected with 400");
+
+    // 14.4 Valid withdrawal request
+    user1!.WalletBalance = 200000;
+    await db.SaveChangesAsync();
+
+    var withdrawAmount = 50000;
+    var resSuccess = await paymentSvc.WithdrawWalletAsync(new WithdrawWalletRequest
+    {
+        UserId = 1,
+        Amount = withdrawAmount,
+        BankName = "MBBank",
+        AccountNumber = "0987654321",
+        AccountHolder = "NGUYEN VAN HUY"
+    });
+    Check(resSuccess.Success && resSuccess.StatusCode == 200, "Valid bank withdrawal succeeds with 200");
+    Check(resSuccess.Data!.WalletBalance == 150000, "Wallet balance accurately deducted (200k - 50k = 150k)");
+
+    var withdrawTx = await db.Transactions
+        .Where(t => t.UserId == 1 && t.Amount == withdrawAmount && t.TransactionCode.StartsWith("WD-"))
+        .OrderByDescending(t => t.Id)
+        .FirstOrDefaultAsync();
+    Check(withdrawTx != null, "Withdrawal transaction recorded in database");
+    Check(withdrawTx!.PaymentGateway.Contains("MBBank"), "Transaction records bank name and account");
+    Check(withdrawTx.Status == "Settled", "Withdrawal status is Settled");
+
+    // 14.5 Concurrent double-withdrawal prevention
+    user1.WalletBalance = 80000;
+    await db.SaveChangesAsync();
+    var withdraw1 = await paymentSvc.WithdrawWalletAsync(new WithdrawWalletRequest
+    {
+        UserId = 1,
+        Amount = 50000,
+        BankName = "MBBank",
+        AccountNumber = "0987654321",
+        AccountHolder = "NGUYEN VAN HUY"
+    });
+    Check(withdraw1.Success && withdraw1.Data!.WalletBalance == 30000, "First concurrent withdrawal of 50k succeeds");
+
+    var withdraw2 = await paymentSvc.WithdrawWalletAsync(new WithdrawWalletRequest
+    {
+        UserId = 1,
+        Amount = 50000, // now 50k > 30k balance
+        BankName = "MBBank",
+        AccountNumber = "0987654321",
+        AccountHolder = "NGUYEN VAN HUY"
+    });
+    Check(!withdraw2.Success && withdraw2.StatusCode == 400, "Second concurrent withdrawal rejected due to insufficient balance");
+}
+
+// 15. Test Auth Service Email OTP & Password Management
+using (var db = Context())
+{
+    var uow = Uow(db);
+    var inMemConfig = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+    {
+        {"Jwt:Key", "SportSpotSecretKeyForJwtTesting12345678901234567890!"},
+        {"Jwt:Issuer", "SportSpotAuth"},
+        {"Jwt:Audience", "SportSpotUsers"}
+    }).Build();
+    var testJwtSvc = new JwtService(inMemConfig);
+    var testCache = new MemoryCache(new MemoryCacheOptions());
+    var testEmailSvc = new TestEmailService();
+    var authSvc = new AuthService(uow, testCache, testJwtSvc, testEmailSvc, NullLogger<AuthService>.Instance);
+
+    // 15.1 Send register email OTP
+    var sendOtpRes = await authSvc.SendRegisterEmailOtpAsync(new RequestRegisterOtpDto
+    {
+        Email = "testuser@sportspot.vn",
+        FullName = "Huy Test User"
+    });
+    Check(sendOtpRes.Success && sendOtpRes.StatusCode == 200, "Send register email OTP succeeds");
+    Check(!string.IsNullOrEmpty(testEmailSvc.LastOtp) && testEmailSvc.LastOtp.Length == 6, "6-digit OTP generated and dispatched via email");
+
+    // 15.2 Register with invalid OTP -> 400
+    var registerWrongOtp = await authSvc.RegisterWithEmailOtpAsync(new RegisterUserDto
+    {
+        Email = "testuser@sportspot.vn",
+        FullName = "Huy Test User",
+        PhoneNumber = "0988112233",
+        Password = "Password123!",
+        OtpCode = "000000"
+    });
+    Check(!registerWrongOtp.Success && registerWrongOtp.StatusCode == 400, "Register with incorrect OTP rejected");
+
+    // 15.3 Register with valid OTP -> 200 + token
+    var registerSuccess = await authSvc.RegisterWithEmailOtpAsync(new RegisterUserDto
+    {
+        Email = "testuser@sportspot.vn",
+        FullName = "Huy Test User",
+        PhoneNumber = "0988112233",
+        Password = "Password123!",
+        OtpCode = testEmailSvc.LastOtp!
+    });
+    Check(registerSuccess.Success && registerSuccess.StatusCode == 200, "Register with valid OTP succeeds");
+    Check(!string.IsNullOrEmpty(registerSuccess.Data!.AccessToken), "JWT Token returned upon successful registration");
+    Check(registerSuccess.Data.Email == "testuser@sportspot.vn", "Registered user profile matches");
+
+    // 15.4 Login with password
+    var loginWrongPass = await authSvc.LoginAsync(new LoginDto
+    {
+        Identifier = "testuser@sportspot.vn",
+        Password = "WrongPassword!"
+    });
+    Check(!loginWrongPass.Success && loginWrongPass.StatusCode == 401, "Login with wrong password returns 401");
+
+    var loginSuccess = await authSvc.LoginAsync(new LoginDto
+    {
+        Identifier = "testuser@sportspot.vn",
+        Password = "Password123!"
+    });
+    Check(loginSuccess.Success && loginSuccess.StatusCode == 200, "Login with correct credentials succeeds");
+    Check(!string.IsNullOrEmpty(loginSuccess.Data!.AccessToken), "JWT Token generated upon successful login");
+
+    // 15.5 Send Password Reset OTP & Change Password
+    var sendResetOtpRes = await authSvc.SendChangePasswordOtpAsync(new RequestPasswordOtpDto
+    {
+        Email = "testuser@sportspot.vn"
+    });
+    Check(sendResetOtpRes.Success && sendResetOtpRes.StatusCode == 200, "Send password reset OTP succeeds");
+
+    var changePassRes = await authSvc.ChangePasswordWithOtpAsync(new ChangePasswordWithOtpDto
+    {
+        Email = "testuser@sportspot.vn",
+        OtpCode = testEmailSvc.LastOtp!,
+        NewPassword = "NewStrongPassword456!"
+    });
+    Check(changePassRes.Success && changePassRes.StatusCode == 200, "Change password with OTP succeeds");
+
+    var loginWithNewPass = await authSvc.LoginAsync(new LoginDto
+    {
+        Identifier = "testuser@sportspot.vn",
+        Password = "NewStrongPassword456!"
+    });
+    Check(loginWithNewPass.Success && loginWithNewPass.StatusCode == 200, "Login with new password succeeds after OTP reset");
+}
+
 Console.WriteLine($"All {passed} Module 5 backend checks passed!");
 
 class TestConfig : Microsoft.Extensions.Configuration.IConfiguration
@@ -518,3 +746,23 @@ class DummyChangeToken : Microsoft.Extensions.Primitives.IChangeToken
 }
 
 class DummyDisposable : IDisposable { public void Dispose() {} }
+
+class TestEmailService : IEmailService
+{
+    public string? LastOtp { get; private set; }
+    public string? LastEmail { get; private set; }
+
+    public Task<bool> SendOtpEmailAsync(string toEmail, string fullName, string otpCode, string purpose = "Đăng ký tài khoản")
+    {
+        LastEmail = toEmail;
+        LastOtp = otpCode;
+        return Task.FromResult(true);
+    }
+
+    public Task<bool> SendPasswordResetEmailAsync(string toEmail, string fullName, string otpCode)
+    {
+        LastEmail = toEmail;
+        LastOtp = otpCode;
+        return Task.FromResult(true);
+    }
+}

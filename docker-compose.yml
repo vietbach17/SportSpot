@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: sportspot_ngrok
+    restart: unless-stopped
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: >
+      http
+      ${NGROK_DOMAIN:+--url=${NGROK_DOMAIN}}
+      ${BACKEND_HOST:-host.docker.internal}:5000
+    ports:
+      - "4040:4040"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

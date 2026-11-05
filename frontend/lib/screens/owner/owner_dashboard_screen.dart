@@ -305,13 +305,21 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'QUẢN LÝ SÂN CON (${data.subVenues.length})',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: mutedColor, letterSpacing: 0.2),
+              Flexible(
+                child: Text(
+                  'QUẢN LÝ SÂN CON (${data.subVenues.length})',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: mutedColor, letterSpacing: 0.2),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              Text(
-                'Bật/Tắt bảo trì tức thì',
-                style: TextStyle(fontSize: 11.5, color: mutedColor),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Bật/Tắt bảo trì tức thì',
+                  style: TextStyle(fontSize: 11.5, color: mutedColor),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
               ),
             ],
           ),
@@ -377,9 +385,12 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: mutedColor),
+              Flexible(
+                child: Text(
+                  title,
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: mutedColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               Icon(icon, size: 18, color: iconColor),
             ],
@@ -438,10 +449,14 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Chạm vào cột ngày để xem chi tiết',
-                style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: mutedColor),
+              Flexible(
+                child: Text(
+                  'Chạm vào cột ngày để xem chi tiết',
+                  style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: mutedColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
@@ -465,16 +480,17 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
               final heightRatio = (d.revenue / maxVal).clamp(0.12, 1.0);
               final barHeight = 75.0 * heightRatio;
 
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedDayIndex = idx;
-                  });
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              return Expanded(
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedDayIndex = idx;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? const Color(0xFF00A859).withValues(alpha: 0.12)
@@ -541,7 +557,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                     ],
                   ),
                 ),
-              );
+              ));
             }),
           ),
           const SizedBox(height: 14),
@@ -574,13 +590,21 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              '${selectedDay.dayOfWeek} (${selectedDay.date})',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
+                            Flexible(
+                              child: Text(
+                                '${selectedDay.dayOfWeek} (${selectedDay.date})',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            Text(
-                              _formatCurrency(selectedDay.revenue),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF00A859)),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                _formatCurrency(selectedDay.revenue),
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF00A859)),
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.end,
+                              ),
                             ),
                           ],
                         ),
@@ -769,35 +793,42 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Icon(
-                sv.isActive ? Icons.sports_tennis_rounded : Icons.handyman_rounded,
-                size: 20,
-                color: sv.isActive ? const Color(0xFF16A34A) : Colors.orange,
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    sv.name,
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textColor),
+          Expanded(
+            child: Row(
+              children: [
+                Icon(
+                  sv.isActive ? Icons.sports_tennis_rounded : Icons.handyman_rounded,
+                  size: 20,
+                  color: sv.isActive ? const Color(0xFF16A34A) : Colors.orange,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sv.name,
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textColor),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        sv.isActive
+                            ? '${sv.bookedSlotsToday}/${sv.totalSlotsToday} slots hôm nay đã đặt'
+                            : 'Đang tạm đóng để bảo trì',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: sv.isActive ? mutedColor : Colors.orange.shade700,
+                          fontWeight: sv.isActive ? FontWeight.normal : FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  Text(
-                    sv.isActive
-                        ? '${sv.bookedSlotsToday}/${sv.totalSlotsToday} slots hôm nay đã đặt'
-                        : 'Đang tạm đóng để bảo trì',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: sv.isActive ? mutedColor : Colors.orange.shade700,
-                      fontWeight: sv.isActive ? FontWeight.normal : FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 6),
           Switch(
             value: sv.isActive,
             activeTrackColor: const Color(0xFF16A34A),
@@ -843,10 +874,14 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                b.bookingCode,
-                style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w900, fontSize: 13),
+              Flexible(
+                child: Text(
+                  b.bookingCode,
+                  style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w900, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(6)),
@@ -871,13 +906,21 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Tổng: ${_formatCurrency(b.totalPrice)}',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: textColor),
+              Flexible(
+                child: Text(
+                  'Tổng: ${_formatCurrency(b.totalPrice)}',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: textColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              Text(
-                'Cọc: ${_formatCurrency(b.depositAmount)}',
-                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Cọc: ${_formatCurrency(b.depositAmount)}',
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
               ),
             ],
           ),

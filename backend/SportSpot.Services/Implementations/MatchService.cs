@@ -240,4 +240,56 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
         Members = m.MatchMembers.OrderBy(mm => mm.JoinedAt).Select(mm => new MatchMemberDto(
             mm.Id, mm.UserId, mm.User?.FullName ?? (mm.MemberType == "GuestWalkIn" ? "Khách vãng lai" : "Khách tại quầy"), mm.User?.AvatarUrl, mm.MemberType)).ToList()
     };
+
+    public async Task<ApiResponse<List<MatchCommentDto>>> GetMatchCommentsAsync(int matchId)
+    {
+        var comments = await db.MatchComments
+            .Include(c => c.User)
+            .Where(c => c.MatchId == matchId)
+            .OrderBy(c => c.CreatedAt)
+            .Select(c => new MatchCommentDto
+            {
+                Id = c.Id,
+                MatchId = c.MatchId,
+                UserId = c.UserId,
+                UserName = c.User != null ? c.User.FullName : "Thành viên",
+                UserAvatarUrl = c.User != null ? c.User.AvatarUrl : null,
+                Content = c.Content,
+                CreatedAt = c.CreatedAt
+            })
+            .ToListAsync();
+
+        return ApiResponse<List<MatchCommentDto>>.Ok(comments);
+    }
+
+    public async Task<ApiResponse<MatchCommentDto>> AddMatchCommentAsync(int matchId, int userId, CreateMatchCommentRequest request)
+    {
+        var uid = userId > 0 ? userId : 1;
+        var user = await db.Users.FindAsync(uid);
+        var match = await db.OpenMatches.FindAsync(matchId);
+        if (match == null) return ApiResponse<MatchCommentDto>.Fail("Không tìm thấy trận đấu", 404);
+        if (string.IsNullOrWhiteSpace(request.Content)) return ApiResponse<MatchCommentDto>.Fail("Nội dung không được để trống", 400);
+
+        var comment = new MatchComment
+        {
+            MatchId = matchId,
+            UserId = uid,
+            Content = request.Content.Trim(),
+            CreatedAt = DateTime.UtcNow
+        };
+        db.MatchComments.Add(comment);
+        await db.SaveChangesAsync();
+
+        var dto = new MatchCommentDto
+        {
+            Id = comment.Id,
+            MatchId = comment.MatchId,
+            UserId = comment.UserId,
+            UserName = user?.FullName ?? "Thành viên",
+            UserAvatarUrl = user?.AvatarUrl,
+            Content = comment.Content,
+            CreatedAt = comment.CreatedAt
+        };
+        return ApiResponse<MatchCommentDto>.Ok(dto, "Gửi bình luận thành công");
+    }
 }

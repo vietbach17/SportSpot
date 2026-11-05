@@ -52,4 +52,16 @@ firebase-service-account.json
 **/google-services.json
 google-services.json
 
+# Binaries & Executables
+*.exe
+ngrok.exe
+ngrok
+
 graphify-out/
+
+# Local Test Suites (Preserved on developer machine only)
+frontend/test/auth_flow_test.dart
+frontend/test/booking_payment_integration_test.dart
+frontend/test/rbac_roles_flow_test.dart
+frontend/test/settings_theme_test.dart
+frontend/test/tickets_wallet_withdrawal_test.dart

@@ -264,9 +264,11 @@ class _BankWithdrawalDialogState extends State<BankWithdrawalDialog> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Số dư ví hoàn tiền:',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF047857)),
+                      const Flexible(
+                        child: Text(
+                          'Số dư ví hoàn tiền:',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF047857)),
+                        ),
                       ),
                       Text(
                         _formatVnd(balance),
@@ -366,7 +368,9 @@ class _BankWithdrawalDialogState extends State<BankWithdrawalDialog> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Số tiền muốn rút (VNĐ)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                    const Flexible(
+                      child: Text('Số tiền muốn rút (VNĐ)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                    ),
                     if (balance > 0)
                       GestureDetector(
                         onTap: () => setState(() => _amountController.text = balance.toString()),
@@ -392,6 +396,7 @@ class _BankWithdrawalDialogState extends State<BankWithdrawalDialog> {
                   validator: (val) {
                     final n = int.tryParse(val ?? '') ?? 0;
                     if (n <= 0) return 'Vui lòng nhập số tiền lớn hơn 0';
+                    if (n < 50000) return 'Số tiền rút tối thiểu là 50.000 đ';
                     if (n > balance) return 'Số tiền rút không được vượt quá số dư hiện có';
                     return null;
                   },

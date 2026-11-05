@@ -8,4 +8,8 @@ public interface IVenueRepository : IGenericRepository<Venue>
     Task<Venue?> GetVenueDetailByIdAsync(int id);
     Task<List<TimeSlot>> GetAllTimeSlotsOrderedAsync();
     Task<List<int>> GetBookedSlotIdsAsync(int subVenueId, DateOnly playDate);
+    Task<List<int>> GetFavoriteVenueIdsAsync(int userId);
+    Task<FavoriteVenue?> GetFavoriteVenueAsync(int userId, int venueId);
+    Task AddFavoriteVenueAsync(FavoriteVenue favorite);
+    void RemoveFavoriteVenue(FavoriteVenue favorite);
 }
