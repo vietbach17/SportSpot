@@ -1468,7 +1468,7 @@ class _MatchCard extends StatelessWidget {
                             onPressed: () => showRefereeSheet(context, m),
                             icon: const Icon(Icons.sports_rounded, size: 16, color: Color(0xFF00A859)),
                             label: Text(
-                              'Trọng tài',
+                              'Xem trọng tài',
                               style: TextStyle(
                                 fontFamily: AppTheme.headingFont,
                                 fontSize: 13,
