@@ -1,3 +1,6 @@
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../screens/auth/login_screen.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/sportspot_models.dart';
@@ -256,10 +259,27 @@ class VenueBookingModal extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
+                          onPressed: () async {
+                            AuthProvider? auth;
+                            try {
+                              auth = context.read<AuthProvider>();
+                            } catch (_) {}
+                            final nav = Navigator.of(context);
+                            final messenger = ScaffoldMessenger.of(context);
+                            nav.pop();
+                            if (auth != null && !auth.isAuthenticated) {
+                              messenger.hideCurrentSnackBar();
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Khách vãng lai chỉ được tham gia ghép trận có sẵn. Vui lòng đăng nhập để đặt sân!'),
+                                ),
+                              );
+                              await nav.push(
+                                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                              );
+                              if (!auth.isAuthenticated) return;
+                            }
+                            nav.push(
                               MaterialPageRoute(
                                 builder: (_) => CourtSlotsScreen(venueId: _venueId),
                               ),

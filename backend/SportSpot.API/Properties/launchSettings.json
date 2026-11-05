@@ -14,7 +14,11 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
+<<<<<<< HEAD
       "applicationUrl": "http://0.0.0.0:5000;http://localhost:5000",
+=======
+      "applicationUrl": "http://localhost:5000",
+>>>>>>> a31694a (feat(payment,auth): render in-app PayOS VietQR on mobile, enforce Guest login redirect on booking, and update docs)
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

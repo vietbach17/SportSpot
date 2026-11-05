@@ -257,6 +257,34 @@
 }
 ```
 
+
+#### `POST /api/payments/payos-webhook`
+* **Mô tả:** Nhận Webhook IPN thời gian thực từ cổng thanh toán PayOS khi người dùng quét mã VietQR chuyển khoản thành công.
+* **Response (200 OK):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Xác nhận Webhook PayOS thành công! Tiền cọc đã chuyển sang trạng thái tạm giữ Escrow (Holding)."
+}
+```
+
+#### `GET /api/payments/status/{bookingId}`
+* **Mô tả:** API để ứng dụng Mobile polling kiểm tra trạng thái thanh toán VietQR tự động mỗi 3 giây.
+* **Response (200 OK):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "bookingId": 17,
+    "bookingStatus": "Confirmed",
+    "transactionStatus": "Completed",
+    "isPaid": true
+  }
+}
+```
+
 #### `POST /api/payments/mock-pay/{bookingCode}`
 * **Response (200 OK):**
 ```json

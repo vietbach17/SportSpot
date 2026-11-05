@@ -138,4 +138,15 @@ public class PaymentsController : ControllerBase
         var claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return int.TryParse(claimValue, out var id) ? id : 0;
     }
+
+    /// <summary>
+    /// GET /api/payments/status/{bookingId}: Kiểm tra trạng thái thanh toán đơn (để client polling).
+    /// </summary>
+    [HttpGet("status/{bookingId}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetPaymentStatus(int bookingId)
+    {
+        var result = await _paymentService.GetPaymentStatusAsync(bookingId);
+        return StatusCode(result.StatusCode, result);
+    }
+
 }

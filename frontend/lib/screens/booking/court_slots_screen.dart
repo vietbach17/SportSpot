@@ -1,3 +1,5 @@
+import '../../providers/auth_provider.dart';
+import '../auth/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -381,7 +383,25 @@ class _CourtSlotsScreenState extends State<CourtSlotsScreen> {
                 const SizedBox(width: 16),
                 FilledButton.icon(
                   onPressed: hasSelection
-                      ? () {
+                      ? () async {
+                          AuthProvider? auth;
+                          try {
+                            auth = context.read<AuthProvider>();
+                          } catch (_) {}
+                          if (auth != null && !auth.isAuthenticated) {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Khách vãng lai chỉ được tham gia ghép trận có sẵn. Vui lòng đăng nhập để đặt sân!'),
+                              ),
+                            );
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            );
+                            if (!mounted || !auth.isAuthenticated) return;
+                          }
+                          if (!mounted) return;
                           Navigator.push(
                             context,
                             MaterialPageRoute(

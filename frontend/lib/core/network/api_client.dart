@@ -21,6 +21,7 @@ class ApiClient {
     final headers = {
       'Content-Type': 'application/json; charset=utf-8',
       'Accept': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
     };
 
     if (requiresAuth) {

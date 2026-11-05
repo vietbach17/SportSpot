@@ -13,4 +13,5 @@ public interface IPaymentService
     Task<ApiResponse<WalletAndHistoryDto>> GetUserTransactionsAsync(int userId);
     Task<ApiResponse<WalletAndHistoryDto>> TopUpWalletAsync(TopUpWalletRequest request);
     Task<ApiResponse<WalletAndHistoryDto>> WithdrawWalletAsync(WithdrawWalletRequest request);
+    Task<ApiResponse<object>> GetPaymentStatusAsync(int bookingId);
 }

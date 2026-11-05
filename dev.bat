@@ -91,7 +91,7 @@ goto MENU
 :: ================================================================
 :DO_START
 echo [*] Dang khoi dong Backend .NET 8 (Port 5000)...
-start "SportSpot Backend (Port 5000)" cmd /c "set SPORTSPOT_SERVER=BE && cd /d "%~dp0backend\SportSpot.API" && title SportSpot Backend (Port 5000) && dotnet run --urls http://localhost:5000 & exit 0"
+start "SportSpot Backend (Port 5000)" cmd /c "set SPORTSPOT_SERVER=BE && cd /d "%~dp0backend\SportSpot.API" && title SportSpot Backend (Port 5000) && dotnet run --no-launch-profile --urls http://0.0.0.0:5000 & exit 0"
 
 echo [*] Cho Backend on dinh trong 3 giay...
 timeout /t 3 > nul

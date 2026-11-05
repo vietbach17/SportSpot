@@ -15,6 +15,7 @@ import '../../widgets/confirm_action_sheet.dart';
 import '../../widgets/bounce_interaction.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../../widgets/brand_header.dart';
+import '../auth/login_screen.dart';
 import '../venues/venue_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
 
@@ -1031,7 +1032,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 10),
                     BounceTap(
-                      onTap: () {
+                      onTap: () async {
+                        final auth = context.read<AuthProvider>();
+                        if (!auth.isAuthenticated) {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Khách vãng lai chỉ được tham gia ghép trận có sẵn. Vui lòng đăng nhập để đặt sân!'),
+                            ),
+                          );
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          );
+                          if (!mounted || !auth.isAuthenticated) return;
+                        }
+                        if (!mounted) return;
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -1040,7 +1056,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          final auth = context.read<AuthProvider>();
+                          if (!auth.isAuthenticated) {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Khách vãng lai chỉ được tham gia ghép trận có sẵn. Vui lòng đăng nhập để đặt sân!'),
+                              ),
+                            );
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            );
+                            if (!mounted || !auth.isAuthenticated) return;
+                          }
+                          if (!mounted) return;
                           Navigator.push(
                             context,
                             MaterialPageRoute(
