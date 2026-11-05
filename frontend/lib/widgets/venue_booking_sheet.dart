@@ -65,13 +65,7 @@ class VenueBookingModal extends StatelessWidget {
     return 4.9;
   }
 
-  int get _price {
-    try {
-      if (venue is SportSpotVenue) return (venue as SportSpotVenue).priceFrom;
-      if (venue is VenueItemModel) return (venue as VenueItemModel).basePrice;
-    } catch (_) {}
-    return 90000;
-  }
+
 
   List<String> get _images {
     List<String> list = [];
