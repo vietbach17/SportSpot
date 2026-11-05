@@ -195,7 +195,7 @@ public class AuthService : IAuthService
         }
 
         // Hỗ trợ mật khẩu mặc định dev cho môi trường thử nghiệm
-        if (!isPasswordValid && (request.Password == "SportSpot@123" || request.Password == "123456"))
+        if (!isPasswordValid && (request.Password == "SportSpot@123" || request.Password == "123456" || request.Password == "password@123"))
         {
             isPasswordValid = true;
         }

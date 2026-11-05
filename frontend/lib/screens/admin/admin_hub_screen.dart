@@ -1,3 +1,4 @@
+import '../../core/network/api_client.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/brand_header.dart';
 import '../../widgets/bounce_interaction.dart';
@@ -54,7 +55,7 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
   final List<Map<String, dynamic>> _systemUsers = [
     {
       'id': 1,
-      'name': 'Phạm Việt Bách (Super Admin)',
+      'name': 'Admin',
       'email': 'admin@sportspot.vn',
       'phone': '0900000001',
       'role': 'Admin',
@@ -124,6 +125,21 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
     super.initState();
     final tabIdx = (widget.initialTabIndex >= 0 && widget.initialTabIndex < 3) ? widget.initialTabIndex : 0;
     _tabController = TabController(length: 3, vsync: this, initialIndex: tabIdx);
+    _loadLiveUsers();
+  }
+
+  Future<void> _loadLiveUsers() async {
+    try {
+      final res = await ApiClient().get('/api/admin/users', requiresAuth: false);
+      if (res is List && res.isNotEmpty && mounted) {
+        setState(() {
+          _systemUsers.clear();
+          for (final item in res) {
+            _systemUsers.add(Map<String, dynamic>.from(item as Map));
+          }
+        });
+      }
+    } catch (_) {}
   }
 
   @override

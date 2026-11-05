@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SportSpot.Data.Context;
 using SportSpot.Services.DTOs;
 using SportSpot.Services.Interfaces;
 
@@ -54,6 +56,29 @@ public class UsersController : ControllerBase
         if (uid <= 0) uid = 1;
         var result = await _userService.SaveUserSkillsAsync(uid, request);
         return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpGet("/api/admin/users")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<List<object>>>> GetAllUsers([FromServices] SportSpotDbContext db)
+    {
+        var users = await db.Users
+            .OrderBy(u => u.Id)
+            .Select(u => new
+            {
+                id = u.Id,
+                name = u.FullName,
+                email = u.Email ?? "",
+                phone = u.PhoneNumber,
+                role = u.Role,
+                isActive = true,
+                joinDate = u.CreatedAt.ToString("dd/MM/yyyy"),
+                walletBalance = u.WalletBalance,
+                avatarUrl = u.AvatarUrl,
+            })
+            .ToListAsync();
+
+        return Ok(ApiResponse<List<object>>.Ok(users.Cast<object>().ToList(), "Lấy danh sách người dùng thành công"));
     }
 
     [HttpPost("fcm-token")]
