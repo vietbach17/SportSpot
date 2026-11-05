@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/favorite_repository.dart';
+import '../../data/repositories/venue_repository.dart';
 import '../../data/models/venue_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/ticket_provider.dart';
@@ -27,16 +29,26 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final IFavoriteRepository _favoriteRepo = ApiFavoriteRepository();
   List<int> _favoriteVenueIds = [];
-  
+  StreamSubscription<void>? _favSub;
+
   @override
   void initState() {
     super.initState();
     _loadFavorites();
+    _favSub = _favoriteRepo.onFavoritesChanged.listen((_) {
+      if (mounted) _loadFavorites();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<AuthProvider>().fetchUserSkills();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _favSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadFavorites() async {
@@ -304,9 +316,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (_) {
       venueProvider = null;
     }
-    final favoriteVenues = venueProvider != null
-        ? venueProvider.venues.where((v) => _favoriteVenueIds.contains(v.id)).toList()
-        : <VenueItemModel>[];
+    final allVenues = (venueProvider != null && venueProvider.venues.isNotEmpty)
+        ? venueProvider.venues
+        : VenueRepository.fallbackVenues;
+    final favoriteVenues = allVenues.where((v) => _favoriteVenueIds.contains(v.id)).toList();
 
     final matchCount = isGuest
         ? (ticketProvider.tickets.isNotEmpty ? ticketProvider.tickets.length : 2)
@@ -821,12 +834,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    InkWell(
-                                      onTap: () => _toggleFavorite(v.id),
-                                      child: const Padding(
-                                        padding: EdgeInsets.all(4),
-                                        child: Icon(Icons.favorite_rounded, color: Color(0xFFE11D48), size: 18),
-                                      ),
+                                    IconButton(
+                                      icon: const Icon(Icons.favorite_rounded, color: Color(0xFFE11D48), size: 20),
+                                      tooltip: 'Bỏ yêu thích',
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                      onPressed: () => _toggleFavorite(v.id),
                                     ),
                                     const SizedBox(height: 6),
                                     SizedBox(
@@ -1187,7 +1200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (sport.toLowerCase().contains('cầu lông')) {
         title = 'Cầu lông';
-        subtitle = 'Nâng cao 4.0 • Xác thực bởi Host';
+        subtitle = 'Nâng cao 4.0';
         progress = 0.80;
         color = const Color(0xFF00A859);
       } else if (sport.toLowerCase().contains('pickleball')) {

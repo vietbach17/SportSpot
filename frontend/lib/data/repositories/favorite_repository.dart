@@ -1,12 +1,27 @@
+import 'dart:async';
 import '../../core/network/api_client.dart';
+
+/// Stream broadcast toàn cục thông báo sự kiện thay đổi danh sách yêu thích (thêm / xoá)
+final StreamController<void> _globalFavoritesChangedController =
+    StreamController<void>.broadcast();
 
 abstract class IFavoriteRepository {
   Future<List<int>> getFavoriteVenueIds({int? userId});
   Future<bool> toggleFavorite(int venueId, {int? userId});
+  Stream<void> get onFavoritesChanged;
 }
 
 class MockFavoriteRepository implements IFavoriteRepository {
-  final Set<int> _favoriteIds = {1};
+  static final Set<int> _favoriteIds = {1};
+
+  static void reset() {
+    _favoriteIds.clear();
+    _favoriteIds.add(1);
+    _globalFavoritesChangedController.add(null);
+  }
+
+  @override
+  Stream<void> get onFavoritesChanged => _globalFavoritesChangedController.stream;
 
   @override
   Future<List<int>> getFavoriteVenueIds({int? userId}) async {
@@ -15,21 +30,27 @@ class MockFavoriteRepository implements IFavoriteRepository {
 
   @override
   Future<bool> toggleFavorite(int venueId, {int? userId}) async {
+    final bool isFav;
     if (_favoriteIds.contains(venueId)) {
       _favoriteIds.remove(venueId);
-      return false;
+      isFav = false;
     } else {
       _favoriteIds.add(venueId);
-      return true;
+      isFav = true;
     }
+    _globalFavoritesChangedController.add(null);
+    return isFav;
   }
 }
 
 class ApiFavoriteRepository implements IFavoriteRepository {
   final ApiClient _client;
-  final MockFavoriteRepository _fallback = MockFavoriteRepository();
+  static final MockFavoriteRepository _fallback = MockFavoriteRepository();
 
   ApiFavoriteRepository({ApiClient? client}) : _client = client ?? ApiClient();
+
+  @override
+  Stream<void> get onFavoritesChanged => _globalFavoritesChangedController.stream;
 
   @override
   Future<List<int>> getFavoriteVenueIds({int? userId}) async {
@@ -49,13 +70,19 @@ class ApiFavoriteRepository implements IFavoriteRepository {
   Future<bool> toggleFavorite(int venueId, {int? userId}) async {
     try {
       final query = userId != null ? '?userId=$userId' : '';
-      final response = await _client.post('/api/favorites/$venueId/toggle$query', {});
+      final response = await _client.post('/api/favorites/$venueId/toggle$query', {}, requiresAuth: false);
+      bool isFav;
       if (response is Map<String, dynamic> && response.containsKey('isFavorite')) {
-        return response['isFavorite'] as bool;
+        isFav = response['isFavorite'] as bool;
+      } else {
+        isFav = await _fallback.toggleFavorite(venueId, userId: userId);
       }
-      return await _fallback.toggleFavorite(venueId, userId: userId);
+      _globalFavoritesChangedController.add(null);
+      return isFav;
     } catch (_) {
-      return await _fallback.toggleFavorite(venueId, userId: userId);
+      final isFav = await _fallback.toggleFavorite(venueId, userId: userId);
+      _globalFavoritesChangedController.add(null);
+      return isFav;
     }
   }
 }

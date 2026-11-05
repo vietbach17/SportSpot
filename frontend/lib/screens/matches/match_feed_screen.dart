@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/maps_launcher.dart';
 import '../../data/models/match_model.dart';
 import '../../data/repositories/match_repository.dart';
 import '../../data/sportspot_mock_data.dart';
@@ -1552,17 +1553,11 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   }
 
   Future<void> _openGoogleMaps(double? lat, double? lng, String address) async {
-    Uri uri;
-    if (lat != null && lng != null && lat != 0.0 && lng != 0.0) {
-      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
-    } else {
-      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}');
-    }
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (_) {}
+    await MapsLauncher.openDirections(
+      latitude: lat,
+      longitude: lng,
+      address: address,
+    );
   }
 
   Future<void> _openVenueDetail(BuildContext context, OpenMatch m) async {
