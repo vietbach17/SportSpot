@@ -123,7 +123,7 @@ class VenueRepository {
         basePrice: 350000,
         peakPrice: 650000,
         rating: 4.8,
-        amenities: 'Đèn chiếu sáng ban đêm, Trọng tài, Căn tin, Giữ xe miễn phí, Khán đài cổ vũ',
+        amenities: 'Đèn chiếu sáng ban đêm, Căn tin, Giữ xe miễn phí, Khán đài cổ vũ',
         description: 'Tổ hợp 6 sân cỏ nhân tạo đạt chuẩn FIFA, hệ thống thoát nước chuẩn và đèn LED ban đêm rực rỡ.',
         distanceKm: 13.5,
         galleryImages: [
