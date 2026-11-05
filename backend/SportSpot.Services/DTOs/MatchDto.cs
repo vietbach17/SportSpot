@@ -51,7 +51,7 @@ public class CreateMatchRequest
 public class JoinMatchRequest
 {
     public int UserId { get; set; }
-    public string PaymentGateway { get; set; } = "MockPayment";
+    public string PaymentGateway { get; set; } = "PayOS";
 }
 
 public class GuestJoinMatchRequest

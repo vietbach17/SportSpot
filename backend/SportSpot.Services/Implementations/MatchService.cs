@@ -98,7 +98,7 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
     }
 
     public Task<ApiResponse<object>> JoinMatchAsync(int matchId, JoinMatchRequest request) =>
-        AddMemberAsync(matchId, request.UserId, false, request.PaymentGateway);
+        AddMemberAsync(matchId, request.UserId, false, string.IsNullOrWhiteSpace(request.PaymentGateway) ? "PayOS" : request.PaymentGateway);
 
     public Task<ApiResponse<object>> AssignWalkInAtDeskAsync(int matchId, int staffId) =>
         AddMemberAsync(matchId, staffId, true, "Cash");
@@ -131,7 +131,7 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
             BookingId = match.BookingId,
             UserId = 0,
             Amount = match.CostPerPerson,
-            PaymentGateway = request.PaymentGateway ?? "GuestWallet",
+            PaymentGateway = request.PaymentGateway ?? "PayOS",
             TransactionCode = $"TXN-G-{Guid.NewGuid():N}",
             Status = "Holding"
         });

@@ -10,8 +10,8 @@ abstract class MatchRepository {
     bool staff = false,
   });
   Future<OpenMatch> detail(int id);
-  Future<void> join(int id);
-  Future<void> guestJoin(int id, {String name, String phone, String gateway});
+  Future<void> join(int id, {String gateway = 'PayOS'});
+  Future<void> guestJoin(int id, {String name, String phone, String gateway = 'PayOS'});
   Future<void> assign(int id);
   Future<void> stop(int id);
   Future<void> leave(int id);
@@ -69,18 +69,18 @@ class ApiMatchRepository implements MatchRepository {
   }
 
   @override
-  Future<void> join(int id) async {
+  Future<void> join(int id, {String gateway = 'PayOS'}) async {
     try {
       await client.post('/api/matches/$id/join', {
-        'paymentGateway': 'MockPayment',
+        'paymentGateway': gateway,
       });
     } catch (_) {
-      await _fallback.join(id);
+      await _fallback.join(id, gateway: gateway);
     }
   }
 
   @override
-  Future<void> guestJoin(int id, {String name = 'Khách vãng lai', String phone = '', String gateway = 'GuestWallet'}) async {
+  Future<void> guestJoin(int id, {String name = 'Khách vãng lai', String phone = '', String gateway = 'PayOS'}) async {
     await client.post('/api/matches/$id/guest-join', {
       'guestName': name,
       'phoneNumber': phone,

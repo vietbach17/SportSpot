@@ -72,11 +72,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Chi tiết kèo'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.text('Tham gia kèo · Thanh toán mock'),
+      find.text('Tham gia kèo · Thanh toán PayOS'),
       250,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Tham gia kèo · Thanh toán mock'), findsOneWidget);
+    expect(find.text('Tham gia kèo · Thanh toán PayOS'), findsOneWidget);
   });
 
   test(
@@ -113,7 +113,7 @@ void main() {
     await tester.tap(find.text('Sân thể thao demo'));
     await tester.pumpAndSettle();
 
-    final joinButton = find.text('Tham gia kèo · Thanh toán mock');
+    final joinButton = find.text('Tham gia kèo · Thanh toán PayOS');
     await tester.scrollUntilVisible(joinButton, 250, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
@@ -125,7 +125,7 @@ void main() {
     expect(find.text('Tham gia ghép trận'), findsOneWidget);
     expect(find.textContaining('Khách vãng lai'), findsWidgets);
     expect(find.text('Ví tạm trên máy'), findsOneWidget);
-    expect(find.text('Cổng thanh toán giả lập'), findsOneWidget);
+    expect(find.text('Cổng thanh toán VietQR PayOS'), findsOneWidget);
 
     // Confirm join
     await tester.tap(find.text('Xác nhận & Tham gia'));

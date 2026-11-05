@@ -170,12 +170,12 @@ class MockMatchRepository implements MatchRepository {
   }
 
   @override
-  Future<void> join(int id) async {
+  Future<void> join(int id, {String gateway = 'PayOS'}) async {
     _add(id, actorId);
   }
 
   @override
-  Future<void> guestJoin(int id, {String name = 'Khách vãng lai', String phone = '', String gateway = 'GuestWallet'}) async {
+  Future<void> guestJoin(int id, {String name = 'Khách vãng lai', String phone = '', String gateway = 'PayOS'}) async {
     _add(id, null, name: name);
   }
 

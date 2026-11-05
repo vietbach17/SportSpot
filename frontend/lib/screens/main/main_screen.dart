@@ -113,18 +113,12 @@ class _MainScreenState extends State<MainScreen> {
 
       case 'VenueStaff':
         pages = [
-          const OwnerScheduleScreen(),
           Consumer<TicketProvider>(
             builder: (ctx, ticketProv, _) => QrScannerScreen(provider: ticketProv),
           ),
           const ProfileScreen(),
         ];
         navItems = [
-          {
-            'icon': Icons.calendar_month_outlined,
-            'activeIcon': Icons.calendar_month,
-            'label': 'Lịch sân',
-          },
           {
             'icon': Icons.qr_code_scanner_outlined,
             'activeIcon': Icons.qr_code_scanner_rounded,

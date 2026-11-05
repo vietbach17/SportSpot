@@ -10,7 +10,8 @@ class MatchMember {
 }
 
 class OpenMatch {
-  final int id, hostId, needed, joined, cost, balance, sportId, venueId;
+  final int id, hostId, needed, joined, cost, balance, sportId, venueId, bookingId;
+  final String bookingCode;
   final String title,
       venue,
       court,
@@ -29,6 +30,8 @@ class OpenMatch {
 
   OpenMatch(Map<String, dynamic> json)
     : id = json['matchId'] ?? 0,
+      bookingId = json['bookingId'] ?? 0,
+      bookingCode = json['bookingCode']?.toString() ?? 'SP-M0',
       hostId = json['hostUserId'] ?? 0,
       venueId = json['venueId'] ?? 0,
       needed = json['neededPlayers'] ?? 0,

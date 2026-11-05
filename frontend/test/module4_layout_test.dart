@@ -114,7 +114,7 @@ void main() {
       expect(find.text('Chi tiết kèo'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.scrollUntilVisible(
-        find.text('Tham gia kèo · Thanh toán mock'),
+        find.text('Tham gia kèo · Thanh toán PayOS'),
         250,
         scrollable: find.byType(Scrollable).first,
       );
