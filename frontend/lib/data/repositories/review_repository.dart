@@ -44,8 +44,7 @@ class MockReviewRepository implements IReviewRepository {
 
   @override
   Future<VenueReviewSummaryModel> getVenueReviews(int venueId) async {
-    
-    final list = _reviewsByVenue[venueId] ?? _reviewsByVenue[1] ?? [];
+    final list = _reviewsByVenue[venueId] ?? [];
     final breakdown = <int, int>{5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
     for (var r in list) {
       breakdown[r.rating] = (breakdown[r.rating] ?? 0) + 1;
@@ -64,8 +63,11 @@ class MockReviewRepository implements IReviewRepository {
   }
 
   @override
-  Future<ReviewModel> submitReview(int venueId, int rating, String comment) async {
-    
+  Future<ReviewModel> submitReview(
+    int venueId,
+    int rating,
+    String comment,
+  ) async {
     final newReview = ReviewModel(
       id: DateTime.now().millisecondsSinceEpoch % 10000,
       venueId: venueId,
@@ -87,37 +89,35 @@ class MockReviewRepository implements IReviewRepository {
 
 class ApiReviewRepository implements IReviewRepository {
   final ApiClient _client;
-  final MockReviewRepository _fallback = MockReviewRepository();
 
   ApiReviewRepository({ApiClient? client}) : _client = client ?? ApiClient();
 
   @override
   Future<VenueReviewSummaryModel> getVenueReviews(int venueId) async {
-    try {
-      final response = await _client.get('/api/venues/$venueId/reviews', requiresAuth: false);
-      if (response is Map<String, dynamic>) {
-        return VenueReviewSummaryModel.fromJson(response);
-      }
-      return await _fallback.getVenueReviews(venueId);
-    } catch (_) {
-      return await _fallback.getVenueReviews(venueId);
+    final response = await _client.get(
+      '/api/venues/$venueId/reviews',
+      requiresAuth: false,
+    );
+    if (response is! Map<String, dynamic>) {
+      throw ApiException(502, 'Không tải được đánh giá sân');
     }
+    return VenueReviewSummaryModel.fromJson(response);
   }
 
   @override
-  Future<ReviewModel> submitReview(int venueId, int rating, String comment) async {
-    try {
-      final response = await _client.post('/api/reviews', {
-        'venueId': venueId,
-        'rating': rating,
-        'comment': comment,
-      });
-      if (response is Map<String, dynamic>) {
-        return ReviewModel.fromJson(response);
-      }
-      return await _fallback.submitReview(venueId, rating, comment);
-    } catch (_) {
-      return await _fallback.submitReview(venueId, rating, comment);
+  Future<ReviewModel> submitReview(
+    int venueId,
+    int rating,
+    String comment,
+  ) async {
+    final response = await _client.post('/api/reviews', {
+      'venueId': venueId,
+      'rating': rating,
+      'comment': comment,
+    });
+    if (response is! Map<String, dynamic>) {
+      throw ApiException(502, 'Chưa lưu được đánh giá');
     }
+    return ReviewModel.fromJson(response);
   }
 }

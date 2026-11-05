@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../data/models/ticket_model.dart';
 import '../../data/repositories/ticket_repository.dart';
@@ -7,7 +8,9 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/boarding_pass_ticket.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import 'qr_scanner_screen.dart';
+
 import 'package:provider/provider.dart';
+
 import 'ticket_qr_detail_screen.dart';
 import 'escrow_wallet_sheet.dart';
 import 'bank_withdrawal_dialog.dart';
@@ -15,11 +18,22 @@ import 'cancel_ticket_dialog.dart';
 import 'ticket_share_helper.dart';
 import '../../widgets/brand_header.dart';
 import '../../widgets/bounce_interaction.dart';
+import '../../data/repositories/venue_repository.dart';
+import '../../data/repositories/review_repository.dart';
+import '../../widgets/venue_review_sheet.dart';
+import '../venues/venue_detail_screen.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   final Object? repository;
+  final VenueRepository? venueRepository;
+  final IReviewRepository? reviewRepository;
 
-  const MyTicketsScreen({super.key, this.repository});
+  const MyTicketsScreen({
+    super.key,
+    this.repository,
+    this.venueRepository,
+    this.reviewRepository,
+  });
 
   @override
   State<MyTicketsScreen> createState() => _MyTicketsScreenState();
@@ -30,6 +44,55 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   TicketProvider? _boundProvider;
   TicketProvider get _provider => _localProvider ?? _boundProvider!;
   int _selectedTabIndex = 0; // 0: Tất cả, 1: Sắp tới, 2: Đã xong, 3: Đã hủy
+  final Set<int> _openingVenues = {};
+  late final IReviewRepository _reviewRepository =
+      widget.reviewRepository ?? ApiReviewRepository();
+
+  Future<void> _viewVenue(TicketModel ticket) async {
+    if (_openingVenues.contains(ticket.bookingId)) return;
+    setState(() => _openingVenues.add(ticket.bookingId));
+    try {
+      final venue = await (widget.venueRepository ?? VenueRepository())
+          .getVenueDetail(ticket.venueId, allowMockFallback: false);
+      if (!mounted) return;
+      if (venue.id != ticket.venueId) throw StateError('Không tìm thấy sân');
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => VenueDetailScreen(
+            venue: venue,
+            reviewRepository: _reviewRepository,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không tải được thông tin sân. Vui lòng thử lại.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _openingVenues.remove(ticket.bookingId));
+    }
+  }
+
+  Future<void> _reviewVenue(TicketModel ticket) async {
+    final submitted = await VenueReviewSheet.show(
+      context,
+      venueId: ticket.venueId,
+      venueName: ticket.venueName,
+      repository: _reviewRepository,
+    );
+    if (!mounted || submitted != true) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Cảm ơn bạn đã gửi đánh giá! Xem nhận xét tại trang chi tiết sân.',
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -94,9 +157,15 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF111216) : const Color(0xFFF7F8FA);
     final cardColor = isDark ? const Color(0xFF191A20) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2E313A) : const Color(0xFFE5E7EB);
-    final textColor = isDark ? const Color(0xFFF6F6F3) : const Color(0xFF111315);
-    final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final borderColor = isDark
+        ? const Color(0xFF2E313A)
+        : const Color(0xFFE5E7EB);
+    final textColor = isDark
+        ? const Color(0xFFF6F6F3)
+        : const Color(0xFF111315);
+    final mutedColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF6B7280);
 
     final tickets = _filteredTickets;
     final reminders = _provider.upcomingReminders;
@@ -115,9 +184,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => QrScannerScreen(
-                    provider: _provider,
-                  ),
+                  builder: (_) => QrScannerScreen(provider: _provider),
                 ),
               );
             },
@@ -139,7 +206,12 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. Escrow Wallet & Offline Control Bar
-                _buildWalletAndOfflineBar(cardColor, borderColor, textColor, mutedColor),
+                _buildWalletAndOfflineBar(
+                  cardColor,
+                  borderColor,
+                  textColor,
+                  mutedColor,
+                ),
                 const SizedBox(height: 14),
 
                 // 2. Pre-match 2h Reminder Banner
@@ -162,7 +234,12 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     ],
                   )
                 else if (tickets.isEmpty)
-                  _buildEmptyState(cardColor, borderColor, textColor, mutedColor)
+                  _buildEmptyState(
+                    cardColor,
+                    borderColor,
+                    textColor,
+                    mutedColor,
+                  )
                 else
                   ListView.separated(
                     shrinkWrap: true,
@@ -284,9 +361,13 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    _provider.isOfflineMode ? Icons.cloud_off_rounded : Icons.cloud_done_rounded,
+                    _provider.isOfflineMode
+                        ? Icons.cloud_off_rounded
+                        : Icons.cloud_done_rounded,
                     size: 16,
-                    color: _provider.isOfflineMode ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+                    color: _provider.isOfflineMode
+                        ? const Color(0xFFD97706)
+                        : const Color(0xFF16A34A),
                   ),
                   const SizedBox(width: 4),
                   Switch(
@@ -307,10 +388,15 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     side: BorderSide(color: borderColor),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   icon: const Icon(Icons.history_edu_rounded, size: 14),
-                  label: const Text('Sao Kê Escrow & Ví', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  label: const Text(
+                    'Sao Kê Escrow & Ví',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
                   onPressed: () => EscrowWalletSheet.show(context, _provider),
                 ),
               ),
@@ -320,11 +406,25 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     side: BorderSide(color: borderColor),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  icon: const Icon(Icons.account_balance_rounded, size: 14, color: Color(0xFF16A34A)),
-                  label: const Text('Rút Tiền Về NH', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
-                  onPressed: () => BankWithdrawalDialog.show(context, _provider),
+                  icon: const Icon(
+                    Icons.account_balance_rounded,
+                    size: 14,
+                    color: Color(0xFF16A34A),
+                  ),
+                  label: const Text(
+                    'Rút Tiền Về NH',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF16A34A),
+                    ),
+                  ),
+                  onPressed: () =>
+                      BankWithdrawalDialog.show(context, _provider),
                 ),
               ),
             ],
@@ -340,7 +440,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.offline_bolt_rounded, size: 14, color: Color(0xFFD97706)),
+                  Icon(
+                    Icons.offline_bolt_rounded,
+                    size: 14,
+                    color: Color(0xFFD97706),
+                  ),
                   SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -378,7 +482,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
               color: Color(0xFFFDE68A),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.alarm_on_rounded, size: 18, color: Color(0xFFB45309)),
+            child: const Icon(
+              Icons.alarm_on_rounded,
+              size: 18,
+              color: Color(0xFFB45309),
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -411,7 +519,12 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     );
   }
 
-  Widget _buildFilterTabs(Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
+  Widget _buildFilterTabs(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color mutedColor,
+  ) {
     final tabs = [
       'Tất cả (${_provider.tickets.length})',
       'Sắp tới (${_provider.upcomingTickets.length})',
@@ -431,7 +544,10 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
               onTap: () => setState(() => _selectedTabIndex = index),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF111315) : cardColor,
                   borderRadius: BorderRadius.circular(10),
@@ -521,11 +637,16 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header row: Sport badge + Escrow status
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF0F172A),
                         borderRadius: BorderRadius.circular(6),
@@ -536,7 +657,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                           try {
                             isGuestUser = ctx.watch<AuthProvider>().isGuest;
                           } catch (_) {}
-                          final isHost = !isGuestUser && (ticket.userRoleInMatch.toLowerCase() == 'host' || ticket.userRoleInMatch.toLowerCase() == 'đội trưởng');
+                          final isHost =
+                              !isGuestUser &&
+                              (ticket.userRoleInMatch.toLowerCase() == 'host' ||
+                                  ticket.userRoleInMatch.toLowerCase() ==
+                                      'đội trưởng');
                           return Text(
                             '${ticket.sportName.toUpperCase()} • ${isHost ? 'ĐỘI TRƯỞNG' : 'KHÁCH GHÉP'}',
                             style: const TextStyle(
@@ -550,7 +675,10 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: statusBg,
                         borderRadius: BorderRadius.circular(6),
@@ -593,19 +721,35 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                 // Date & Time metadata row
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 14, color: mutedColor),
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 14,
+                      color: mutedColor,
+                    ),
                     const SizedBox(width: 5),
                     Text(
                       ticket.playDate,
-                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: textColor),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                      ),
                     ),
                     const SizedBox(width: 14),
-                    Icon(Icons.access_time_rounded, size: 14, color: mutedColor),
+                    Icon(
+                      Icons.access_time_rounded,
+                      size: 14,
+                      color: mutedColor,
+                    ),
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
                         ticket.timeSlots.join(', '),
-                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: textColor),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -616,8 +760,37 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                 const SizedBox(height: 10),
 
                 // Bottom row: Booking code + View QR Pass CTA
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    OutlinedButton.icon(
+                      key: Key('view_venue_${ticket.bookingId}'),
+                      onPressed: _openingVenues.contains(ticket.bookingId)
+                          ? null
+                          : () => _viewVenue(ticket),
+                      icon: const Icon(Icons.stadium_outlined, size: 18),
+                      label: Text(
+                        _openingVenues.contains(ticket.bookingId)
+                            ? 'Đang tải sân...'
+                            : 'Xem lại sân',
+                      ),
+                    ),
+                    if (isCheckedIn && !isCancelled)
+                      FilledButton.icon(
+                        key: Key('review_venue_${ticket.bookingId}'),
+                        onPressed: () => _reviewVenue(ticket),
+                        icon: const Icon(Icons.rate_review_outlined, size: 18),
+                        label: const Text('Đánh giá sân'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     Text(
                       ticket.bookingCode,
@@ -648,8 +821,15 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                           },
                           borderRadius: BorderRadius.circular(8),
                           child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                            child: Icon(Icons.share_outlined, size: 16, color: Color(0xFF2563EB)),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 4,
+                            ),
+                            child: Icon(
+                              Icons.share_outlined,
+                              size: 16,
+                              color: Color(0xFF2563EB),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -661,7 +841,9 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                                 builder: (_) => CancelTicketDialog(
                                   ticket: ticket,
                                   onConfirmCancel: () async {
-                                    final res = await _provider.cancelTicket(ticket);
+                                    final res = await _provider.cancelTicket(
+                                      ticket,
+                                    );
                                     if (!mounted) return;
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
@@ -677,12 +859,17 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                             },
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFDC2626).withValues(alpha: isDark ? 0.16 : 0.08),
+                                color: const Color(0xFFDC2626)
+                                    .withValues(alpha: isDark ? 0.16 : 0.08),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: const Color(0xFFDC2626).withValues(alpha: isDark ? 0.4 : 0.28),
+                                  color: const Color(0xFFDC2626)
+                                      .withValues(alpha: isDark ? 0.4 : 0.28),
                                   width: 1,
                                 ),
                               ),
@@ -692,7 +879,9 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                                   Icon(
                                     Icons.cancel_outlined,
                                     size: 13,
-                                    color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626),
+                                    color: isDark
+                                        ? const Color(0xFFF87171)
+                                        : const Color(0xFFDC2626),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
@@ -701,7 +890,9 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                                       fontFamily: AppTheme.headingFont,
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w700,
-                                      color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626),
+                                      color: isDark
+                                          ? const Color(0xFFF87171)
+                                          : const Color(0xFFDC2626),
                                     ),
                                   ),
                                 ],
@@ -711,9 +902,14 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                           const SizedBox(width: 8),
                         ],
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF2E313A) : const Color(0xFF111315),
+                            color: isDark
+                                ? const Color(0xFF2E313A)
+                                : const Color(0xFF111315),
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
@@ -726,7 +922,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.qr_code_2_rounded, size: 15, color: Colors.white),
+                              const Icon(
+                                Icons.qr_code_2_rounded,
+                                size: 15,
+                                color: Colors.white,
+                              ),
                               const SizedBox(width: 5),
                               Text(
                                 'Mở Vé QR',
@@ -738,7 +938,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                                 ),
                               ),
                               const SizedBox(width: 3),
-                              const Icon(Icons.chevron_right_rounded, size: 14, color: Colors.white70),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                size: 14,
+                                color: Colors.white70,
+                              ),
                             ],
                           ),
                         ),
@@ -754,7 +958,12 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     );
   }
 
-  Widget _buildEmptyState(Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
+  Widget _buildEmptyState(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color mutedColor,
+  ) {
     return LivelyEmptyState(
       icon: Icons.confirmation_number_outlined,
       title: 'Chưa có vé nào trong mục này',

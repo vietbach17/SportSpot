@@ -1,6 +1,9 @@
+import '../../widgets/venue_review_sheet.dart';
 import '../../widgets/venue_image_carousel.dart';
 import '../../data/models/venue_model.dart';
+
 import 'package:flutter/material.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../data/sportspot_models.dart';
 import '../booking/court_slots_screen.dart';
@@ -12,10 +15,12 @@ import '../../widgets/brand_header.dart';
 
 class VenueDetailScreen extends StatefulWidget {
   final dynamic venue;
+  final IReviewRepository? reviewRepository;
 
   const VenueDetailScreen({
     super.key,
     required this.venue,
+    this.reviewRepository,
   });
 
   @override
@@ -24,9 +29,11 @@ class VenueDetailScreen extends StatefulWidget {
 
 class _VenueDetailScreenState extends State<VenueDetailScreen> {
   String selectedSport = 'Cầu lông';
-  final IReviewRepository _reviewRepo = ApiReviewRepository();
+  late final IReviewRepository _reviewRepo =
+      widget.reviewRepository ?? ApiReviewRepository();
   VenueReviewSummaryModel? _reviewSummary;
   bool _isLoadingReviews = false;
+  bool _reviewsFailed = false;
   final IFavoriteRepository _favoriteRepo = ApiFavoriteRepository();
   bool _isFavorite = false;
 
@@ -44,7 +51,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(next ? 'Đã lưu sân vào danh sách yêu thích' : 'Đã bỏ yêu thích sân'),
+        content: Text(
+          next ? 'Đã lưu sân vào danh sách yêu thích' : 'Đã bỏ yêu thích sân',
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -58,7 +67,10 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   }
 
   Future<void> _loadReviews() async {
-    setState(() => _isLoadingReviews = true);
+    setState(() {
+      _isLoadingReviews = true;
+      _reviewsFailed = false;
+    });
     try {
       final summary = await _reviewRepo.getVenueReviews(_venueId);
       if (mounted) {
@@ -68,7 +80,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _isLoadingReviews = false);
+      if (mounted)
+        setState(() {
+          _isLoadingReviews = false;
+          _reviewsFailed = true;
+        });
     }
   }
 
@@ -104,8 +120,10 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
   String get _venueDistance {
     try {
-      if (widget.venue.distance != null) return widget.venue.distance.toString();
-      if (widget.venue.distanceKm != null) return '${widget.venue.distanceKm} km';
+      if (widget.venue.distance != null)
+        return widget.venue.distance.toString();
+      if (widget.venue.distanceKm != null)
+        return '${widget.venue.distanceKm} km';
     } catch (_) {}
     return '1.8 km';
   }
@@ -119,6 +137,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   }
 
   double get _rating {
+    if (_reviewSummary != null) return _reviewSummary!.averageRating;
     try {
       if (widget.venue.rating != null) {
         return (widget.venue.rating as num).toDouble();
@@ -133,10 +152,12 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         final img = (widget.venue as SportSpotVenue).image;
         if (img.isNotEmpty) return img;
       }
-      if (widget.venue.image != null && widget.venue.image.toString().isNotEmpty) {
+      if (widget.venue.image != null &&
+          widget.venue.image.toString().isNotEmpty) {
         return widget.venue.image.toString();
       }
-      if (widget.venue.imageUrl != null && widget.venue.imageUrl.toString().isNotEmpty) {
+      if (widget.venue.imageUrl != null &&
+          widget.venue.imageUrl.toString().isNotEmpty) {
         return widget.venue.imageUrl.toString();
       }
     } catch (_) {}
@@ -145,8 +166,10 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
   int get _basePrice {
     try {
-      if (widget.venue.basePrice != null) return (widget.venue.basePrice as num).toInt();
-      if (widget.venue.priceFrom != null) return (widget.venue.priceFrom as num).toInt();
+      if (widget.venue.basePrice != null)
+        return (widget.venue.basePrice as num).toInt();
+      if (widget.venue.priceFrom != null)
+        return (widget.venue.priceFrom as num).toInt();
     } catch (_) {}
     return 90000;
   }
@@ -166,9 +189,15 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF111216) : const Color(0xFFF7F8FA);
     final cardColor = isDark ? const Color(0xFF191A20) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2E313A) : const Color(0xFFE5E7EB);
-    final textColor = isDark ? const Color(0xFFF6F6F3) : const Color(0xFF111315);
-    final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final borderColor = isDark
+        ? const Color(0xFF2E313A)
+        : const Color(0xFFE5E7EB);
+    final textColor = isDark
+        ? const Color(0xFFF6F6F3)
+        : const Color(0xFF111315);
+    final mutedColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF6B7280);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -177,7 +206,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         actions: [
           IconButton(
             icon: Icon(
-              _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              _isFavorite
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
               color: _isFavorite ? Colors.red : textColor,
             ),
             tooltip: _isFavorite ? 'Bỏ yêu thích' : 'Lưu vào yêu thích',
@@ -187,13 +218,21 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             icon: Icon(Icons.share_outlined, color: textColor),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đã sao chép liên kết sân thi đấu! 📋')),
+                const SnackBar(
+                  content: Text('Đã sao chép liên kết sân thi đấu! 📋'),
+                ),
               );
             },
           ),
         ],
       ),
-      bottomNavigationBar: _buildStickyBottomBar(isDark, cardColor, borderColor, textColor, mutedColor),
+      bottomNavigationBar: _buildStickyBottomBar(
+        isDark,
+        cardColor,
+        borderColor,
+        textColor,
+        mutedColor,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         child: Column(
@@ -224,12 +263,20 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.location_on_outlined, size: 14, color: mutedColor),
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: mutedColor,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               '$_venueAddress • $_venueDistance',
-                              style: TextStyle(fontSize: 12.5, color: mutedColor, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: mutedColor,
+                                fontWeight: FontWeight.w500,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -239,7 +286,10 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEF3C7),
                     borderRadius: BorderRadius.circular(10),
@@ -248,7 +298,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.star_rounded, size: 16, color: Color(0xFFD97706)),
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 16,
+                        color: Color(0xFFD97706),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         _rating.toStringAsFixed(1),
@@ -275,15 +329,25 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                         SnackBar(content: Text('Hotline: $_hotline')),
                       );
                     },
-                    icon: const Icon(Icons.phone_in_talk_rounded, size: 16, color: Color(0xFF2563EB)),
+                    icon: const Icon(
+                      Icons.phone_in_talk_rounded,
+                      size: 16,
+                      color: Color(0xFF2563EB),
+                    ),
                     label: const Text(
                       'Hotline',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF2563EB),
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       side: BorderSide(color: borderColor),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -292,18 +356,32 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Đang mở bản đồ chỉ đường Google Maps...')),
+                        const SnackBar(
+                          content: Text(
+                            'Đang mở bản đồ chỉ đường Google Maps...',
+                          ),
+                        ),
                       );
                     },
-                    icon: const Icon(Icons.directions_rounded, size: 16, color: Color(0xFF16A34A)),
+                    icon: const Icon(
+                      Icons.directions_rounded,
+                      size: 16,
+                      color: Color(0xFF16A34A),
+                    ),
                     label: const Text(
                       'Chỉ đường',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF16A34A)),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF16A34A),
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       side: BorderSide(color: borderColor),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -325,7 +403,12 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             const SizedBox(height: 20),
 
             // 6. Booking Flow Entry Invitation Card
-            _buildBookingInvitation(cardColor, borderColor, textColor, mutedColor),
+            _buildBookingInvitation(
+              cardColor,
+              borderColor,
+              textColor,
+              mutedColor,
+            ),
             const SizedBox(height: 20),
 
             // 6. Amenities
@@ -348,11 +431,12 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
-
   String get _openUntil {
     try {
-      if (widget.venue is SportSpotVenue) return (widget.venue as SportSpotVenue).openUntil;
-      if (widget.venue.openUntil != null) return widget.venue.openUntil.toString();
+      if (widget.venue is SportSpotVenue)
+        return (widget.venue as SportSpotVenue).openUntil;
+      if (widget.venue.openUntil != null)
+        return widget.venue.openUntil.toString();
     } catch (_) {}
     return '23:00';
   }
@@ -362,19 +446,25 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     try {
       if (widget.venue is SportSpotVenue) {
         final v = widget.venue as SportSpotVenue;
-        if (v.images.isNotEmpty) list.addAll(v.images);
-        else if (v.image.isNotEmpty) list.add(v.image);
+        if (v.images.isNotEmpty)
+          list.addAll(v.images);
+        else if (v.image.isNotEmpty)
+          list.add(v.image);
       } else if (widget.venue is VenueItemModel) {
         final v = widget.venue as VenueItemModel;
-        if (v.galleryImages.isNotEmpty) list.addAll(v.galleryImages);
-        else if (v.imageUrl != null && v.imageUrl!.isNotEmpty) list.add(v.imageUrl!);
+        if (v.galleryImages.isNotEmpty)
+          list.addAll(v.galleryImages);
+        else if (v.imageUrl != null && v.imageUrl!.isNotEmpty)
+          list.add(v.imageUrl!);
       } else if (widget.venue is Map) {
         final g = widget.venue['galleryImages'] ?? widget.venue['images'];
         if (g is List && g.isNotEmpty) {
           list.addAll(g.map((e) => e.toString()));
-        } else if (widget.venue['image'] != null && widget.venue['image'].toString().isNotEmpty) {
+        } else if (widget.venue['image'] != null &&
+            widget.venue['image'].toString().isNotEmpty) {
           list.add(widget.venue['image'].toString());
-        } else if (widget.venue['imageUrl'] != null && widget.venue['imageUrl'].toString().isNotEmpty) {
+        } else if (widget.venue['imageUrl'] != null &&
+            widget.venue['imageUrl'].toString().isNotEmpty) {
           list.add(widget.venue['imageUrl'].toString());
         }
       } else {
@@ -414,7 +504,12 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
-  Widget _buildCourtSpecsGrid(Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
+  Widget _buildCourtSpecsGrid(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color mutedColor,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -427,14 +522,37 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         children: [
           Text(
             'THÔNG SỐ KỸ THUẬT SÂN',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: mutedColor, letterSpacing: 0.8),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              color: mutedColor,
+              letterSpacing: 0.8,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _specItem('MẶT SÂN', 'Thảm cao cấp 5mm', Icons.layers_outlined, textColor, mutedColor),
-              _specItem('QUY MÔ', '6 Sân thi đấu', Icons.grid_view_rounded, textColor, mutedColor),
-              _specItem('ÁNH SÁNG', 'LED 500 Lux', Icons.lightbulb_outline_rounded, textColor, mutedColor),
+              _specItem(
+                'MẶT SÂN',
+                'Thảm cao cấp 5mm',
+                Icons.layers_outlined,
+                textColor,
+                mutedColor,
+              ),
+              _specItem(
+                'QUY MÔ',
+                '6 Sân thi đấu',
+                Icons.grid_view_rounded,
+                textColor,
+                mutedColor,
+              ),
+              _specItem(
+                'ÁNH SÁNG',
+                'LED 500 Lux',
+                Icons.lightbulb_outline_rounded,
+                textColor,
+                mutedColor,
+              ),
             ],
           ),
         ],
@@ -442,7 +560,13 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
-  Widget _specItem(String label, String value, IconData icon, Color textColor, Color mutedColor) {
+  Widget _specItem(
+    String label,
+    String value,
+    IconData icon,
+    Color textColor,
+    Color mutedColor,
+  ) {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,13 +575,24 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             children: [
               Icon(icon, size: 13, color: const Color(0xFF2563EB)),
               const SizedBox(width: 4),
-              Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: mutedColor)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: mutedColor,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 3),
           Text(
             value,
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: textColor),
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -465,7 +600,12 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
-  Widget _buildBookingInvitation(Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
+  Widget _buildBookingInvitation(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color mutedColor,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -485,22 +625,38 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                 ),
                 child: const Text(
                   'LỊCH TRỐNG THỜI GIAN THỰC',
-                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
               const Spacer(),
-              const Icon(Icons.bolt_rounded, color: Color(0xFF38BDF8), size: 18),
+              const Icon(
+                Icons.bolt_rounded,
+                color: Color(0xFF38BDF8),
+                size: 18,
+              ),
             ],
           ),
           const SizedBox(height: 10),
           const Text(
             'Đặt Lịch & Chọn Khung Giờ Thi Đấu',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             'Chọn sân đấu yêu thích, xem khung giờ trống trực tiếp trong 7 ngày và đặt cọc online giữ chỗ tức thì.',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 12.5, height: 1.4),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.75),
+              fontSize: 12.5,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 14),
           SizedBox(
@@ -508,12 +664,17 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             child: ElevatedButton.icon(
               onPressed: _navigateToCourtSlots,
               icon: const Icon(Icons.calendar_month_rounded, size: 17),
-              label: const Text('Xem Khung Giờ & Đặt Ngay', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+              label: const Text(
+                'Xem Khung Giờ & Đặt Ngay',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF111315),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
@@ -522,7 +683,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
-  Widget _buildAmenitiesWrap(Color cardColor, Color borderColor, Color textColor) {
+  Widget _buildAmenitiesWrap(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+  ) {
     final items = [
       {'label': 'Bãi đỗ ô tô & xe máy', 'icon': Icons.local_parking_rounded},
       {'label': 'Căn tin nước giải khát', 'icon': Icons.local_drink_rounded},
@@ -545,11 +710,19 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(item['icon'] as IconData, size: 15, color: const Color(0xFF2563EB)),
+              Icon(
+                item['icon'] as IconData,
+                size: 15,
+                color: const Color(0xFF2563EB),
+              ),
               const SizedBox(width: 6),
               Text(
                 item['label'] as String,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
               ),
             ],
           ),
@@ -558,7 +731,13 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
-  Widget _buildStickyBottomBar(bool isDark, Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
+  Widget _buildStickyBottomBar(
+    bool isDark,
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color mutedColor,
+  ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: BoxDecoration(
@@ -575,7 +754,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                 children: [
                   Text(
                     'GIÁ NIÊM YẾT TỪ',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: mutedColor),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: mutedColor,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -598,8 +781,13 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF111315),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 0,
                 ),
                 child: Text(
@@ -621,13 +809,16 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   void _navigateToCourtSlots() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => CourtSlotsScreen(venueId: _venueId),
-      ),
+      MaterialPageRoute(builder: (_) => CourtSlotsScreen(venueId: _venueId)),
     );
   }
 
-  Widget _buildReviewsSection(Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
+  Widget _buildReviewsSection(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color mutedColor,
+  ) {
     final summary = _reviewSummary;
     final totalReviews = summary?.totalReviews ?? 0;
     final avgRating = summary?.averageRating ?? _rating;
@@ -663,15 +854,28 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             const SizedBox(width: 8),
             TextButton.icon(
               onPressed: _openReviewBottomSheet,
-              icon: const Icon(Icons.rate_review_outlined, size: 16, color: Color(0xFF2563EB)),
+              icon: const Icon(
+                Icons.rate_review_outlined,
+                size: 16,
+                color: Color(0xFF2563EB),
+              ),
               label: const Text(
                 'Viết đánh giá',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF2563EB),
+                ),
               ),
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 backgroundColor: const Color(0xFFEFF6FF),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ],
@@ -702,7 +906,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   Row(
                     children: List.generate(5, (index) {
                       return Icon(
-                        index < avgRating.floor() ? Icons.star_rounded : Icons.star_outline_rounded,
+                        index < avgRating.floor()
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
                         size: 16,
                         color: const Color(0xFFF59E0B),
                       );
@@ -725,7 +931,14 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 2),
                       child: Row(
                         children: [
-                          Text('$star★', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: mutedColor)),
+                          Text(
+                            '$star★',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: mutedColor,
+                            ),
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: ClipRRect(
@@ -734,7 +947,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                 value: ratio,
                                 minHeight: 6,
                                 backgroundColor: const Color(0xFFE2E8F0),
-                                valueColor: const AlwaysStoppedAnimation(Color(0xFFF59E0B)),
+                                valueColor: const AlwaysStoppedAnimation(
+                                  Color(0xFFF59E0B),
+                                ),
                               ),
                             ),
                           ),
@@ -759,7 +974,18 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         const SizedBox(height: 14),
 
         if (_isLoadingReviews)
-          const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_reviewsFailed)
+          TextButton.icon(
+            onPressed: _loadReviews,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Không tải được đánh giá. Nhấn để thử lại'),
+          )
         else if (summary == null || summary.reviews.isEmpty)
           Container(
             padding: const EdgeInsets.all(16),
@@ -776,12 +1002,26 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             ),
           )
         else
-          ...summary.reviews.map((r) => _buildReviewCard(r, cardColor, borderColor, textColor, mutedColor)),
+          ...summary.reviews.map(
+            (r) => _buildReviewCard(
+              r,
+              cardColor,
+              borderColor,
+              textColor,
+              mutedColor,
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildReviewCard(ReviewModel r, Color cardColor, Color borderColor, Color textColor, Color mutedColor) {
+  Widget _buildReviewCard(
+    ReviewModel r,
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color mutedColor,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -798,14 +1038,21 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               CircleAvatar(
                 radius: 16,
                 backgroundColor: const Color(0xFF2563EB),
-                backgroundImage: (r.userAvatarUrl != null && r.userAvatarUrl!.isNotEmpty)
+                backgroundImage:
+                    (r.userAvatarUrl != null && r.userAvatarUrl!.isNotEmpty)
                     ? NetworkImage(r.userAvatarUrl!)
                     : null,
                 child: (r.userAvatarUrl != null && r.userAvatarUrl!.isNotEmpty)
                     ? null
                     : Text(
-                        r.userName.isNotEmpty ? r.userName[0].toUpperCase() : 'U',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        r.userName.isNotEmpty
+                            ? r.userName[0].toUpperCase()
+                            : 'U',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
               ),
               const SizedBox(width: 10),
@@ -815,13 +1062,19 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   children: [
                     Text(
                       r.userName,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                      ),
                     ),
                     Row(
                       children: [
                         ...List.generate(5, (index) {
                           return Icon(
-                            index < r.rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                            index < r.rating
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
                             size: 13,
                             color: const Color(0xFFF59E0B),
                           );
@@ -848,154 +1101,17 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
-  void _openReviewBottomSheet() {
-    int selectedRating = 5;
-    final commentController = TextEditingController();
-    bool isSubmitting = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (bottomSheetContext) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(bottomSheetContext).viewInsets.bottom + 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Đánh giá & Nhận xét sân',
-                    style: TextStyle(
-                      fontFamily: AppTheme.headingFont,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFF0F172A),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _venueName,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Interactive 5-star selector
-                  Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(5, (index) {
-                        final star = index + 1;
-                        return IconButton(
-                          onPressed: () {
-                            setModalState(() => selectedRating = star);
-                          },
-                          icon: Icon(
-                            star <= selectedRating ? Icons.star_rounded : Icons.star_outline_rounded,
-                            size: 34,
-                            color: const Color(0xFFF59E0B),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                  Center(
-                    child: Text(
-                      selectedRating == 5 ? 'Tuyệt vời!' : selectedRating == 4 ? 'Rất tốt' : selectedRating == 3 ? 'Bình thường' : 'Chưa hài lòng',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFB45309)),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Comment Input
-                  TextField(
-                    controller: commentController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Chia sẻ trải nghiệm của bạn về thảm sân, ánh sáng, dịch vụ...',
-                      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Submit button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      onPressed: isSubmitting ? null : () async {
-                        final comment = commentController.text.trim();
-                        final messenger = ScaffoldMessenger.of(bottomSheetContext);
-                        final nav = Navigator.of(bottomSheetContext);
-                        if (comment.isEmpty) {
-                          messenger.showSnackBar(
-                            const SnackBar(content: Text('Vui lòng nhập nội dung nhận xét')),
-                          );
-                          return;
-                        }
-                        setModalState(() => isSubmitting = true);
-                        try {
-                          await _reviewRepo.submitReview(_venueId, selectedRating, comment);
-                          if (!mounted) return;
-                          nav.pop();
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              backgroundColor: Color(0xFF16A34A),
-                              content: Text('Cảm ơn bạn đã gửi đánh giá!'),
-                            ),
-                          );
-                          _loadReviews();
-                        } catch (e) {
-                          if (!mounted) return;
-                          setModalState(() => isSubmitting = false);
-                          messenger.showSnackBar(
-                            SnackBar(content: Text('Lỗi gửi đánh giá: $e')),
-                          );
-                        }
-                      },
-                      child: isSubmitting
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('Gửi Đánh Giá', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+  Future<void> _openReviewBottomSheet() async {
+    final submitted = await VenueReviewSheet.show(
+      context,
+      venueId: _venueId,
+      venueName: _venueName,
+      repository: _reviewRepo,
     );
+    if (!mounted || submitted != true) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Cảm ơn bạn đã gửi đánh giá!')),
+    );
+    await _loadReviews();
   }
-
 }

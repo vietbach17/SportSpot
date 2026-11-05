@@ -61,13 +61,16 @@ class VenueRepository {
     );
   }
 
-  Future<VenueItemModel> getVenueDetail(int id) async {
+  Future<VenueItemModel> getVenueDetail(int id, {bool allowMockFallback = true}) async {
     try {
       final res = await _client.get('/api/venues/$id', requiresAuth: false);
       if (res is Map<String, dynamic>) {
         return VenueItemModel.fromJson(res);
       }
-    } catch (_) {}
+      if (!allowMockFallback) throw ApiException(502, 'Không tải được thông tin sân');
+    } catch (_) {
+      if (!allowMockFallback) rethrow;
+    }
 
     final all = _getMockVenues();
     return all.firstWhere((v) => v.id == id, orElse: () => all.first);
