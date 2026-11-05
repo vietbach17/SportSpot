@@ -12,7 +12,13 @@ class ApiConstants {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(_prefKey);
       if (saved != null && saved.trim().isNotEmpty) {
-        _customUrl = saved.trim().replaceAll(RegExp(r'/+$'), '');
+        final clean = saved.trim().replaceAll(RegExp(r'/+$'), '');
+        if (clean.contains('10.87.14.174')) {
+          await prefs.remove(_prefKey);
+          _customUrl = null;
+        } else {
+          _customUrl = clean;
+        }
       }
     } catch (_) {}
   }
@@ -39,7 +45,7 @@ class ApiConstants {
       return 'http://$host:5000';
     }
     if (Platform.isAndroid) {
-      return 'http://10.87.14.174:5000';
+      return 'http://10.0.2.2:5000';
     }
     return 'http://localhost:5000';
   }
