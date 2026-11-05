@@ -36,12 +36,12 @@ class ApiConstants {
     if (_envApiUrl.isNotEmpty) return _envApiUrl;
     if (kIsWeb) {
       final host = Uri.base.host.isNotEmpty ? Uri.base.host : 'localhost';
-      return 'http://$host:5129';
+      return 'http://$host:5000';
     }
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5129';
+      return 'http://10.87.14.174:5000';
     }
-    return 'http://localhost:5129';
+    return 'http://localhost:5000';
   }
 
   // Endpoints Auth

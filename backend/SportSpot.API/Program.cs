@@ -17,8 +17,8 @@ DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Lắng nghe trên mọi card mạng (0.0.0.0:5129) để localhost, thiết bị thật và Emulator đều kết nối được
-builder.WebHost.UseUrls(Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://0.0.0.0:5129");
+// Lắng nghe trên mọi card mạng (0.0.0.0:5000) để thiết bị thật trong cùng Wi-Fi có thể kết nối
+builder.WebHost.UseUrls(Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://0.0.0.0:5000");
 
 // 1. Cấu hình EF Core: Ưu tiên lấy từ file .env, sau đó mới đến appsettings.json
 var rawConn = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
@@ -26,28 +26,9 @@ var rawConn = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
 
 var connectionString = ConvertPostgresUriToConnectionString(rawConn ?? string.Empty);
 
-var forceSqlite = string.Equals(Environment.GetEnvironmentVariable("USE_SQLITE"), "true", StringComparison.OrdinalIgnoreCase);
-
-var isPostgresConfigured = !forceSqlite &&
-                           !string.IsNullOrWhiteSpace(connectionString) && 
+var isPostgresConfigured = !string.IsNullOrWhiteSpace(connectionString) && 
                            !connectionString.Contains("your-project") &&
-                           !connectionString.Contains("your-password") &&
-                           !connectionString.Contains("sportspot_dev.db") &&
                            (connectionString.Contains("Host=") || connectionString.Contains("Server="));
-
-if (isPostgresConfigured)
-{
-    try
-    {
-        using var testConn = new Npgsql.NpgsqlConnection(connectionString + ";Timeout=2;Command Timeout=2;");
-        testConn.Open();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($">>> [Database Warning] Không thể kết nối PostgreSQL Cloud ({ex.Message}). Tự động fallback sang SQLite local (sportspot_dev.db)...");
-        isPostgresConfigured = false;
-    }
-}
 
 builder.Services.AddDbContext<SportSpotDbContext>(options =>
 {
@@ -210,7 +191,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, ">>> [Database] Gặp lỗi khi khởi tạo database: {Message}", ex.Message);
+        logger.LogError(ex, ">>> [Database] Gặp lỗi khi chạy Migration: {Message}", ex.Message);
         if (isPostgresConfigured)
         {
             try
