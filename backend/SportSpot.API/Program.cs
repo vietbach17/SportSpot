@@ -73,6 +73,8 @@ builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<OwnerScheduleService>();
 builder.Services.AddScoped<OwnerConfigService>();
 builder.Services.AddScoped<VenueApplicationService>();
+builder.Services.AddHttpClient("GoogleMapsLinks")
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false });
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddHttpClient<IVenueImageStorage, CloudinaryImageStorage>(client => client.Timeout = TimeSpan.FromSeconds(60));
 

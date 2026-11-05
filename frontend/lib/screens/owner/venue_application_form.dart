@@ -38,8 +38,10 @@ class _VenueApplicationFormState extends State<VenueApplicationForm> {
       'address': v?.address ?? '',
       'district': v?.district ?? '',
       'hotline': v?.hotline ?? '',
-      'latitude': v?.latitude.toString() ?? '',
-      'longitude': v?.longitude.toString() ?? '',
+      'mapsLink': v == null
+          ? ''
+          : 'https://www.google.com/maps?q=${v.latitude},${v.longitude}',
+      'imageLink': '',
       'basePrice': '${v?.basePrice ?? 100000}',
       'peakPrice': '${v?.peakPrice ?? 150000}',
       'maxSlotsPerBooking': '${v?.maxSlotsPerBooking ?? 3}',
@@ -144,6 +146,9 @@ class _VenueApplicationFormState extends State<VenueApplicationForm> {
     }
     setState(() => _saving = true);
     try {
+      final location = await widget.repository.resolveVenueMapsLink(
+        f('mapsLink').text.trim(),
+      );
       await widget.repository.submitVenueApplication({
         for (final key in [
           'name',
@@ -155,8 +160,8 @@ class _VenueApplicationFormState extends State<VenueApplicationForm> {
         ])
           key: f(key).text.trim(),
         'sportId': _sportId,
-        'latitude': double.parse(f('latitude').text.trim()),
-        'longitude': double.parse(f('longitude').text.trim()),
+        'latitude': location['latitude'],
+        'longitude': location['longitude'],
         for (final key in ['basePrice', 'peakPrice', 'maxSlotsPerBooking'])
           key: int.parse(f(key).text.trim()),
         'minDepositPercent': _deposit, 'courtNames': _courtNames(),
@@ -189,6 +194,33 @@ class _VenueApplicationFormState extends State<VenueApplicationForm> {
           .map((s) => s.trim())
           .where((s) => s.isNotEmpty)
           .toList();
+
+  Future<void> _addImageLink() async {
+    final url = f('imageLink').text.trim();
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      _message('Dán link HTTPS trực tiếp đến ảnh công khai');
+      return;
+    }
+    if (_images.any((i) => i.url == url)) {
+      _message('Ảnh này đã được thêm');
+      return;
+    }
+    setState(() => _uploading = true);
+    try {
+      final image = await widget.repository.addVenueImageLink(url);
+      if (!mounted) return;
+      setState(() {
+        _images.add(image);
+        _unused.add(image);
+        f('imageLink').clear();
+      });
+    } catch (e) {
+      if (mounted) _message('$e');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
 
   Widget _text(
     String key,
@@ -312,8 +344,17 @@ class _VenueApplicationFormState extends State<VenueApplicationForm> {
                       _text('address', 'Địa chỉ', min: 5, maxLength: 255),
                       _text('district', 'Quận / huyện', maxLength: 100),
                       _text('hotline', 'Hotline', maxLength: 16),
-                      _text('latitude', 'Vĩ độ', lower: -90, upper: 90),
-                      _text('longitude', 'Kinh độ', lower: -180, upper: 180),
+                      _text(
+                        'mapsLink',
+                        'Link Google Maps của sân',
+                        maxLength: 8000,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 14),
+                        child: Text(
+                          'Mở địa điểm sân trên Google Maps → Chia sẻ → Sao chép liên kết. Hệ thống tự lấy tọa độ.',
+                        ),
+                      ),
                       _text(
                         'basePrice',
                         'Giá thường (đ/giờ)',
@@ -367,8 +408,25 @@ class _VenueApplicationFormState extends State<VenueApplicationForm> {
                         lines: 2,
                       ),
                       const Text(
-                        'Ảnh sân (1–8 ảnh, JPG/PNG/WebP, tối đa 8 MB/ảnh). Ảnh đầu tiên là ảnh đại diện.',
+                        'Ảnh sân (1–8 ảnh). Tải ảnh từ thiết bị hoặc dán link ảnh công khai. Ảnh đầu tiên là ảnh đại diện.',
                       ),
+                      if (_images.length < 8) ...[
+                        const SizedBox(height: 12),
+                        _text(
+                          'imageLink',
+                          'Link ảnh (https://...)',
+                          optional: true,
+                          maxLength: 1000,
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _addImageLink,
+                          icon: const Icon(Icons.link),
+                          label: const Text('Thêm ảnh bằng link'),
+                        ),
+                        const Text(
+                          'Dùng link trực tiếp đến ảnh, không dùng link trang web hoặc link Google Drive cần đăng nhập.',
+                        ),
+                      ],
                       Wrap(
                         spacing: 8,
                         children: [

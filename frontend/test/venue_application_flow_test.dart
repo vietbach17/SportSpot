@@ -59,6 +59,19 @@ VenueApplicationModel application(String status) =>
     });
 
 class VenueRepo extends Fake implements IVenueConfigRepository {
+  String? mapsLink, imageLink;
+  @override
+  Future<Map<String, dynamic>> resolveVenueMapsLink(String url) async {
+    mapsLink = url;
+    return {'latitude': 10.8, 'longitude': 106.7};
+  }
+
+  @override
+  Future<UploadedVenueImageModel> addVenueImageLink(String url) async {
+    imageLink = url;
+    return UploadedVenueImageModel(id: 12, url: url);
+  }
+
   List<VenueApplicationModel> items = [application('Pending')];
   Object? failure;
   bool failLoad = false;
@@ -325,8 +338,7 @@ void main() {
         'address': '123 Nguyễn Văn Trỗi',
         'district': 'Phú Nhuận',
         'hotline': '0909112233',
-        'latitude': '10.8',
-        'longitude': '106.7',
+        'mapsLink': 'https://maps.app.goo.gl/example',
       };
       for (final entry in inputs.entries) {
         await tester.ensureVisible(find.byKey(ValueKey(entry.key)));
@@ -343,8 +355,34 @@ void main() {
       expect(repo.submittedId, isNull);
       expect(repo.body!['imageIds'], [11]);
       expect(repo.body!['name'], 'Sân mới');
+      expect(repo.mapsLink, 'https://maps.app.goo.gl/example');
+      expect(repo.body!['latitude'], 10.8);
+      expect(repo.body!['longitude'], 106.7);
     },
   );
+
+  testWidgets('Image link can be added and submitted without device upload', (
+    tester,
+  ) async {
+    final repo = VenueRepo();
+    await openForm(tester, repo, v: application('Rejected'));
+    expect(find.byKey(const ValueKey('latitude')), findsNothing);
+    expect(find.byKey(const ValueKey('longitude')), findsNothing);
+    await tester.ensureVisible(find.byKey(const ValueKey('imageLink')));
+    await tester.enterText(
+      find.byKey(const ValueKey('imageLink')),
+      'https://example.test/direct.jpg',
+    );
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Thêm ảnh bằng link'));
+    await tester.tap(find.text('Thêm ảnh bằng link'));
+    await tester.pumpAndSettle();
+    expect(repo.imageLink, 'https://example.test/direct.jpg');
+    await send(tester);
+    expect(repo.body!['imageIds'], [10, 12]);
+    expect(repo.mapsLink, 'https://www.google.com/maps?q=10.799,106.678');
+  });
 
   testWidgets('Registration and moderation fit a 320px phone', (tester) async {
     tester.view.physicalSize = const Size(320, 740);

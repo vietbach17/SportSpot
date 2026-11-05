@@ -217,6 +217,17 @@ using (var db = Context())
 {
     var storage = new FakeImageStorage();
     var appSvc = new VenueApplicationService(db, storage);
+    var linkedImage = await appSvc.AddImageLink(3, "https://example.com/court.jpg");
+    Check(linkedImage.Success && linkedImage.Data!.Url == "https://example.com/court.jpg", "Applicant adds image URL without Cloudinary upload");
+    Check((await appSvc.AddImageLink(3, "https://example.com/court.jpg")).Data!.Id == linkedImage.Data!.Id, "Duplicate image link reuses the applicant's unused image");
+    Check((await appSvc.AddImageLink(3, "file:///etc/passwd")).StatusCode == 400, "Image link rejects non-HTTPS URLs");
+    Check((await appSvc.AddImageLink(7, "https://example.com/court.jpg")).StatusCode == 403, "Staff cannot add venue application image links");
+    Check(GoogleMapsLinkHelper.Parse("https://www.google.com/maps?q=10.8%2C106.7") == (10.8m, 106.7m), "Google Maps query coordinates parse correctly");
+    Check(GoogleMapsLinkHelper.Parse("https://www.google.com/maps/place/Test/@10.1,106.1,15z/data=!3d10.8!4d106.7") == (10.8m, 106.7m), "Maps place pin takes priority over viewport coordinates");
+    Check(GoogleMapsLinkHelper.Parse("https://www.google.com/maps/@10.8,106.7,15z") == (10.8m, 106.7m), "Maps viewport link coordinates parse correctly");
+    Check(GoogleMapsLinkHelper.Parse("https://www.google.com/maps?q=100,200") == null, "Maps invalid coordinates are rejected");
+    Check(!GoogleMapsLinkHelper.IsMapsUrl(new Uri("https://google.com.evil.test/maps?q=10,106"))
+        && !GoogleMapsLinkHelper.IsMapsUrl(new Uri("https://127.0.0.1/maps?q=10,106")), "Maps resolver rejects non-Google hosts");
     var adminSvc = new AdminService(db, appSvc);
     var scheduleSvc = new OwnerScheduleService(db);
     var configSvc = new OwnerConfigService(db, scheduleSvc);

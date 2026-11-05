@@ -60,6 +60,25 @@ public class VenueApplicationService(SportSpotDbContext db, IVenueImageStorage s
         return null;
     }
 
+    public async Task<ApiResponse<UploadedVenueImageDto>> AddImageLink(int userId, string url)
+    {
+        var user = await db.Users.FindAsync(userId);
+        if (user == null || !user.IsActive) return ApiResponse<UploadedVenueImageDto>.Fail("Vui lòng đăng nhập", 401);
+        if (user.Role is "Admin" or "VenueStaff") return ApiResponse<UploadedVenueImageDto>.Fail("Tài khoản này không đăng ký sân", 403);
+        url = url.Trim();
+        if (url.Length > 1000 || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https"
+            || string.IsNullOrWhiteSpace(uri.Host) || !string.IsNullOrEmpty(uri.UserInfo) || uri.IsLoopback)
+            return ApiResponse<UploadedVenueImageDto>.Fail("Nhập link HTTPS trỏ trực tiếp đến ảnh công khai");
+        var existing = await db.VenueImages.FirstOrDefaultAsync(i => i.UploadedByUserId == userId && i.VenueId == null && i.Url == url);
+        if (existing != null) return ApiResponse<UploadedVenueImageDto>.Ok(new(existing.Id, existing.Url));
+        if (await db.VenueImages.CountAsync(i => i.UploadedByUserId == userId && i.VenueId == null) >= 24)
+            return ApiResponse<UploadedVenueImageDto>.Fail("Vui lòng sử dụng ảnh đã thêm trước đó", 409);
+        var image = new VenueImage { UploadedByUserId = userId, Url = url, PublicId = "" };
+        db.VenueImages.Add(image);
+        await db.SaveChangesAsync();
+        return ApiResponse<UploadedVenueImageDto>.Created(new(image.Id, image.Url));
+    }
+
     public async Task<ApiResponse<List<VenueApplicationDto>>> Mine(int userId)
     {
         var allSlots = await db.TimeSlots.Where(s => s.Id <= 19).OrderBy(s => s.StartTime).ThenBy(s => s.Id).ToListAsync();

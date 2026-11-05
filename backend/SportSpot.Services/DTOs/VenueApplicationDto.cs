@@ -57,6 +57,15 @@ public class AssignRoleVenueRequest
 }
 
 public record UploadedVenueImageDto(int Id, string Url);
+public class VenueImageLinkRequest
+{
+    [Required, StringLength(1000)] public string Url { get; set; } = "";
+}
+public class VenueMapsLinkRequest
+{
+    [Required, StringLength(8000)] public string Url { get; set; } = "";
+}
+public record VenueLocationDto(decimal Latitude, decimal Longitude);
 public record ModerationLogDto(string Decision, string Reason, string AdminName, DateTime CreatedAt);
 public record VenueSlotConfigItemDto(
     int SlotId,
