@@ -17,6 +17,9 @@ DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Lắng nghe trên mọi card mạng (0.0.0.0:5000) để thiết bị thật trong cùng Wi-Fi có thể kết nối
+builder.WebHost.UseUrls(Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://0.0.0.0:5000");
+
 // 1. Cấu hình EF Core: Ưu tiên lấy từ file .env, sau đó mới đến appsettings.json
 var rawConn = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
               ?? builder.Configuration.GetConnectionString("DefaultConnection");

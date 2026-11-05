@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'core/constants/api_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/fcm_push_service.dart';
 import 'data/services/floating_notification_service.dart';
@@ -16,10 +17,12 @@ import 'widgets/responsive_phone_frame.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Khởi tạo cấu hình địa chỉ Server API
+  await ApiConstants.init();
+
   // Kiểm tra cờ xem Onboarding
   final bool hasSeenOnboarding = await TokenService.isOnboardingSeen();
 
-  // Khởi tạo dịch vụ Push notification (FCM)
   // Khởi tạo dịch vụ Push notification (FCM) với background handler
   await FcmPushService.instance.initialize();
 

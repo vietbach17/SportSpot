@@ -1,17 +1,45 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConstants {
   static const String _envApiUrl = String.fromEnvironment('API_URL');
-  // Tự động nhận diện IP: 10.0.2.2 cho Android Emulator, localhost cho Windows/Web
+  static const String _prefKey = 'custom_backend_api_url';
+  static String? _customUrl;
+
+  static Future<void> init() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_prefKey);
+      if (saved != null && saved.trim().isNotEmpty) {
+        _customUrl = saved.trim().replaceAll(RegExp(r'/+$'), '');
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> setCustomUrl(String? url) async {
+    final clean = url?.trim().replaceAll(RegExp(r'/+$'), '');
+    _customUrl = (clean != null && clean.isNotEmpty) ? clean : null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_customUrl != null) {
+        await prefs.setString(_prefKey, _customUrl!);
+      } else {
+        await prefs.remove(_prefKey);
+      }
+    } catch (_) {}
+  }
+
+  // Tự động nhận diện IP: hỗ trợ tùy chỉnh qua Settings hoặc biến môi trường
   static String get baseUrl {
+    if (_customUrl != null && _customUrl!.isNotEmpty) return _customUrl!;
     if (_envApiUrl.isNotEmpty) return _envApiUrl;
     if (kIsWeb) {
       final host = Uri.base.host.isNotEmpty ? Uri.base.host : 'localhost';
       return 'http://$host:5000';
     }
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5000';
+      return 'http://10.87.14.174:5000';
     }
     return 'http://localhost:5000';
   }

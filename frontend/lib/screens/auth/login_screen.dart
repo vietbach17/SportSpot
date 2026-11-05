@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../main/main_screen.dart';
@@ -241,6 +242,94 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+
+  void _showServerConfigDialog() {
+    final controller = TextEditingController(text: ApiConstants.baseUrl);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.dns_rounded, color: AppTheme.turfGreen),
+            SizedBox(width: 8),
+            Text('Cấu hình Server API', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Nhập IP hoặc URL của Backend API để app kết nối:',
+              style: TextStyle(fontSize: 13, color: AppTheme.textGray),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'http://10.87.14.174:5000',
+                prefixIcon: Icon(Icons.link_rounded),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text('Gợi ý kết nối nhanh:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                ActionChip(
+                  label: const Text('Wi-Fi PC (10.87.14.174)'),
+                  onPressed: () => controller.text = 'http://10.87.14.174:5000',
+                ),
+                ActionChip(
+                  label: const Text('Máy ảo (10.0.2.2)'),
+                  onPressed: () => controller.text = 'http://10.0.2.2:5000',
+                ),
+                ActionChip(
+                  label: const Text('Localhost (5000)'),
+                  onPressed: () => controller.text = 'http://localhost:5000',
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await ApiConstants.setCustomUrl(null);
+              if (!mounted) return;
+              Navigator.pop(ctx);
+              setState(() {});
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Đã khôi phục địa chỉ mặc định: ${ApiConstants.baseUrl}')),
+              );
+            },
+            child: const Text('Mặc định'),
+          ),
+          ElevatedButton(
+            style: AppTheme.primaryButtonStyle(borderRadius: 10),
+            onPressed: () async {
+              final newUrl = controller.text.trim();
+              if (newUrl.isNotEmpty) {
+                await ApiConstants.setCustomUrl(newUrl);
+                if (!mounted) return;
+                Navigator.pop(ctx);
+                setState(() {});
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Đã cập nhật Server API: ${ApiConstants.baseUrl}')),
+                );
+              }
+            },
+            child: const Text('Lưu kết nối'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -249,6 +338,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Đăng nhập'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_ethernet_rounded),
+            tooltip: 'Cấu hình Server API',
+            onPressed: _showServerConfigDialog,
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
