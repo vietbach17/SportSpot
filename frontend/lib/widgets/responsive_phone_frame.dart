@@ -27,14 +27,16 @@ class ResponsivePhoneFrame extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               // Logo chìm trang trí nền máy tính
-              const Positioned.fill(
+              Positioned.fill(
                 child: Opacity(
                   opacity: 0.04,
                   child: Center(
-                    child: Icon(
-                      Icons.sports_tennis_rounded,
-                      size: 600,
-                      color: Colors.white,
+                    child: Image.asset(
+                      'logo-sp.png',
+                      width: 600,
+                      height: 600,
+                      fit: BoxFit.contain,
+                      excludeFromSemantics: true,
                     ),
                   ),
                 ),

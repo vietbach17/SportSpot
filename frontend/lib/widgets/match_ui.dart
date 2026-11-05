@@ -1,3 +1,4 @@
+import 'brand_header.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -137,35 +138,7 @@ class SportSpotLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF00A859), // Athletic turf green
-            Color(0xFF00753C),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(size * 0.3),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF00A859).withValues(alpha: 0.25),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Icon(
-          Icons.bolt_rounded,
-          color: Colors.white,
-          size: iconSize,
-        ),
-      ),
-    );
+    return SportSpotBrandLogo(size: size, iconSize: iconSize);
   }
 }
 
