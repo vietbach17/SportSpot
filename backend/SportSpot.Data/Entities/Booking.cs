@@ -38,6 +38,10 @@ public class Booking
 
     public int RemainingBalance { get; set; }
 
+    [MaxLength(100)] public string? CustomerName { get; set; }
+    [MaxLength(20)] public string? CustomerPhone { get; set; }
+    [MaxLength(500)] public string? ManagementNote { get; set; }
+
     [Required]
     [MaxLength(30)]
     public string BookingType { get; set; } = "Standard"; // 'Standard', 'OpenMatch'
@@ -55,5 +59,6 @@ public class Booking
     public ICollection<BookingDetail> BookingDetails { get; set; } = new List<BookingDetail>();
     public ICollection<BookingService> BookingServices { get; set; } = new List<BookingService>();
     public OpenMatch? OpenMatch { get; set; }
+    public ICollection<TeamChallenge> TeamChallenges { get; set; } = new List<TeamChallenge>();
     public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 }

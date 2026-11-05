@@ -54,7 +54,7 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
             .Include(b => b.BookingDetails)
                 .ThenInclude(bd => bd.TimeSlot)
             .Include(b => b.Transactions)
-            .Where(b => b.UserId == userId)
+            .Where(b => b.UserId == userId && b.BookingType != "Maintenance" && b.BookingType != "WalkIn")
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
     }
@@ -78,6 +78,7 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
     public async Task<Booking?> GetBookingByIdAndUserAsync(int bookingId, int userId)
     {
         return await _dbSet
+            .Include(b => b.TeamChallenges).ThenInclude(c => c.Requests).ThenInclude(r => r.Team)
             .Include(b => b.User)
             .Include(b => b.BookingDetails)
                 .ThenInclude(bd => bd.TimeSlot)
@@ -91,6 +92,7 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
     public async Task<Booking?> GetBookingByIdWithDetailsAsync(int bookingId)
     {
         return await _dbSet
+            .Include(b => b.TeamChallenges)
             .Include(b => b.User)
             .Include(b => b.SubVenue)
                 .ThenInclude(sv => sv!.Venue)

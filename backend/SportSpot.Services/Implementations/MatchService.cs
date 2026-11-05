@@ -55,6 +55,8 @@ public class MatchService(IUnitOfWork unitOfWork, SportSpotDbContext db) : IMatc
         if (booking == null) return ApiResponse<OpenMatchDto>.Fail("Không tìm thấy đơn đặt sân", 404);
         if (booking.UserId != userId || userId <= 0)
             return ApiResponse<OpenMatchDto>.Fail("Chỉ Host được tạo kèo", 403);
+        if (booking.TeamChallenges.Any())
+            return ApiResponse<OpenMatchDto>.Fail("Đơn sân đã dùng cho ghép đội đối kháng", 409);
         if (!MatchRules.IsUpcoming(booking))
             return ApiResponse<OpenMatchDto>.Fail("Chỉ được tuyển cho đơn sắp diễn ra", 409);
         if (await db.OpenMatches.AnyAsync(m => m.BookingId == booking.Id))

@@ -130,7 +130,7 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
 
   Future<void> _loadLiveUsers() async {
     try {
-      final res = await ApiClient().get('/api/admin/users', requiresAuth: false);
+      final res = await ApiClient().get('/api/admin/users');
       if (res is List && res.isNotEmpty && mounted) {
         setState(() {
           _systemUsers.clear();
@@ -211,6 +211,33 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
         backgroundColor: Color(0xFF2563EB),
       ),
     );
+  }
+
+  Future<void> _assignOwnerVenue(Map<String, dynamic> user) async {
+    try {
+      final venues = (await ApiClient().get('/api/owner/venues')) as List;
+      if (!mounted) return;
+      if (venues.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chưa có cụm sân để phân công')));
+        return;
+      }
+      var selected = venues.first['id'] as int;
+      final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+        title: Text('Gán sân cho ${user['name']}'),
+        content: DropdownButtonFormField<int>(initialValue: selected, isExpanded: true,
+          decoration: const InputDecoration(labelText: 'Cụm sân quản lý'),
+          items: venues.map((v) => DropdownMenuItem(value: v['id'] as int,
+            child: Text(v['name'] as String, overflow: TextOverflow.ellipsis))).toList(),
+          onChanged: (v) => selected = v!),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Đóng')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Gán sân'))],
+      ));
+      if (ok != true || !mounted) return;
+      await ApiClient().put('/api/owner/venues/$selected/owner/${user['id']}', {});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã gán cụm sân cho chủ sân')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
   }
 
   void _exportReport() {
@@ -783,6 +810,9 @@ class _AdminHubScreenState extends State<AdminHubScreen> with SingleTickerProvid
                         ],
                       ),
                     ),
+                    if (role == 'Owner')
+                      IconButton(tooltip: 'Gán cụm sân quản lý', icon: const Icon(Icons.add_business_outlined),
+                        onPressed: () => _assignOwnerVenue(user)),
                     // Nút khóa / mở khóa
                     Column(
                       children: [

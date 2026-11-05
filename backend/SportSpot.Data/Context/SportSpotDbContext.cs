@@ -26,10 +26,26 @@ public class SportSpotDbContext : DbContext
     public DbSet<FavoriteVenue> FavoriteVenues => Set<FavoriteVenue>();
     public DbSet<MatchComment> MatchComments => Set<MatchComment>();
     public DbSet<UserSkill> UserSkills => Set<UserSkill>();
+    public DbSet<Team> Teams => Set<Team>();
+    public DbSet<TeamChallenge> TeamChallenges => Set<TeamChallenge>();
+    public DbSet<TeamChallengeRequest> TeamChallengeRequests => Set<TeamChallengeRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Team>().HasOne(t => t.CaptainUser).WithMany()
+            .HasForeignKey(t => t.CaptainUserId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<TeamChallenge>().HasOne(t => t.Team).WithMany()
+            .HasForeignKey(t => t.TeamId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<TeamChallenge>().HasOne(t => t.Booking).WithMany(b => b.TeamChallenges)
+            .HasForeignKey(t => t.BookingId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<TeamChallenge>().HasIndex(t => t.BookingId).IsUnique();
+        modelBuilder.Entity<TeamChallenge>().Property(t => t.Revision).IsConcurrencyToken();
+        modelBuilder.Entity<TeamChallengeRequest>().HasOne(t => t.Team).WithMany()
+            .HasForeignKey(t => t.TeamId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<TeamChallengeRequest>().HasIndex(t => new { t.TeamChallengeId, t.TeamId }).IsUnique();
+        modelBuilder.Entity<TeamChallengeRequest>().Property(t => t.Status).IsConcurrencyToken();
 
         modelBuilder.Entity<FavoriteVenue>()
             .HasIndex(f => new { f.UserId, f.VenueId })
@@ -49,6 +65,7 @@ public class SportSpotDbContext : DbContext
 
         modelBuilder.Entity<Booking>().Property(b => b.RemainingBalance).IsConcurrencyToken();
         modelBuilder.Entity<Booking>().Property(b => b.Status).IsConcurrencyToken();
+        modelBuilder.Entity<Booking>().Property(b => b.BookingType).IsConcurrencyToken();
         modelBuilder.Entity<User>().Property(u => u.WalletBalance).IsConcurrencyToken();
         modelBuilder.Entity<MatchMember>().HasIndex(m => new { m.MatchId, m.UserId }).IsUnique();
         modelBuilder.Entity<UserSkill>().HasIndex(us => new { us.UserId, us.SportId }).IsUnique();

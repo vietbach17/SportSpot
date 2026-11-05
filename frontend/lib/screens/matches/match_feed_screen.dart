@@ -23,6 +23,7 @@ import 'match_discussion_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/repositories/venue_repository.dart';
 import '../venues/venue_detail_screen.dart';
+import '../teams/team_match_screen.dart';
 
 class MatchFeedScreen extends StatefulWidget {
   final Object? repository;
@@ -866,6 +867,13 @@ class _Module4MatchFeedState extends State<MatchFeedScreen> {
           screenName: widget.staff ? 'Quầy Lễ Tân' : 'Tìm Kèo Giao Lưu',
           showBackButton: widget.staff,
           actions: [
+            if (!widget.staff)
+              IconButton(
+                tooltip: 'Ghép đội bóng',
+                icon: const Icon(Icons.sports_soccer),
+                onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const TeamMatchScreen())),
+              ),
             if (!widget.staff && auth.currentUser?.role == 'VenueStaff')
               IconButton(
                 tooltip: 'Quầy lễ tân',

@@ -35,7 +35,7 @@ public class OwnerService : IOwnerService
             .Include(b => b.BookingDetails)
                 .ThenInclude(bd => bd.TimeSlot)
             .Include(b => b.Transactions)
-            .Where(b => subVenueIds.Contains(b.SubVenueId))
+            .Where(b => subVenueIds.Contains(b.SubVenueId) && b.BookingType != "Maintenance")
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
@@ -59,7 +59,7 @@ public class OwnerService : IOwnerService
             ? (int)Math.Min(100, Math.Round((double)bookedSlotsTodayCount / totalPossibleSlotsToday * 100))
             : 0;
 
-        var nonCancelledBookings = bookings.Where(b => b.Status != "Cancelled").ToList();
+        var nonCancelledBookings = bookings.Where(b => b.Status != "Cancelled" && b.BookingType != "Maintenance").ToList();
         var totalRevenue = nonCancelledBookings.Sum(b => b.TotalPrice);
 
         var holdingEscrow = bookings
@@ -104,8 +104,8 @@ public class OwnerService : IOwnerService
             {
                 BookingId = b.Id,
                 BookingCode = b.BookingCode,
-                CustomerName = b.User?.FullName ?? "Khách đặt sân",
-                CustomerPhone = b.User?.PhoneNumber ?? string.Empty,
+                CustomerName = b.CustomerName ?? b.User?.FullName ?? "Khách đặt sân",
+                CustomerPhone = b.CustomerPhone ?? b.User?.PhoneNumber ?? string.Empty,
                 SubVenueName = b.SubVenue?.Name ?? "Sân chính",
                 PlayDate = b.PlayDate.ToString("yyyy-MM-dd"),
                 TimeSlots = b.BookingDetails

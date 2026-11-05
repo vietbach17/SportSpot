@@ -116,21 +116,20 @@ class MockOwnerRepository implements IOwnerRepository {
 
 class ApiOwnerRepository implements IOwnerRepository {
   final ApiClient _client;
-  final MockOwnerRepository _fallback = MockOwnerRepository();
 
   ApiOwnerRepository({ApiClient? client}) : _client = client ?? ApiClient();
 
   @override
   Future<OwnerDashboardModel> getDashboard({int? venueId}) async {
     try {
-      final vid = venueId ?? 1;
-      final response = await _client.get('/api/owner/dashboard?venueId=$vid', requiresAuth: false);
+      final query = venueId == null ? '' : '?venueId=$venueId';
+      final response = await _client.get('/api/owner/dashboard$query');
       if (response is Map<String, dynamic>) {
         return OwnerDashboardModel.fromJson(response);
       }
-      return await _fallback.getDashboard(venueId: venueId);
+      throw ApiException(500, 'Không đọc được dữ liệu chủ sân');
     } catch (_) {
-      return await _fallback.getDashboard(venueId: venueId);
+      rethrow;
     }
   }
 
@@ -144,9 +143,9 @@ class ApiOwnerRepository implements IOwnerRepository {
       if (response is Map<String, dynamic> && response['data'] is bool) {
         return response['data'] as bool;
       }
-      return await _fallback.toggleSubVenueStatus(subVenueId, isActive: isActive);
+      throw ApiException(500, 'Không cập nhật được trạng thái sân');
     } catch (_) {
-      return await _fallback.toggleSubVenueStatus(subVenueId, isActive: isActive);
+      rethrow;
     }
   }
 }

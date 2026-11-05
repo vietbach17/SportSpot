@@ -7,6 +7,7 @@ import '../admin/admin_hub_screen.dart';
 import '../home/home_screen.dart';
 import '../matches/match_feed_screen.dart';
 import '../owner/owner_dashboard_screen.dart';
+import '../owner/owner_schedule_screen.dart';
 import '../profile/profile_screen.dart';
 import '../tickets/my_tickets_screen.dart';
 import '../tickets/qr_scanner_screen.dart';
@@ -78,6 +79,7 @@ class _MainScreenState extends State<MainScreen> {
       case 'Owner':
         pages = [
           const OwnerDashboardScreen(),
+          const OwnerScheduleScreen(),
           Consumer<TicketProvider>(
             builder: (ctx, ticketProv, _) => QrScannerScreen(provider: ticketProv),
           ),
@@ -88,6 +90,11 @@ class _MainScreenState extends State<MainScreen> {
             'icon': Icons.dashboard_outlined,
             'activeIcon': Icons.dashboard_rounded,
             'label': 'Doanh thu',
+          },
+          {
+            'icon': Icons.calendar_month_outlined,
+            'activeIcon': Icons.calendar_month,
+            'label': 'Lịch sân',
           },
           {
             'icon': Icons.qr_code_scanner_outlined,
@@ -104,12 +111,18 @@ class _MainScreenState extends State<MainScreen> {
 
       case 'VenueStaff':
         pages = [
+          const OwnerScheduleScreen(),
           Consumer<TicketProvider>(
             builder: (ctx, ticketProv, _) => QrScannerScreen(provider: ticketProv),
           ),
           const ProfileScreen(),
         ];
         navItems = [
+          {
+            'icon': Icons.calendar_month_outlined,
+            'activeIcon': Icons.calendar_month,
+            'label': 'Lịch sân',
+          },
           {
             'icon': Icons.qr_code_scanner_outlined,
             'activeIcon': Icons.qr_code_scanner_rounded,

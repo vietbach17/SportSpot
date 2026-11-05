@@ -21,6 +21,38 @@ public static class SqliteModule4Upgrade
             AddColumn(db, "OpenMatches", "Title", "TEXT NULL");
             AddColumn(db, "OpenMatches", "HostNote", "TEXT NULL");
             AddColumn(db, "OpenMatches", "HostPhone", "TEXT NULL");
+            AddColumn(db, "Bookings", "CustomerName", "TEXT NULL");
+            AddColumn(db, "Bookings", "CustomerPhone", "TEXT NULL");
+            AddColumn(db, "Bookings", "ManagementNote", "TEXT NULL");
+            db.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS UserSkills (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    UserId INTEGER NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+                    SportId INTEGER NOT NULL REFERENCES Sports(Id) ON DELETE CASCADE,
+                    SkillLevel TEXT NOT NULL, RatingScore TEXT NOT NULL, IsVerified INTEGER NOT NULL,
+                    VerifiedBy TEXT NULL, UpdatedAt TEXT NOT NULL);
+                CREATE UNIQUE INDEX IF NOT EXISTS IX_UserSkills_UserId_SportId ON UserSkills(UserId, SportId);
+                CREATE INDEX IF NOT EXISTS IX_UserSkills_SportId ON UserSkills(SportId);
+                CREATE TABLE IF NOT EXISTS Teams (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL,
+                    CaptainUserId INTEGER NOT NULL REFERENCES Users(Id) ON DELETE RESTRICT,
+                    TeamSize INTEGER NOT NULL, SkillLevel TEXT NOT NULL, CreatedAt TEXT NOT NULL);
+                CREATE INDEX IF NOT EXISTS IX_Teams_CaptainUserId ON Teams(CaptainUserId);
+                CREATE TABLE IF NOT EXISTS TeamChallenges (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    TeamId INTEGER NOT NULL REFERENCES Teams(Id) ON DELETE RESTRICT,
+                    BookingId INTEGER NOT NULL REFERENCES Bookings(Id) ON DELETE RESTRICT,
+                    Note TEXT NOT NULL, Status TEXT NOT NULL, Revision INTEGER NOT NULL, CreatedAt TEXT NOT NULL);
+                CREATE UNIQUE INDEX IF NOT EXISTS IX_TeamChallenges_BookingId ON TeamChallenges(BookingId);
+                CREATE INDEX IF NOT EXISTS IX_TeamChallenges_TeamId ON TeamChallenges(TeamId);
+                CREATE TABLE IF NOT EXISTS TeamChallengeRequests (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    TeamChallengeId INTEGER NOT NULL REFERENCES TeamChallenges(Id) ON DELETE CASCADE,
+                    TeamId INTEGER NOT NULL REFERENCES Teams(Id) ON DELETE RESTRICT,
+                    Message TEXT NOT NULL, Status TEXT NOT NULL, CreatedAt TEXT NOT NULL);
+                CREATE UNIQUE INDEX IF NOT EXISTS IX_TeamChallengeRequests_TeamChallengeId_TeamId
+                    ON TeamChallengeRequests(TeamChallengeId, TeamId);
+                CREATE INDEX IF NOT EXISTS IX_TeamChallengeRequests_TeamId ON TeamChallengeRequests(TeamId);");
             db.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS IX_MatchMembers_MatchId_UserId ON MatchMembers(MatchId, UserId)");
             db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Users_StaffVenueId ON Users(StaffVenueId)");
             db.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS Notifications (

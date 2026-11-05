@@ -214,6 +214,8 @@ public class TicketService : ITicketService
         {
             return ApiResponse<CancelRefundResultDto>.Fail("Không tìm thấy đơn đặt sân của bạn", 404);
         }
+        if (booking.BookingType is "Maintenance" or "WalkIn")
+            return ApiResponse<CancelRefundResultDto>.Fail("Dùng lịch quản lý sân để hủy đơn tại quầy hoặc bỏ chặn bảo trì", 409);
 
         if (booking.Status == "Cancelled")
         {
@@ -263,6 +265,13 @@ public class TicketService : ITicketService
         int penaltyAmount = booking.DepositAmount - refundAmount;
 
         booking.Status = "Cancelled";
+        foreach (var challenge in booking.TeamChallenges)
+        {
+            challenge.Status = "Cancelled";
+            challenge.Revision++;
+            foreach (var application in challenge.Requests.Where(r => r.Status is "Pending" or "Accepted"))
+                application.Status = "Cancelled";
+        }
         foreach (var detail in booking.BookingDetails)
         {
             detail.Status = "Cancelled";

@@ -38,7 +38,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
       _errorMessage = null;
     });
     try {
-      final data = await _repository.getDashboard(venueId: widget.venueId ?? 1);
+      final data = await _repository.getDashboard(venueId: widget.venueId);
       if (mounted) {
         setState(() {
           _dashboardData = data;
