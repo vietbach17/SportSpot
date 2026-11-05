@@ -6,6 +6,11 @@ using SportSpot.Services.Implementations;
 
 namespace SportSpot.API.Controllers;
 
+public class VenueImageUploadRequest
+{
+    public IFormFile File { get; set; } = null!;
+}
+
 [ApiController, Authorize, Route("api/venue-applications")]
 public class VenueApplicationsController(VenueApplicationService service) : ControllerBase
 {
@@ -27,8 +32,10 @@ public class VenueApplicationsController(VenueApplicationService service) : Cont
     public async Task<IActionResult> Resubmit(int id, [FromBody] SubmitVenueRequest request) => Respond(await service.Submit(UserId, request, id));
 
     [HttpPost("images"), RequestSizeLimit(9 * 1024 * 1024)]
-    public async Task<IActionResult> Upload([FromForm] IFormFile file, CancellationToken cancellationToken)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> Upload([FromForm] VenueImageUploadRequest request, CancellationToken cancellationToken)
     {
+        var file = request?.File;
         if (file == null || file.Length is < 12 or > 8388608)
             return BadRequest(ApiResponse<object>.Fail("Chọn ảnh JPG/PNG/WebP tối đa 8 MB"));
         using var stream = new MemoryStream();

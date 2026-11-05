@@ -21,6 +21,7 @@ class ApiClient {
     final headers = {
       'Content-Type': 'application/json; charset=utf-8',
       'Accept': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
     };
 
     if (requiresAuth) {
@@ -38,7 +39,7 @@ class ApiClient {
     final headers = await _getHeaders(requiresAuth: requiresAuth);
 
     final response = await http.get(uri, headers: headers).timeout(
-      const Duration(seconds: 15),
+      const Duration(seconds: 30),
     );
 
     return _processResponse(response);
@@ -50,7 +51,7 @@ class ApiClient {
 
     final response = await http
         .post(uri, headers: headers, body: jsonEncode(body))
-        .timeout(const Duration(seconds: 15));
+        .timeout(const Duration(seconds: 30));
 
     return _processResponse(response);
   }
@@ -61,7 +62,7 @@ class ApiClient {
 
     final response = await http
         .put(uri, headers: headers, body: jsonEncode(body))
-        .timeout(const Duration(seconds: 15));
+        .timeout(const Duration(seconds: 30));
 
     return _processResponse(response);
   }

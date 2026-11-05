@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../auth/login_screen.dart';
 import '../../widgets/venue_review_sheet.dart';
 import '../../widgets/venue_image_carousel.dart';
 import '../../data/models/venue_model.dart';
@@ -5,6 +9,7 @@ import '../../data/models/venue_model.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/maps_launcher.dart';
 import '../../data/sportspot_models.dart';
 import '../booking/court_slots_screen.dart';
 import '../../widgets/mini_pitch_map.dart';
@@ -36,6 +41,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   bool _reviewsFailed = false;
   final IFavoriteRepository _favoriteRepo = ApiFavoriteRepository();
   bool _isFavorite = false;
+  StreamSubscription<void>? _favSub;
 
   void _checkFavorite() async {
     try {
@@ -64,6 +70,15 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     super.initState();
     _loadReviews();
     _checkFavorite();
+    _favSub = _favoriteRepo.onFavoritesChanged.listen((_) {
+      if (mounted) _checkFavorite();
+    });
+  }
+
+  @override
+  void dispose() {
+    _favSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadReviews() async {
@@ -90,7 +105,14 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
   int get _venueId {
     if (widget.venue is SportSpotVenue) {
-      return int.tryParse((widget.venue as SportSpotVenue).id) ?? 1;
+      final s = widget.venue as SportSpotVenue;
+      final parsed = int.tryParse(s.id);
+      if (parsed != null) return parsed;
+      if (s.id.contains('cau-giay') || s.name.toLowerCase().contains('cầu giấy')) return 1;
+      if (s.id.contains('westlake') || s.id.contains('chao-lua') || s.name.toLowerCase().contains('chảo lửa')) return 2;
+      if (s.id.contains('thao-dien') || s.id.contains('dsports') || s.name.toLowerCase().contains('pickleball')) return 3;
+      if (s.id.contains('phu-my-hung') || s.id.contains('xuan-huong') || s.name.toLowerCase().contains('bóng rổ')) return 4;
+      return 1;
     } else if (widget.venue is Map) {
       return int.tryParse(widget.venue['id']?.toString() ?? '1') ?? 1;
     } else {
@@ -117,6 +139,51 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       return 'Quận Cầu Giấy, Hà Nội';
     }
   }
+
+  double? get _venueLatitude {
+    try {
+      if (widget.venue is VenueItemModel) {
+        final lat = (widget.venue as VenueItemModel).latitude;
+        return lat != 0.0 ? lat : null;
+      }
+      if (widget.venue is Map) {
+        final lat = widget.venue['latitude'] ?? widget.venue['lat'];
+        if (lat != null) {
+          final val = (lat as num).toDouble();
+          return val != 0.0 ? val : null;
+        }
+      }
+      final dynamic v = widget.venue;
+      if (v.latitude != null) {
+        final val = (v.latitude as num).toDouble();
+        return val != 0.0 ? val : null;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  double? get _venueLongitude {
+    try {
+      if (widget.venue is VenueItemModel) {
+        final lng = (widget.venue as VenueItemModel).longitude;
+        return lng != 0.0 ? lng : null;
+      }
+      if (widget.venue is Map) {
+        final lng = widget.venue['longitude'] ?? widget.venue['lng'];
+        if (lng != null) {
+          final val = (lng as num).toDouble();
+          return val != 0.0 ? val : null;
+        }
+      }
+      final dynamic v = widget.venue;
+      if (v.longitude != null) {
+        final val = (v.longitude as num).toDouble();
+        return val != 0.0 ? val : null;
+      }
+    } catch (_) {}
+    return null;
+  }
+
 
   String get _venueDistance {
     try {
@@ -355,12 +422,10 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Đang mở bản đồ chỉ đường Google Maps...',
-                          ),
-                        ),
+                      MapsLauncher.openDirections(
+                        latitude: _venueLatitude,
+                        longitude: _venueLongitude,
+                        address: _venueAddress,
                       );
                     },
                     icon: const Icon(
@@ -806,7 +871,25 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
-  void _navigateToCourtSlots() {
+  Future<void> _navigateToCourtSlots() async {
+    AuthProvider? auth;
+    try {
+      auth = context.read<AuthProvider>();
+    } catch (_) {}
+    if (auth != null && !auth.isAuthenticated) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Khách vãng lai chỉ được tham gia ghép trận có sẵn. Vui lòng đăng nhập để đặt sân!'),
+        ),
+      );
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      if (!mounted || !auth.isAuthenticated) return;
+    }
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => CourtSlotsScreen(venueId: _venueId)),

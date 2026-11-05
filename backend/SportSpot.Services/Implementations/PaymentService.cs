@@ -97,6 +97,10 @@ public class PaymentService : IPaymentService
 
 
         // Tích hợp cổng PayOS VietQR nếu được cấu hình và gateway là PayOS / VietQR
+        string? payOsAccNo = null;
+        string? payOsAccName = null;
+        string? payOsBankName = null;
+        string? payOsTransferDesc = null;
         if (!string.Equals(gateway, "Wallet", StringComparison.OrdinalIgnoreCase))
         {
             var payOsClient = GetPayOSClient();
@@ -132,6 +136,17 @@ public class PaymentService : IPaymentService
                         {
                             qrPayload = payOsResponse.QrCode;
                         }
+                        payOsAccNo = payOsResponse.AccountNumber;
+                        payOsAccName = payOsResponse.AccountName;
+                        payOsBankName = payOsResponse.Bin switch
+                        {
+                            "970418" => "VietinBank (Ngân hàng TMCP Công Thương)",
+                            "970422" => "MBBank (Ngân hàng TMCP Quân Đội)",
+                            "970436" => "Vietcombank",
+                            "970407" => "Techcombank",
+                            _ => "Ngân hàng liên kết (" + payOsResponse.Bin + ")"
+                        };
+                        payOsTransferDesc = payOsResponse.Description;
                     }
                 }
                 catch (Exception)
@@ -148,7 +163,11 @@ public class PaymentService : IPaymentService
             EscrowStatus = "Holding",
             Amount = amount,
             PaymentGateway = gateway,
-            QrPayload = qrPayload
+            QrPayload = qrPayload,
+            AccountNumber = payOsAccNo,
+            AccountName = payOsAccName,
+            BankName = payOsBankName,
+            Description = payOsTransferDesc
         };
 
         return ApiResponse<PaymentIntentResponseDto>.Ok(
@@ -452,4 +471,21 @@ public class PaymentService : IPaymentService
 
         return await GetUserTransactionsAsync(request.UserId);
     }
+
+    public async Task<ApiResponse<object>> GetPaymentStatusAsync(int bookingId)
+    {
+        var booking = await _unitOfWork.Bookings.GetByIdAsync(bookingId);
+        if (booking == null) return ApiResponse<object>.Fail("Không tìm thấy đơn đặt sân", 404);
+        var txns = await _unitOfWork.Transactions.GetByBookingIdAsync(bookingId);
+        var lastTxn = txns.LastOrDefault();
+        var isPaid = booking.Status == "Confirmed" || lastTxn?.Status == "Completed";
+        return ApiResponse<object>.Ok(new
+        {
+            bookingId = booking.Id,
+            bookingStatus = booking.Status,
+            transactionStatus = lastTxn?.Status ?? "Holding",
+            isPaid = isPaid
+        });
+    }
+
 }

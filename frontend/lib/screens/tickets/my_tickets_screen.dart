@@ -22,6 +22,7 @@ import '../../data/repositories/venue_repository.dart';
 import '../../data/repositories/review_repository.dart';
 import '../../widgets/venue_review_sheet.dart';
 import '../venues/venue_detail_screen.dart';
+import '../booking/booking_detail_screen.dart';
 
 class MyTicketsScreen extends StatefulWidget {
   final Object? repository;

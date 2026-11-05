@@ -1,5 +1,5 @@
+import 'dart:async';
 import '../owner/venue_applications_screen.dart';
-import '../auth/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
@@ -7,6 +7,7 @@ import '../../data/models/venue_model.dart';
 import '../../providers/venue_provider.dart';
 import '../../data/sportspot_mock_data.dart';
 import '../../data/sportspot_models.dart';
+import '../../data/repositories/favorite_repository.dart';
 import '../../providers/auth_provider.dart';
 import '../../data/repositories/match_repository.dart';
 import '../../data/models/match_model.dart';
@@ -14,6 +15,7 @@ import '../../widgets/match_ui.dart';
 import '../../widgets/bounce_interaction.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../../widgets/brand_header.dart';
+import '../auth/login_screen.dart';
 import '../venues/venue_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
 
@@ -883,6 +885,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+                Positioned(
+                  top: 10,
+                  right: 12,
+                  child: _VenueFavoriteButton(venue: venue),
+                ),
               ],
             ),
           ),
@@ -1014,7 +1021,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 10),
                     BounceTap(
-                      onTap: () {
+                      onTap: () async {
+                        final auth = context.read<AuthProvider>();
+                        if (!auth.isAuthenticated) {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Khách vãng lai chỉ được tham gia ghép trận có sẵn. Vui lòng đăng nhập để đặt sân!'),
+                            ),
+                          );
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          );
+                          if (!mounted || !auth.isAuthenticated) return;
+                        }
+                        if (!mounted) return;
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -1023,7 +1045,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          final auth = context.read<AuthProvider>();
+                          if (!auth.isAuthenticated) {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Khách vãng lai chỉ được tham gia ghép trận có sẵn. Vui lòng đăng nhập để đặt sân!'),
+                              ),
+                            );
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            );
+                            if (!mounted || !auth.isAuthenticated) return;
+                          }
+                          if (!mounted) return;
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -1047,6 +1084,89 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _VenueFavoriteButton extends StatefulWidget {
+  final SportSpotVenue venue;
+  const _VenueFavoriteButton({required this.venue});
+
+  @override
+  State<_VenueFavoriteButton> createState() => _VenueFavoriteButtonState();
+}
+
+class _VenueFavoriteButtonState extends State<_VenueFavoriteButton> {
+  final IFavoriteRepository _favoriteRepo = ApiFavoriteRepository();
+  bool _isFavorite = false;
+  StreamSubscription<void>? _sub;
+
+  int get _venueId {
+    final parsed = int.tryParse(widget.venue.id);
+    if (parsed != null) return parsed;
+    if (widget.venue.id.contains('cau-giay') || widget.venue.name.toLowerCase().contains('cầu giấy')) return 1;
+    if (widget.venue.id.contains('westlake') || widget.venue.id.contains('chao-lua') || widget.venue.name.toLowerCase().contains('chảo lửa')) return 2;
+    if (widget.venue.id.contains('thao-dien') || widget.venue.id.contains('dsports') || widget.venue.name.toLowerCase().contains('pickleball')) return 3;
+    if (widget.venue.id.contains('phu-my-hung') || widget.venue.id.contains('xuan-huong') || widget.venue.name.toLowerCase().contains('bóng rổ')) return 4;
+    return 1;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+    _sub = _favoriteRepo.onFavoritesChanged.listen((_) {
+      if (mounted) _check();
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _check() async {
+    try {
+      final favs = await _favoriteRepo.getFavoriteVenueIds();
+      if (mounted) setState(() => _isFavorite = favs.contains(_venueId));
+    } catch (_) {}
+  }
+
+  Future<void> _toggle() async {
+    final next = !_isFavorite;
+    setState(() => _isFavorite = next);
+    await _favoriteRepo.toggleFavorite(_venueId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          next ? 'Đã lưu sân vào danh sách yêu thích' : 'Đã bỏ yêu thích sân',
+        ),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: _toggle,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.55),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Icon(
+          _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          color: _isFavorite ? const Color(0xFFEF4444) : Colors.white,
+          size: 18,
+        ),
       ),
     );
   }

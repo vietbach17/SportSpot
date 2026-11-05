@@ -268,7 +268,7 @@ class _LoginScreenState extends State<LoginScreen> {
             TextField(
               controller: controller,
               decoration: const InputDecoration(
-                hintText: 'http://10.87.14.174:5000',
+                hintText: 'http://10.0.2.2:5000',
                 prefixIcon: Icon(Icons.link_rounded),
                 isDense: true,
               ),

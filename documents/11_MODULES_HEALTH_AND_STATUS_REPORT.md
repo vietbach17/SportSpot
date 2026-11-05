@@ -3,7 +3,7 @@
 **Dự án:** SportSpot – Multi-Sport Venue Booking & Match-Finding Platform  
 **Khóa học:** PRM393 - Mobile Programming (Fall 2026)  
 **Nhánh Git:** `feature/payment-tickets` & `main`  
-**Ngày cập nhật:** 31/10/2026  
+**Ngày cập nhật:** 05/11/2026  
 
 ---
 
@@ -75,7 +75,8 @@
 
 ### 🔹 Module 5: Thanh Toán Escrow, Vé QR Offline SHA-256 & Quản Trị Ví (Gói 4 - Huy)
 - **Backend**:
-  - `PaymentsController.cs` (`/api/payments/create-intent`, `/api/payments/webhook-ipn`, `/api/payments/mock-pay`, `/api/payments/history`).
+  - `PaymentsController.cs` (`/api/payments/create-intent`, `/api/payments/payos-webhook`, `/api/payments/status/{bookingId}`, `/api/payments/mock-pay`, `/api/payments/history`).
+  - **Tích hợp PayOS VietQR thật 100% In-App Mobile**: Sinh mã VietQR động chuẩn EMVCo Napas kèm thông tin ngân hàng định danh (`accountNumber`, `accountName`, `bankName`, `description`, `qrPayload`), đối soát tự động qua Ngrok Tunnel Webhook & Polling.
   - `TicketsController.cs` (`/api/tickets/my-tickets`, `/api/tickets/verify-qr`, `/api/tickets/{id}/cancel`).
   - **Cơ chế Escrow**: Tiền cọc giữ ở trạng thái `Holding`, chỉ giải ngân `Settled` cho chủ sân khi quét QR check-in hợp lệ.
   - **Chữ ký SHA-256 Checksum**: Chống làm giả vé và chống quét lại lần 2 (Replay Attack).

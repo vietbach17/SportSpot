@@ -36,7 +36,9 @@ class _MainScreenState extends State<MainScreen> {
     final role = auth.isGuest ? 'Guest' : (auth.currentUser?.role ?? 'Player');
 
     // Tự động đồng bộ index khi vai trò đăng nhập thay đổi
-    if (_currentRole != role) {
+    if (_currentRole == null) {
+      _currentRole = role;
+    } else if (_currentRole != role) {
       _currentRole = role;
       _currentIndex = 0;
     }

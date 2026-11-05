@@ -16,6 +16,10 @@ public class PaymentIntentResponseDto
     public int Amount { get; set; }
     public string PaymentGateway { get; set; } = string.Empty;
     public string QrPayload { get; set; } = string.Empty;
+    public string? AccountNumber { get; set; }
+    public string? AccountName { get; set; }
+    public string? BankName { get; set; }
+    public string? Description { get; set; }
 }
 
 public class PaymentWebhookRequest

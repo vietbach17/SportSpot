@@ -69,7 +69,8 @@ void main() {
 
       // Verify that skill ratings breakdown is NOT rendered for guest
       expect(find.text('Bộ Môn & Đánh Giá Kỹ Năng'), findsNothing);
-      expect(find.text('Nâng cao 4.0 • Xác thực bởi Host'), findsNothing);
+      expect(find.text('Nâng cao 4.0'), findsNothing);
+      expect(find.textContaining('Xác thực bởi Host'), findsNothing);
       expect(find.text('Trung cấp 3.5 • DUPR Rating'), findsNothing);
       expect(find.text('Hạng B+ • Tốc độ & Thể lực'), findsNothing);
     });
@@ -108,7 +109,8 @@ void main() {
 
       // Verify that skill ratings breakdown IS rendered for logged-in user
       expect(find.text('Bộ Môn & Đánh Giá Kỹ Năng'), findsOneWidget);
-      expect(find.text('Nâng cao 4.0 • Xác thực bởi Host'), findsOneWidget);
+      expect(find.text('Nâng cao 4.0'), findsOneWidget);
+      expect(find.textContaining('Xác thực bởi Host'), findsNothing);
       expect(find.text('Trung cấp 3.5 • DUPR Rating'), findsOneWidget);
       expect(find.text('Hạng B+ • Tốc độ & Thể lực'), findsOneWidget);
     });

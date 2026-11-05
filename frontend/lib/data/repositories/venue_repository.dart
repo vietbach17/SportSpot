@@ -76,6 +76,8 @@ class VenueRepository {
     return all.firstWhere((v) => v.id == id, orElse: () => all.first);
   }
 
+  static List<VenueItemModel> get fallbackVenues => VenueRepository()._getMockVenues();
+
   List<VenueItemModel> _getMockVenues({
     int? sportId,
     String? search,

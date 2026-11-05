@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/favorite_repository.dart';
+import '../../data/repositories/venue_repository.dart';
 import '../../data/models/venue_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/ticket_provider.dart';
@@ -14,6 +16,7 @@ import '../payment/wallet_history_screen.dart';
 import '../settings/settings_screen.dart';
 import '../admin/admin_hub_screen.dart';
 import '../tickets/cancel_ticket_dialog.dart';
+import '../tickets/my_tickets_screen.dart';
 import '../tickets/qr_scanner_screen.dart';
 import '../venues/venue_detail_screen.dart';
 import '../../widgets/brand_header.dart';
@@ -28,16 +31,26 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final IFavoriteRepository _favoriteRepo = ApiFavoriteRepository();
   List<int> _favoriteVenueIds = [];
-  
+  StreamSubscription<void>? _favSub;
+
   @override
   void initState() {
     super.initState();
     _loadFavorites();
+    _favSub = _favoriteRepo.onFavoritesChanged.listen((_) {
+      if (mounted) _loadFavorites();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<AuthProvider>().fetchUserSkills();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _favSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadFavorites() async {
@@ -305,9 +318,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (_) {
       venueProvider = null;
     }
-    final favoriteVenues = venueProvider != null
-        ? venueProvider.venues.where((v) => _favoriteVenueIds.contains(v.id)).toList()
-        : <VenueItemModel>[];
+    final allVenues = (venueProvider != null && venueProvider.venues.isNotEmpty)
+        ? venueProvider.venues
+        : VenueRepository.fallbackVenues;
+    final favoriteVenues = allVenues.where((v) => _favoriteVenueIds.contains(v.id)).toList();
 
     final matchCount = isGuest
         ? (ticketProvider.tickets.isNotEmpty ? ticketProvider.tickets.length : 2)
@@ -822,12 +836,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    InkWell(
-                                      onTap: () => _toggleFavorite(v.id),
-                                      child: const Padding(
-                                        padding: EdgeInsets.all(4),
-                                        child: Icon(Icons.favorite_rounded, color: Color(0xFFE11D48), size: 18),
-                                      ),
+                                    IconButton(
+                                      icon: const Icon(Icons.favorite_rounded, color: Color(0xFFE11D48), size: 20),
+                                      tooltip: 'Bỏ yêu thích',
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                      onPressed: () => _toggleFavorite(v.id),
                                     ),
                                     const SizedBox(height: 6),
                                     SizedBox(
@@ -1001,6 +1015,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
+
+              // Vé Thi Đấu & Lịch Đặt Sân Của Tôi (Truy cập nhanh cho mọi vai trò)
+              Container(
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderColor, width: 1.2),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  child: ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00A859).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.confirmation_number_rounded, color: Color(0xFF00A859)),
+                    ),
+                    title: Text(
+                      'Vé Thi Đấu & Đơn Đặt Sân Của Tôi',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
+                    ),
+                    subtitle: Text(
+                      'Xem chi tiết vé QR Check-in, bảng kê chi phí, hủy vé hoàn cọc & rút tiền ví',
+                      style: TextStyle(fontSize: 11, color: mutedColor),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                    onTap: () {
+                      context.read<TicketProvider>().loadTickets();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MyTicketsScreen()),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
 
               // Cài Đặt Hệ Thống Card (Mới: Đáp ứng yêu cầu thứ 3 của người dùng)
               Container(
@@ -1196,7 +1250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (sport.toLowerCase().contains('cầu lông')) {
         title = 'Cầu lông';
-        subtitle = 'Nâng cao 4.0 • Xác thực bởi Host';
+        subtitle = 'Nâng cao 4.0';
         progress = 0.80;
         color = const Color(0xFF00A859);
       } else if (sport.toLowerCase().contains('pickleball')) {
