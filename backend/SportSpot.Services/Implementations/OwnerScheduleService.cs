@@ -12,15 +12,19 @@ public class OwnerScheduleService(SportSpotDbContext db)
     public async Task<bool> CanManage(int userId, int venueId, bool ownerOnly = false)
     {
         var user = await db.Users.FindAsync(userId);
-        return user != null && (user.Role == "Admin" || (user.StaffVenueId == venueId
-            && (user.Role == "Owner" || (!ownerOnly && user.Role == "VenueStaff"))));
+        var venue = await db.Venues.FindAsync(venueId);
+        return user is { IsActive: true } && venue?.ApprovalStatus == "Approved" && (user.Role == "Admin"
+            || (user.Role == "Owner" && (venue.OwnerUserId == userId || (venue.OwnerUserId == null && user.StaffVenueId == venueId)))
+            || (!ownerOnly && user.Role == "VenueStaff" && user.StaffVenueId == venueId));
     }
     public async Task<ApiResponse<List<ManagedVenueDto>>> Venues(int userId)
     {
         var user = await db.Users.FindAsync(userId);
-        if (user == null || user.Role is not ("Owner" or "VenueStaff" or "Admin"))
+        if (user == null || !user.IsActive || user.Role is not ("Owner" or "VenueStaff" or "Admin"))
             return ApiResponse<List<ManagedVenueDto>>.Fail("Bạn không có quyền quản lý sân", 403);
-        var rows = await db.Venues.Where(v => user.Role == "Admin" || v.Id == user.StaffVenueId)
+        var rows = await db.Venues.Where(v => v.ApprovalStatus == "Approved" && (user.Role == "Admin"
+            || (user.Role == "Owner" && (v.OwnerUserId == userId || (v.OwnerUserId == null && v.Id == user.StaffVenueId)))
+            || (user.Role == "VenueStaff" && v.Id == user.StaffVenueId)))
             .OrderBy(v => v.Name).Select(v => new ManagedVenueDto(v.Id, v.Name, v.BasePrice, v.PeakPrice)).ToListAsync();
         return ApiResponse<List<ManagedVenueDto>>.Ok(rows);
     }

@@ -15,7 +15,7 @@ public class VenueRepository : GenericRepository<Venue>, IVenueRepository
     {
         var query = _dbSet
             .Include(v => v.Sport)
-            .Where(v => v.IsActive)
+            .Where(v => v.IsActive && v.ApprovalStatus == "Approved")
             .AsQueryable();
 
         if (sportId.HasValue && sportId.Value > 0)
@@ -40,7 +40,8 @@ public class VenueRepository : GenericRepository<Venue>, IVenueRepository
             .Include(v => v.Sport)
             .Include(v => v.SubVenues.Where(sv => sv.IsActive))
             .Include(v => v.Services)
-            .FirstOrDefaultAsync(v => v.Id == id && v.IsActive);
+            .Include(v => v.Images)
+            .FirstOrDefaultAsync(v => v.Id == id && v.IsActive && v.ApprovalStatus == "Approved");
     }
 
     public async Task<List<TimeSlot>> GetAllTimeSlotsOrderedAsync()

@@ -29,6 +29,7 @@ public class User
     public string Role { get; set; } = "Player"; // 'Player', 'VenueStaff', 'Admin'
 
     public int WalletBalance { get; set; } = 0;
+    public bool IsActive { get; set; } = true;
 
     public int? StaffVenueId { get; set; }
 

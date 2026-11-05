@@ -27,12 +27,28 @@ public class SportSpotDbContext : DbContext
     public DbSet<MatchComment> MatchComments => Set<MatchComment>();
     public DbSet<UserSkill> UserSkills => Set<UserSkill>();
     public DbSet<Team> Teams => Set<Team>();
+    public DbSet<VenueImage> VenueImages => Set<VenueImage>();
+    public DbSet<VenueModerationLog> VenueModerationLogs => Set<VenueModerationLog>();
     public DbSet<TeamChallenge> TeamChallenges => Set<TeamChallenge>();
     public DbSet<TeamChallengeRequest> TeamChallengeRequests => Set<TeamChallengeRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<User>().Property(u => u.IsActive).HasDefaultValue(true);
+        modelBuilder.Entity<Venue>().Property(v => v.ApprovalStatus).HasDefaultValue("Approved");
+        modelBuilder.Entity<Venue>().HasOne(v => v.OwnerUser).WithMany()
+            .HasForeignKey(v => v.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Venue>().HasIndex(v => new { v.ApprovalStatus, v.SubmittedAt });
+        modelBuilder.Entity<VenueImage>().HasOne(i => i.UploadedByUser).WithMany()
+            .HasForeignKey(i => i.UploadedByUserId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<VenueImage>().HasOne(i => i.Venue).WithMany(v => v.Images)
+            .HasForeignKey(i => i.VenueId).OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<VenueImage>().Property(i => i.VenueId).IsConcurrencyToken();
+        modelBuilder.Entity<VenueModerationLog>().HasOne(l => l.AdminUser).WithMany()
+            .HasForeignKey(l => l.AdminUserId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<VenueModerationLog>().HasOne(l => l.Venue).WithMany(v => v.ModerationHistory)
+            .HasForeignKey(l => l.VenueId).OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Team>().HasOne(t => t.CaptainUser).WithMany()
             .HasForeignKey(t => t.CaptainUserId).OnDelete(DeleteBehavior.Restrict);

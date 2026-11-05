@@ -76,6 +76,8 @@ public class OwnerController : ControllerBase
         if (user?.Role != "Owner" || !await _db.Venues.AnyAsync(v => v.Id == venueId))
             return Respond(ApiResponse<bool>.Fail("Chọn tài khoản Owner và cụm sân hợp lệ"));
         user.StaffVenueId = venueId;
+        var venue = await _db.Venues.FindAsync(venueId);
+        venue!.OwnerUserId = ownerId;
         await _db.SaveChangesAsync();
         return Respond(ApiResponse<bool>.Ok(true));
     }

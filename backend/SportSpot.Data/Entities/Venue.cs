@@ -39,7 +39,7 @@ public class Venue
     [MaxLength(20)]
     public string Hotline { get; set; } = string.Empty;
 
-    [MaxLength(255)]
+    [MaxLength(1000)]
     public string? ImageUrl { get; set; }
 
     public int BasePrice { get; set; }
@@ -52,6 +52,17 @@ public class Venue
     public string? Amenities { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    public int? OwnerUserId { get; set; }
+    public User? OwnerUser { get; set; }
+    [MaxLength(20)] public string ApprovalStatus { get; set; } = "Approved";
+    [MaxLength(1000)] public string? RejectionReason { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+    public DateTime? ReviewedAt { get; set; }
+    public int? ReviewedByUserId { get; set; }
+    [ConcurrencyCheck] public int ReviewRevision { get; set; }
+    public ICollection<VenueImage> Images { get; set; } = new List<VenueImage>();
+    public ICollection<VenueModerationLog> ModerationHistory { get; set; } = new List<VenueModerationLog>();
 
     public ICollection<SubVenue> SubVenues { get; set; } = new List<SubVenue>();
     public ICollection<Service> Services { get; set; } = new List<Service>();

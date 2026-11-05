@@ -71,6 +71,9 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IFcmPushService, FcmPushService>();
 builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<OwnerScheduleService>();
+builder.Services.AddScoped<VenueApplicationService>();
+builder.Services.AddScoped<AdminService>();
+builder.Services.AddHttpClient<IVenueImageStorage, CloudinaryImageStorage>(client => client.Timeout = TimeSpan.FromSeconds(60));
 
 // 4. Cấu hình JWT Bearer Authentication (Ưu tiên đọc từ .env)
 var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
@@ -88,6 +91,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "SportSpotAPI",
             ValidAudience = builder.Configuration["Jwt:Audience"] ?? "SportSpotMobileApp",
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var rawId = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var db = context.HttpContext.RequestServices.GetRequiredService<SportSpotDbContext>();
+                var user = int.TryParse(rawId, out var id) ? await db.Users.FindAsync(id) : null;
+                if (user == null || !user.IsActive) { context.Fail("Tài khoản không hoạt động"); return; }
+                if (context.Principal?.Identity is System.Security.Claims.ClaimsIdentity identity)
+                {
+                    foreach (var role in identity.FindAll(System.Security.Claims.ClaimTypes.Role).ToList()) identity.RemoveClaim(role);
+                    identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, user.Role));
+                }
+            }
         };
     });
 

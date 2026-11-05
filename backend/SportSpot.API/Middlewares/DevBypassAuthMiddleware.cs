@@ -23,7 +23,7 @@ public class DevBypassAuthMiddleware
         if (environment.IsDevelopment() && context.Request.Headers.TryGetValue("X-Mock-User-Id", out var mockUserIdHeader))
         {
             var userIdStr = mockUserIdHeader.ToString();
-            if (int.TryParse(userIdStr, out var userId) && userId > 0 && await db.Users.FindAsync(userId) is { } user)
+            if (int.TryParse(userIdStr, out var userId) && userId > 0 && await db.Users.FindAsync(userId) is { IsActive: true } user)
             {
                 var claims = new[]
                 {

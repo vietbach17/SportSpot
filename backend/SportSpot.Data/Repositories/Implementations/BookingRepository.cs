@@ -16,7 +16,7 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
         return await _context.SubVenues
             .Include(sv => sv.Venue)
                 .ThenInclude(v => v!.Sport)
-            .FirstOrDefaultAsync(sv => sv.Id == subVenueId && sv.IsActive);
+            .FirstOrDefaultAsync(sv => sv.Id == subVenueId && sv.IsActive && sv.Venue!.IsActive && sv.Venue.ApprovalStatus == "Approved");
     }
 
     public async Task<List<TimeSlot>> GetTimeSlotsByIdsAsync(List<int> slotIds)

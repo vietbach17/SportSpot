@@ -75,8 +75,10 @@ public class VenueService : IVenueService
 
         var gallery = new List<string>();
         if (!string.IsNullOrEmpty(venue.ImageUrl)) gallery.Add(venue.ImageUrl);
+        gallery.AddRange(venue.Images.OrderBy(i => i.Position).Select(i => i.Url));
 
-        if (venue.SportId == 1) // Cầu lông
+        if (venue.OwnerUserId != null) { /* Owner galleries contain only their uploaded photos. */ }
+        else if (venue.SportId == 1) // Cầu lông
         {
             gallery.AddRange(new[]
             {
@@ -151,7 +153,7 @@ public class VenueService : IVenueService
     public async Task<ApiResponse<List<TimeSlotStatusDto>>> GetVenueTimeSlotsAsync(int id, int subVenueId, DateOnly playDate)
     {
         var venue = await _unitOfWork.Venues.GetByIdAsync(id);
-        if (venue == null)
+        if (venue == null || !venue.IsActive || venue.ApprovalStatus != "Approved")
         {
             return ApiResponse<List<TimeSlotStatusDto>>.Fail("Không tìm thấy cụm sân", 404);
         }

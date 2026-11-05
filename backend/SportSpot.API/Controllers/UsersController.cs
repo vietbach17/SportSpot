@@ -59,7 +59,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("/api/admin/users")]
-    [AllowAnonymous]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ApiResponse<List<object>>>> GetAllUsers([FromServices] SportSpotDbContext db)
     {
         var users = await db.Users
@@ -71,7 +71,7 @@ public class UsersController : ControllerBase
                 email = u.Email ?? "",
                 phone = u.PhoneNumber,
                 role = u.Role,
-                isActive = true,
+                isActive = u.IsActive,
                 joinDate = u.CreatedAt.ToString("dd/MM/yyyy"),
                 walletBalance = u.WalletBalance,
                 avatarUrl = u.AvatarUrl,
