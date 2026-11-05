@@ -116,9 +116,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(origin => true)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -186,6 +187,15 @@ using (var scope = app.Services.CreateScope())
             try
             {
                 db.Database.ExecuteSqlRaw(@"
+                    ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""IsActive"" boolean DEFAULT TRUE;
+                    ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""StaffVenueId"" integer;
+                    ALTER TABLE ""Venues"" ADD COLUMN IF NOT EXISTS ""ApprovalStatus"" character varying(50) DEFAULT 'Approved';
+                    ALTER TABLE ""Venues"" ADD COLUMN IF NOT EXISTS ""OwnerUserId"" integer;
+                    ALTER TABLE ""Venues"" ADD COLUMN IF NOT EXISTS ""RejectionReason"" character varying(1000);
+                    ALTER TABLE ""Venues"" ADD COLUMN IF NOT EXISTS ""SubmittedAt"" timestamp with time zone;
+                    ALTER TABLE ""Venues"" ADD COLUMN IF NOT EXISTS ""ReviewedAt"" timestamp with time zone;
+                    ALTER TABLE ""Venues"" ADD COLUMN IF NOT EXISTS ""ReviewedByUserId"" integer;
+                    ALTER TABLE ""Venues"" ADD COLUMN IF NOT EXISTS ""ReviewRevision"" integer DEFAULT 0;
                     ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""DateOfBirth"" date;
                     ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""AvatarUrl"" character varying(255);
                     ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""FavoriteSports"" character varying(255);
@@ -236,6 +246,7 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = string.Empty; // Mở Swagger trực tiếp tại http://localhost:5000/
 });
 
+app.UseRouting();
 app.UseCors("AllowAll");
 
 // Middleware hỗ trợ kiểm thử nội bộ: Cho phép gửi header X-Mock-User-Id
